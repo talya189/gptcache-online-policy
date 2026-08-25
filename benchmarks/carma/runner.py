@@ -15,7 +15,7 @@ from benchmarks.carma.synthetic import Catalog, Request, build_trace, trace_hash
 from gptcache.manager.eviction.memory_cache import MemoryCacheEviction
 
 
-SCHEMA_VERSION = "carma-benchmark-v1"
+SCHEMA_VERSION = "carma-benchmark-v2"
 DEFAULT_WORKLOAD_SIZES = {
     "stationary": 1000,
     "phase_shift": 1500,
@@ -23,6 +23,9 @@ DEFAULT_WORKLOAD_SIZES = {
     "novel": 200,
 }
 POLICIES = ("LRU", "LFU", "CARMA", "CARMA_NO_CLUSTER")
+RECOVERY_WINDOW_FRACTION = 0.10
+RECOVERY_TAIL_FRACTION = 0.25
+RECOVERY_TARGET_FRACTION = 0.90
 
 
 @dataclass(frozen=True)
@@ -188,6 +191,113 @@ class RunResult:
     summary: Dict[str, Any]
 
 
+def phase_valid_hit_summary(
+    records: Sequence[Dict[str, Any]], phase: str
+) -> Dict[str, Any]:
+    """Return exact hit metrics for one named phase of one policy run."""
+
+    selected = [row for row in records if row.get("phase") == phase]
+    valid_hits = sum(int(bool(row.get("valid_hit", False))) for row in selected)
+    false_hits = sum(int(bool(row.get("false_hit", False))) for row in selected)
+    opportunities = sum(
+        int(bool(row.get("reuse_opportunity", False))) for row in selected
+    )
+    return {
+        "phase": phase,
+        "requests": len(selected),
+        "valid_hits": valid_hits,
+        "false_hits": false_hits,
+        "reuse_opportunities": opportunities,
+        "valid_hit_rate": (
+            _ratio(valid_hits, len(selected)) if selected else None
+        ),
+        "false_hit_rate": (
+            _ratio(false_hits, len(selected)) if selected else None
+        ),
+        "opportunity_recall": (
+            _ratio(valid_hits, opportunities) if selected else None
+        ),
+    }
+
+
+def phase_recovery_summary(
+    records: Sequence[Dict[str, Any]], phase_prefix: str = "shift-"
+) -> Dict[str, Any]:
+    """Return deterministic, oracle-targeted recovery lags after phase shifts.
+
+    The policy-independent target is 90% of the reuse-opportunity rate in the
+    final quarter of a phase. Lag is the earliest zero-based start of a
+    contiguous 10%-of-phase window whose valid-hit rate reaches the target.
+    A zero or unattained target is right-censored at the phase length.
+    """
+
+    grouped: Dict[str, List[Dict[str, Any]]] = {}
+    for row in records:
+        phase = str(row.get("phase", ""))
+        if phase.startswith(phase_prefix):
+            grouped.setdefault(phase, []).append(row)
+    ordered = sorted(
+        grouped.items(),
+        key=lambda item: min(int(row["request_index"]) for row in item[1]),
+    )
+
+    transitions: List[Dict[str, Any]] = []
+    for phase, phase_rows in ordered[1:]:
+        phase_rows = sorted(phase_rows, key=lambda row: int(row["request_index"]))
+        count = len(phase_rows)
+        window = max(1, int(math.floor(count * RECOVERY_WINDOW_FRACTION)))
+        tail_count = max(1, int(math.ceil(count * RECOVERY_TAIL_FRACTION)))
+        tail = phase_rows[-tail_count:]
+        tail_opportunities = sum(
+            int(bool(row.get("reuse_opportunity", False))) for row in tail
+        )
+        oracle_tail_rate = tail_opportunities / tail_count
+        target = RECOVERY_TARGET_FRACTION * oracle_tail_rate
+
+        prefix_hits = [0]
+        for row in phase_rows:
+            prefix_hits.append(
+                prefix_hits[-1] + int(bool(row.get("valid_hit", False)))
+            )
+        recovered = False
+        lag = count
+        if target > 0:
+            for start in range(0, count - window + 1):
+                hits = prefix_hits[start + window] - prefix_hits[start]
+                if hits / window + 1e-12 >= target:
+                    recovered = True
+                    lag = start
+                    break
+
+        transitions.append(
+            {
+                "phase": phase,
+                "requests": count,
+                "window_requests": window,
+                "tail_requests": tail_count,
+                "oracle_tail_opportunity_rate": round(oracle_tail_rate, 8),
+                "target_valid_hit_rate": round(target, 8),
+                "recovered": recovered,
+                "lag_requests": lag,
+            }
+        )
+
+    lags = [int(row["lag_requests"]) for row in transitions]
+    return {
+        "transitions": transitions,
+        "transition_count": len(transitions),
+        "phase_recovery_lag_mean_requests": (
+            round(sum(lags) / len(lags), 8) if lags else None
+        ),
+        "phase_recovery_lag_max_requests": max(lags) if lags else None,
+        "phase_recovery_failures": (
+            sum(int(not bool(row["recovered"])) for row in transitions)
+            if transitions
+            else None
+        ),
+    }
+
+
 class CacheSimulation:
     """A labeled semantic-cache replay around a real eviction policy."""
 
@@ -342,7 +452,7 @@ class CacheSimulation:
         sorted_latencies = sorted(latencies_ns)
         policy_stats = self.policy.stats()
         deterministic_digest = _records_digest(records)
-        return {
+        summary = {
             "schema_version": SCHEMA_VERSION,
             "run_id": self.run_id,
             "policy": self.policy_name,
@@ -382,6 +492,8 @@ class CacheSimulation:
             "policy_cells": int(policy_stats.get("cells", 0)),
             "policy_ghost_cells": int(policy_stats.get("ghost_cells", 0)),
         }
+        summary.update(_phase_metrics(records))
+        return summary
 
 
 RUN_FIELDS = (
@@ -417,6 +529,17 @@ RUN_FIELDS = (
     "policy_topics",
     "policy_cells",
     "policy_ghost_cells",
+    "scan_return_requests",
+    "scan_return_valid_hits",
+    "scan_return_false_hits",
+    "scan_return_reuse_opportunities",
+    "scan_return_valid_hit_rate",
+    "scan_return_false_hit_rate",
+    "scan_return_opportunity_recall",
+    "shift_recovery_lag_mean_requests",
+    "shift_recovery_lag_max_requests",
+    "shift_recovery_failures",
+    "shift_recovery_transitions_json",
 )
 
 
@@ -549,6 +672,70 @@ def _records_digest(records: Sequence[Dict[str, Any]]) -> str:
         )
         digest.update(b"\n")
     return digest.hexdigest()
+
+
+def _phase_metrics(records: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+    """Return workload-applicable scan and shift phase diagnostics.
+
+    For each post-initial shift phase, a policy-independent target is 90% of
+    the reuse-opportunity rate in that phase's final quarter. Recovery is the
+    earliest start of a contiguous 10%-of-phase window whose valid-hit rate
+    meets the target. An unattained or zero target is right-censored at the
+    full phase length. Non-applicable scalar fields are ``None`` rather than
+    numeric zeros, so downstream analyses cannot mistake them for results.
+    """
+
+    scan = phase_valid_hit_summary(records, "scan-return")
+    recovery = phase_recovery_summary(records)
+    result: Dict[str, Any] = {
+        "scan_return_requests": None,
+        "scan_return_valid_hits": None,
+        "scan_return_false_hits": None,
+        "scan_return_reuse_opportunities": None,
+        "scan_return_valid_hit_rate": None,
+        "scan_return_false_hit_rate": None,
+        "scan_return_opportunity_recall": None,
+        "shift_recovery_lag_mean_requests": None,
+        "shift_recovery_lag_max_requests": None,
+        "shift_recovery_failures": None,
+        "shift_recovery_transitions_json": "",
+    }
+    if scan["requests"]:
+        result.update(
+            {
+                "scan_return_requests": scan["requests"],
+                "scan_return_valid_hits": scan["valid_hits"],
+                "scan_return_false_hits": scan["false_hits"],
+                "scan_return_reuse_opportunities": scan[
+                    "reuse_opportunities"
+                ],
+                "scan_return_valid_hit_rate": scan["valid_hit_rate"],
+                "scan_return_false_hit_rate": scan["false_hit_rate"],
+                "scan_return_opportunity_recall": scan[
+                    "opportunity_recall"
+                ],
+            }
+        )
+    if recovery["transition_count"]:
+        result.update(
+            {
+                "shift_recovery_lag_mean_requests": recovery[
+                    "phase_recovery_lag_mean_requests"
+                ],
+                "shift_recovery_lag_max_requests": recovery[
+                    "phase_recovery_lag_max_requests"
+                ],
+                "shift_recovery_failures": recovery[
+                    "phase_recovery_failures"
+                ],
+                "shift_recovery_transitions_json": json.dumps(
+                    recovery["transitions"],
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+            }
+        )
+    return result
 
 
 def _ratio(numerator: int, denominator: int) -> float:

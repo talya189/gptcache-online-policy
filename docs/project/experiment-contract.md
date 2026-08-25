@@ -46,11 +46,19 @@ hit_precision = valid_hits / (valid_hits + false_hits)
 false_hit_rate = false_hits / requests
 opportunity_recall = valid_hits / reuse_opportunities
 safe_token_saving_ratio = valid-hit prompt+context+answer tokens / all tokens
+scan_return_valid_hit_rate = valid hits in scan-return / scan-return requests
 ```
 
 False hits save zero valid tokens. Report mean, p50, p95, and p99 cache-path
 latency, throughput, CPU time/utilization, peak/mean RSS and USS, disk/I/O
 bytes, admissions, rejections, evictions, clusters, and phase-recovery lag.
+
+For each category-shift phase after the initial phase, the policy-independent
+recovery target is 90% of the reuse-opportunity rate in that phase's final
+quarter. Recovery lag is the earliest zero-based start of a contiguous window
+covering 10% of the phase whose valid-hit rate meets the target. A zero or
+unattained target is right-censored at the full phase length. Report mean and
+maximum lag, failure count, and every transition's target/window details.
 
 ## Primary controls
 
@@ -93,6 +101,15 @@ within-topic cosine hierarchy (`0.72`, `0.88`, and `0.96`); cross-topic cosine
 is at most `0.12`, below every topic threshold. The full catalog therefore has
 802 rather than more than 8,000 dimensions. The benchmark records measured
 cosine extrema and aborts on geometry drift.
+
+Pre-execution coverage amendment: the first full command was interrupted after
+107.68 seconds while still evaluating validation configurations; it had not
+selected a configuration, written an artifact, or constructed a held-out test
+trace. The runner was amended to retain `scan-return` valid-hit rate and the
+recovery-lag definition above before restarting validation from the beginning.
+The same pre-restart audit corrected two builder drifts to the already-frozen
+workloads: category shift now uses five phases with 80% hot demand, and the
+pollution split is exactly 30% warm, 40% unique scan, and 30% return.
 
 ## Frozen tuning procedure
 
@@ -143,9 +160,11 @@ eviction disabled, and full CARMA.
   Holm-correct primary p-values.
 - Report paired rank-biserial effect size. Use Wilson intervals for precision
   and false-hit rates.
-- Only primary-test valid-hit-rate comparisons against LRU, LFU, and the
-  per-seed stronger baseline are confirmatory. Other emitted p-values,
-  hard-negative results, and capacity sweeps are explicitly exploratory.
+- Primary-test whole-trace valid-hit-rate and pollution return-phase
+  valid-hit-rate comparisons against LRU, LFU, and the per-seed stronger
+  baseline are confirmatory and share the Holm family. Other emitted p-values,
+  recovery-lag results, hard-negative results, and capacity sweeps are
+  explicitly exploratory.
 
 ## Success gates
 
@@ -157,13 +176,14 @@ eviction disabled, and full CARMA.
    has an upper 95% bound no greater than 0.1 percentage point.
 3. On the 10,000-request category-shift test at capacity 100, CARMA improves
    valid-hit rate by at least two absolute points over `max(LRU, LFU)`, with the
-   Holm-adjusted confidence interval above zero.
+   paired bootstrap confidence interval above zero and Holm-adjusted `p <= .05`.
 4. Return-phase scan valid-hit rate improves by at least five points over the
-   stronger baseline, with its confidence interval above zero.
+   stronger baseline, with its confidence interval above zero and
+   Holm-adjusted `p <= .05`.
 5. Stationary valid-hit-rate delta has a lower confidence bound no worse than
    minus one point.
 6. Safe token-saving-ratio delta has a lower confidence bound no worse than
-   minus 0.5 point.
+   minus 0.5 point in each of the three primary workloads.
 7. CARMA p95 cache-path latency is at most 1.25 times LRU and no more than
    0.5 ms higher; throughput is at least 90% of LRU; peak RSS is at most 1.20
    times LRU and no more than 64 MiB higher.

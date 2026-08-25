@@ -47,7 +47,7 @@ from benchmarks.carma.synthetic import (
 )
 
 
-EXPERIMENT_SCHEMA = "carma-full-experiment-v1"
+EXPERIMENT_SCHEMA = "carma-full-experiment-v2"
 BASELINE_COMMIT = "c59fb3a6152a4458b2a070ca183b61c4b614095f"
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT_CONTRACT = PROJECT_ROOT / "docs/project/experiment-contract.md"
@@ -67,12 +67,21 @@ FULL_VALIDATION_REQUESTS = 2000
 FULL_TEST_REQUESTS = 10000
 HARD_NEGATIVE_REQUESTS = 200
 CAPACITY_SWEEP = (20, 50, 200)
-METRICS = (
+BASE_METRICS = (
     "valid_hit_rate",
     "false_hit_rate",
     "opportunity_recall",
     "safe_token_saving_ratio",
 )
+POLLUTION_PHASE_METRICS = (
+    "scan_return_valid_hit_rate",
+)
+SHIFT_PHASE_METRICS = ("shift_recovery_lag_mean_requests",)
+METRICS = BASE_METRICS + POLLUTION_PHASE_METRICS + SHIFT_PHASE_METRICS
+LOWER_IS_BETTER = {
+    "false_hit_rate",
+    "shift_recovery_lag_mean_requests",
+}
 ARTIFACT_NAMES = (
     "validation.csv",
     "validation_runs.csv",
@@ -455,6 +464,11 @@ def _execute_experiment(
 
     aggregate_rows = _aggregate_runs(test_rows, bootstrap_resamples)
     _write_csv(output_dir / "aggregate.csv", aggregate_rows, AGGREGATE_FIELDS)
+    synthetic_success_gates = _evaluate_synthetic_success_gates(
+        aggregate_rows,
+        capacity=test_capacity,
+        inferential=mode == "full",
+    )
 
     metadata = {
         "schema_version": EXPERIMENT_SCHEMA,
@@ -611,6 +625,7 @@ def _execute_experiment(
             "Held-out QQP precision at its independently calibrated threshold; "
             "the synthetic 0.95 diagnostic is not used for model selection."
         ),
+        "synthetic_success_gates": synthetic_success_gates,
         "bootstrap_resamples": bootstrap_resamples,
         "statistics": {
             "sampling_unit": "independent seed",
@@ -620,15 +635,17 @@ def _execute_experiment(
             "paired_test": "exact two-sided Wilcoxon signed-rank",
             "effect_size": (
                 "matched-pairs rank-biserial; positive means CARMA is higher "
-                "and is beneficial for every reported metric except FHR"
+                "and is beneficial except for false-hit rate and recovery lag"
             ),
             "multiple_testing": (
-                "Holm adjustment over primary VHR comparisons against LRU, "
-                "LFU, and per-seed best baseline across all workloads"
+                "Holm adjustment over whole-trace primary VHR and pollution "
+                "return-phase VHR comparisons against LRU, LFU, and the "
+                "per-seed best baseline"
             ),
             "confirmatory_scope": (
-                "Only primary-test VHR comparisons against LRU, LFU, and "
-                "the per-seed best baseline are confirmatory."
+                "Only primary-test whole-trace VHR and pollution return-phase "
+                "VHR comparisons against LRU, LFU, and the per-seed best "
+                "baseline are confirmatory."
             ),
             "exploratory_scope": (
                 "All other comparison p-values are unadjusted exploratory "
@@ -886,7 +903,7 @@ def _aggregate_runs(
         groups.setdefault(key, []).append(row)
 
     for (stage, workload, capacity, policy), group in sorted(groups.items()):
-        for metric in METRICS:
+        for metric in _metrics_for_workload(workload):
             values = [
                 float(row[metric])
                 for row in sorted(group, key=lambda item: item["seed"])
@@ -946,7 +963,7 @@ def _aggregate_runs(
         ]
         if "LRU" in by_policy and "LFU" in by_policy:
             comparators.append("BEST_BASELINE")
-        for metric in METRICS:
+        for metric in _metrics_for_workload(workload):
             for comparator in comparators:
                 if comparator == "BEST_BASELINE":
                     common = sorted(
@@ -963,7 +980,7 @@ def _aggregate_runs(
                         lfu = by_policy["LFU"][seed][metric]
                         right.append(
                             min(lru, lfu)
-                            if metric == "false_hit_rate"
+                            if metric in LOWER_IS_BETTER
                             else max(lru, lfu)
                         )
                 else:
@@ -1006,7 +1023,13 @@ def _aggregate_runs(
                 )
                 if (
                     stage == "primary_test"
-                    and metric == "valid_hit_rate"
+                    and (
+                        metric == "valid_hit_rate"
+                        or (
+                            workload == "pollution_scan"
+                            and metric == "scan_return_valid_hit_rate"
+                        )
+                    )
                     and comparator in (
                         "LRU",
                         "LFU",
@@ -1037,6 +1060,106 @@ def _aggregate_runs(
     return aggregate
 
 
+def _evaluate_synthetic_success_gates(
+    aggregate: Sequence[Dict[str, Any]],
+    capacity: int = PRIMARY_CAPACITY,
+    inferential: bool = True,
+) -> Dict[str, Any]:
+    """Adjudicate the preregistered synthetic gates without report judgment."""
+
+    def comparison(workload: str, metric: str) -> Dict[str, Any]:
+        matches = [
+            row
+            for row in aggregate
+            if row["stage"] == "primary_test"
+            and row["row_type"] == "comparison"
+            and row["workload"] == workload
+            and int(row["capacity"]) == capacity
+            and row["metric"] == metric
+            and row["policy"] == "CARMA"
+            and row["comparator"] == "BEST_BASELINE"
+        ]
+        if len(matches) != 1:
+            raise RuntimeError(
+                "expected one primary BEST_BASELINE comparison for %s/%s"
+                % (workload, metric)
+            )
+        return matches[0]
+
+    shift = comparison("phase_shift", "valid_hit_rate")
+    scan_return = comparison(
+        "pollution_scan", "scan_return_valid_hit_rate"
+    )
+    stationary = comparison("stationary", "valid_hit_rate")
+    token_rows = [
+        comparison(workload, "safe_token_saving_ratio")
+        for workload in WORKLOADS
+    ]
+
+    gate_3_passes = (
+        float(shift["delta_mean"]) >= 0.02
+        and float(shift["delta_ci_low"]) > 0
+        and float(shift["p_holm"]) <= 0.05
+    )
+    gate_4_passes = (
+        float(scan_return["delta_mean"]) >= 0.05
+        and float(scan_return["delta_ci_low"]) > 0
+        and float(scan_return["p_holm"]) <= 0.05
+    )
+    gate_5_passes = float(stationary["delta_ci_low"]) >= -0.01
+    gate_6_passes = all(
+        float(row["delta_ci_low"]) >= -0.005 for row in token_rows
+    )
+    return {
+        "status": "inferential" if inferential else "smoke_non_inferential",
+        "evaluated_capacity": capacity,
+        "claimable": inferential,
+        "scope": (
+            "Synthetic gates 3-6 only; correctness, QQP safety, system "
+            "overhead, and Docker reproducibility are adjudicated elsewhere."
+        ),
+        "gate_3_phase_shift_vhr": {
+            "required_delta": 0.02,
+            "required_ci_low_strictly_above": 0.0,
+            "required_holm_p_at_most": 0.05,
+            "observed_delta": shift["delta_mean"],
+            "observed_ci_low": shift["delta_ci_low"],
+            "observed_ci_high": shift["delta_ci_high"],
+            "observed_holm_p": shift["p_holm"],
+            "passes": gate_3_passes,
+        },
+        "gate_4_scan_return_vhr": {
+            "required_delta": 0.05,
+            "required_ci_low_strictly_above": 0.0,
+            "required_holm_p_at_most": 0.05,
+            "observed_delta": scan_return["delta_mean"],
+            "observed_ci_low": scan_return["delta_ci_low"],
+            "observed_ci_high": scan_return["delta_ci_high"],
+            "observed_holm_p": scan_return["p_holm"],
+            "passes": gate_4_passes,
+        },
+        "gate_5_stationary_nonregression": {
+            "required_ci_low_at_least": -0.01,
+            "observed_delta": stationary["delta_mean"],
+            "observed_ci_low": stationary["delta_ci_low"],
+            "observed_ci_high": stationary["delta_ci_high"],
+            "passes": gate_5_passes,
+        },
+        "gate_6_token_saving_nonregression": {
+            "required_each_workload_ci_low_at_least": -0.005,
+            "workloads": {
+                row["workload"]: {
+                    "observed_delta": row["delta_mean"],
+                    "observed_ci_low": row["delta_ci_low"],
+                    "observed_ci_high": row["delta_ci_high"],
+                }
+                for row in token_rows
+            },
+            "passes": gate_6_passes,
+        },
+    }
+
+
 def _values_by_seed(
     rows: Sequence[Dict[str, Any]],
 ) -> Dict[str, Dict[int, Dict[str, float]]]:
@@ -1046,8 +1169,19 @@ def _values_by_seed(
         seed = int(row["seed"])
         if seed in result.setdefault(policy, {}):
             raise RuntimeError("duplicate policy/workload/capacity/seed result")
-        result[policy][seed] = {metric: float(row[metric]) for metric in METRICS}
+        result[policy][seed] = {
+            metric: float(row[metric])
+            for metric in _metrics_for_workload(str(row["workload"]))
+        }
     return result
+
+
+def _metrics_for_workload(workload: str) -> Tuple[str, ...]:
+    if workload == "pollution_scan":
+        return BASE_METRICS + POLLUTION_PHASE_METRICS
+    if workload == "phase_shift":
+        return BASE_METRICS + SHIFT_PHASE_METRICS
+    return BASE_METRICS
 
 
 def _aggregate_row(**kwargs: Any) -> Dict[str, Any]:

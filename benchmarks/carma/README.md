@@ -30,7 +30,7 @@ Default profile sizes are:
 | Workload | Requests | Purpose |
 | --- | ---: | --- |
 | `stationary` | 1,000 | Stable Zipf plus exactly 15% one-shot traffic |
-| `phase_shift` | 1,500 | Three rotating hot-topic phases |
+| `phase_shift` | 1,500 | Five rotating 80% hot-topic phases |
 | `pollution_scan` | 1,200 | `0.8C` hot set, unique scan, hot-set return |
 | `novel` | 200 | Unique traffic and near-twin false hits |
 

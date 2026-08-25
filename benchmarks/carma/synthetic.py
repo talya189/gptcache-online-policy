@@ -233,10 +233,10 @@ def stationary_trace(catalog: Catalog, count: int, seed: int) -> List[Request]:
 
 
 def phase_shift_trace(catalog: Catalog, count: int, seed: int) -> List[Request]:
-    """Demand whose hot topic rotates through three equal-length CI phases."""
+    """Demand whose 80% hot topic rotates through five equal phases."""
 
     rng = random.Random(seed)
-    phases = 3
+    phases = 5
     concept_samplers = {
         topic: _zipf_sampler(catalog.for_topic(topic))
         for topic in range(catalog.topics)
@@ -245,7 +245,7 @@ def phase_shift_trace(catalog: Catalog, count: int, seed: int) -> List[Request]:
     for index in range(count):
         phase_index = min(phases - 1, index * phases // count)
         hot_topic = phase_index % catalog.topics
-        if rng.random() < 0.85:
+        if rng.random() < 0.80:
             topic = hot_topic
         else:
             alternatives = [t for t in range(catalog.topics) if t != hot_topic]
@@ -261,8 +261,8 @@ def pollution_scan_trace(
     """Warm a compact hot set, scan unique cold entries, then revisit hot data."""
 
     rng = random.Random(seed)
-    warm_count = count // 3
-    scan_count = count // 3
+    warm_count = 3 * count // 10
+    scan_count = 4 * count // 10
     return_count = count - warm_count - scan_count
     working_size = max(4, min(int(capacity * 0.80), capacity - 1))
     hot_candidates = sorted(catalog.for_topic(0), key=lambda item: item.concept_id)
