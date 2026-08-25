@@ -139,3 +139,9 @@ dmypy.json
 **/.chroma
 docs/references/*
 !docs/references/index.rst
+
+# Generated benchmark outputs can be large and machine-specific. Curated,
+# deterministic handoff samples may be committed under artifacts/samples/.
+artifacts/*
+!artifacts/samples/
+!artifacts/samples/**
