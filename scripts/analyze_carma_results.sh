@@ -19,6 +19,8 @@ if [[ "$#" -eq 0 ]]; then
     --integration-dir "${PROJECT_ROOT}/artifacts/carma-integration-full" \
     --qqp-result "${PROJECT_ROOT}/artifacts/qqp/evaluation/result.json" \
     --moss-dir "${PROJECT_ROOT}/artifacts/carma-moss" \
+    --host-verification "${PROJECT_ROOT}/artifacts/ci/host-verification.json" \
+    --container-reproducibility "${PROJECT_ROOT}/artifacts/container-reproducibility.json" \
     --output "${PROJECT_ROOT}/artifacts/carma-analysis"
 fi
 

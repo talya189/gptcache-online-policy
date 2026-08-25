@@ -12,6 +12,7 @@ from benchmarks.carma.analyze_results import (
     CAPACITY_RATE_DOMAIN_PERCENT,
     CAPACITY_RATE_TICKS_PERCENT,
     FULL_RUN_FIELDS,
+    HOST_VERIFICATION_SCHEMA,
     INTEGRATION_FIELDS,
     MAX_CAPACITY_FIGURE_HEIGHT_IN,
     MAX_PUBLICATION_FIGURE_WIDTH_IN,
@@ -22,11 +23,13 @@ from benchmarks.carma.analyze_results import (
     PUBLICATION_FIGURE_WIDTH_IN,
     REPORT_TEXT_WIDTH_IN,
     RUN_FIELDS,
+    CONTAINER_REPRODUCIBILITY_SCHEMA,
     VALIDATION_FIELDS,
     VALIDATION_RUN_FIELDS,
     AnalysisError,
     _wilson_lower,
     analyze_results,
+    main,
     sha256_file,
 )
 
@@ -51,6 +54,174 @@ def _write_json(path, value):
         json.dumps(value, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+def _artifact_reference(root, path):
+    return {
+        "path": path.relative_to(root).as_posix(),
+        "sha256": sha256_file(path),
+    }
+
+
+def _ci_benchmark_fixture(root):
+    root.mkdir(parents=True, exist_ok=True)
+    trace_hash = "a" * 64
+    run_id = "ci-fixture-carma-stationary"
+    row = {field: "" for field in RUN_FIELDS}
+    row.update(
+        {
+            "schema_version": "carma-benchmark-v2",
+            "run_id": run_id,
+            "policy": "CARMA",
+            "workload": "stationary",
+            "seed": 7,
+            "trace_hash": trace_hash,
+            "deterministic_digest": "d" * 64,
+            "requests": 1,
+            "capacity": 50,
+            "raw_hits": 0,
+            "valid_hits": 0,
+            "false_hits": 0,
+            "misses": 1,
+            "false_misses": 0,
+            "reuse_opportunities": 0,
+            "valid_hit_rate": 0.0,
+            "false_hit_rate": 0.0,
+            "hit_precision": 1.0,
+            "opportunity_recall": 1.0,
+            "safe_token_saving_ratio": 0.0,
+            "admissions": 1,
+            "rejections": 0,
+            "evictions": 0,
+            "final_cache_entries": 1,
+            "mean_latency_us": 0.0,
+            "p50_latency_us": 0.0,
+            "p95_latency_us": 0.0,
+            "p99_latency_us": 0.0,
+            "throughput_qps": 0.0,
+            "policy_topics": 1,
+            "policy_cells": 1,
+            "policy_ghost_cells": 0,
+        }
+    )
+    _write_csv(root / "runs.csv", RUN_FIELDS, [row])
+    (root / "requests.jsonl").write_text(
+        '{"request_index":0,"workload":"stationary"}\n', encoding="utf-8"
+    )
+    _write_json(
+        root / "manifest.json",
+        {
+            "schema_version": "carma-benchmark-v2",
+            "config": {"measure_latency": False, "seed": 7},
+            "trace_hashes": {"stationary": trace_hash},
+            "run_ids": [run_id],
+            "timing_is_measured": False,
+            "determinism_scope": "fixture non-timing fields",
+        },
+    )
+    return root
+
+
+def _host_verification_fixture(root, source_commit="1" * 40, lock_text="lock\n"):
+    root.mkdir(parents=True, exist_ok=True)
+    lock = root / "requirements-project.lock"
+    lock.write_text(lock_text, encoding="utf-8")
+    log = root / "host-verification.log"
+    log.write_text("fixture test output\n[verify] PASS\n", encoding="utf-8")
+    benchmark = _ci_benchmark_fixture(root / "benchmark")
+    evidence = {
+        "schema_version": HOST_VERIFICATION_SCHEMA,
+        "status": "pass",
+        "source_commit": source_commit,
+        "baseline_ancestor_verified": True,
+        "python": {"implementation": "CPython", "version": "3.12.13"},
+        "platform": "fixture-host",
+        "dependency_lock": {
+            **_artifact_reference(root, lock),
+            "require_hashes": True,
+            "only_binary": True,
+            "index_url": "https://pypi.org/simple",
+        },
+        "verification_log": _artifact_reference(root, log),
+        "benchmark_artifacts": {
+            name: _artifact_reference(root, benchmark / name)
+            for name in ("manifest.json", "requests.jsonl", "runs.csv")
+        },
+    }
+    path = root / "host-verification.json"
+    _write_json(path, evidence)
+    return path
+
+
+def _container_reproducibility_fixture(
+    root, source_commit="1" * 40, lock_text="lock\n"
+):
+    root.mkdir(parents=True, exist_ok=True)
+    lock = root / "requirements-project.lock"
+    lock.write_text(lock_text, encoding="utf-8")
+    build_log = root / "docker-build.log"
+    build_log.write_text("fixture image build\n", encoding="utf-8")
+    runs = []
+    for index in (1, 2):
+        label = "docker-run-%d" % index
+        benchmark = _ci_benchmark_fixture(root / label / "benchmark")
+        raw_log = root / (label + ".log")
+        raw_log.write_text("fixture container output\n[verify] PASS\n", encoding="utf-8")
+        non_timing_log = root / (label + ".nontiming.log")
+        non_timing_log.write_text(
+            "fixture container output\n[verify] PASS\n", encoding="utf-8"
+        )
+        hash_list = root / (label + ".sha256")
+        hash_list.write_text(
+            "".join(
+                "%s  %s\n" % (sha256_file(benchmark / name), name)
+                for name in ("manifest.json", "requests.jsonl", "runs.csv")
+            ),
+            encoding="utf-8",
+        )
+        runs.append(
+            {
+                "label": label,
+                "raw_log": _artifact_reference(root, raw_log),
+                "non_timing_log": _artifact_reference(root, non_timing_log),
+                "hash_list": _artifact_reference(root, hash_list),
+                "benchmark_artifacts": {
+                    name: _artifact_reference(root, benchmark / name)
+                    for name in ("manifest.json", "requests.jsonl", "runs.csv")
+                },
+            }
+        )
+    evidence = {
+        "schema_version": CONTAINER_REPRODUCIBILITY_SCHEMA,
+        "status": "pass",
+        "source_commit": source_commit,
+        "image_id": "sha256:" + "2" * 64,
+        "platform": "linux/amd64",
+        "fresh_container_count": 2,
+        "controls": {
+            "runtime_network": "none",
+            "capabilities_dropped": "ALL",
+            "no_new_privileges": True,
+            "dependency_hashes_required": True,
+            "binary_only_dependencies": True,
+            "dependency_index_url": "https://pypi.org/simple",
+            "checkout_credentials_persisted": False,
+            "generated_lock_check_passed": True,
+        },
+        "dependency_lock": _artifact_reference(root, lock),
+        "build_log": _artifact_reference(root, build_log),
+        "comparisons": {
+            "non_timing_logs_identical": True,
+            "hash_lists_identical": True,
+            "manifest_json_identical": True,
+            "requests_jsonl_identical": True,
+            "runs_csv_identical": True,
+        },
+        "runs": runs,
+    }
+    path = root / "container-reproducibility.json"
+    _write_json(path, evidence)
+    return path
 
 
 def _trace(stage, capacity, workload, seed):
@@ -753,3 +924,88 @@ def test_interrupted_staging_directory_is_not_ingested(tmp_path):
     result = analyze_results(tmp_path / "analysis", full_dir=full)
     assert result["sources"]["full"]["status"] == "incomplete"
     assert "metadata.json" in result["sources"]["full"]["reason"]
+
+
+def test_verified_host_and_container_evidence_pass_gates_1_and_8(tmp_path):
+    assert ANALYSIS_SCHEMA == "carma-post-analysis-v2"
+    host = _host_verification_fixture(tmp_path / "host")
+    container = _container_reproducibility_fixture(tmp_path / "container")
+
+    result = analyze_results(
+        tmp_path / "analysis",
+        host_verification=host,
+        container_reproducibility=container,
+    )
+
+    assert result["sources"]["host_verification"]["status"] == "verified"
+    assert result["sources"]["container_reproducibility"]["status"] == "verified"
+    assert result["sources"]["host_verification"]["benchmark_validation"] == {
+        "schema_version": "carma-benchmark-v2",
+        "timing_is_measured": False,
+        "request_rows": 1,
+        "run_rows": 1,
+        "run_ids": ["ci-fixture-carma-stationary"],
+        "trace_hashes": {"stationary": "a" * 64},
+    }
+    assert result["gates"]["gate_1_correctness"]["status"] == "pass"
+    assert result["gates"]["gate_1_correctness"]["claimable"] is True
+    assert result["gates"]["gate_8_reproducibility"]["status"] == "pass"
+    assert result["gates"]["gate_8_reproducibility"]["claimable"] is True
+
+
+def test_host_evidence_hash_tamper_is_rejected(tmp_path):
+    host = _host_verification_fixture(tmp_path / "host")
+    (host.parent / "host-verification.log").write_text(
+        "fixture test output\n[verify] FAIL\n", encoding="utf-8"
+    )
+
+    with pytest.raises(AnalysisError, match="verification log SHA-256 mismatch"):
+        analyze_results(tmp_path / "analysis", host_verification=host)
+
+
+@pytest.mark.parametrize(
+    ("container_commit", "container_lock", "message"),
+    (
+        ("3" * 40, "lock\n", "different source commits"),
+        ("1" * 40, "different lock\n", "different dependency locks"),
+    ),
+)
+def test_host_container_source_or_lock_mismatch_is_rejected(
+    tmp_path, container_commit, container_lock, message
+):
+    host = _host_verification_fixture(tmp_path / "host")
+    container = _container_reproducibility_fixture(
+        tmp_path / "container",
+        source_commit=container_commit,
+        lock_text=container_lock,
+    )
+
+    with pytest.raises(AnalysisError, match=message):
+        analyze_results(
+            tmp_path / "analysis",
+            host_verification=host,
+            container_reproducibility=container,
+        )
+
+
+def test_cli_accepts_host_and_container_evidence_flags(tmp_path, capsys):
+    host = _host_verification_fixture(tmp_path / "host")
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    output = tmp_path / "analysis"
+
+    exit_code = main(
+        [
+            "--host-verification",
+            str(host),
+            "--container-reproducibility",
+            str(container),
+            "--output",
+            str(output),
+        ]
+    )
+
+    printed = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert printed["gates"]["gate_1_correctness"]["status"] == "pass"
+    assert printed["gates"]["gate_8_reproducibility"]["status"] == "pass"
+    assert (output / "gate-audit.json").is_file()

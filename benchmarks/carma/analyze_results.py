@@ -17,13 +17,15 @@ import tempfile
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-ANALYSIS_SCHEMA = "carma-post-analysis-v1"
+ANALYSIS_SCHEMA = "carma-post-analysis-v2"
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FULL_SCHEMA = "carma-full-experiment-v2"
 RUN_SCHEMA = "carma-benchmark-v2"
 INTEGRATION_SCHEMA = "carma-sqlite-faiss-v1"
 QQP_SCHEMA = "carma-qqp-v1"
 MOSS_SCHEMA = "carma-moss-recorded-response-v2"
+HOST_VERIFICATION_SCHEMA = "carma-host-verification-v1"
+CONTAINER_REPRODUCIBILITY_SCHEMA = "carma-container-reproducibility-v1"
 MATPLOTLIB_VERSION = "3.10.8"
 REPORT_TEXT_WIDTH_IN = 7.05
 PUBLICATION_FIGURE_WIDTH_IN = 8.0
@@ -281,6 +283,8 @@ def analyze_results(
     integration_dirs: Sequence[Path] = (),
     qqp_result: Optional[Path] = None,
     moss_dir: Optional[Path] = None,
+    host_verification: Optional[Path] = None,
+    container_reproducibility: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Validate supplied result sets and atomically publish the audit."""
 
@@ -295,7 +299,11 @@ def analyze_results(
     integration = _load_integrations(integration_dirs)
     qqp = _load_qqp(qqp_result)
     moss = _load_moss(moss_dir)
-    gates, supplemental = _build_gate_audit(full, integration, qqp, moss)
+    host = _load_host_verification(host_verification)
+    container = _load_container_reproducibility(container_reproducibility)
+    gates, supplemental = _build_gate_audit(
+        full, integration, qqp, moss, host, container
+    )
 
     output_dir = Path(output_dir)
     output_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -324,6 +332,8 @@ def analyze_results(
                 "integration": integration["report"],
                 "qqp": qqp["report"],
                 "moss": moss["report"],
+                "host_verification": host["report"],
+                "container_reproducibility": container["report"],
             },
             "gates": gates,
             "supplemental_checks": supplemental,
@@ -337,9 +347,21 @@ def analyze_results(
                     "Gate 7 requires five fresh-process system seeds but "
                     "does not freeze an across-seed aggregation rule."
                 ),
-                (
-                    "Gates 1 and 8 require external test/Docker evidence "
-                    "that is not among this analyzer's declared inputs."
+                *(
+                    [
+                        "Gate 1 remains pending unless a verified clean-host "
+                        "test artifact is supplied."
+                    ]
+                    if host["report"].get("status") != "verified"
+                    else []
+                ),
+                *(
+                    [
+                        "Gate 8 remains pending unless verified paired-container "
+                        "evidence is supplied."
+                    ]
+                    if container["report"].get("status") != "verified"
+                    else []
                 ),
             ],
             "renderer": {
@@ -1262,13 +1284,421 @@ def _load_moss(path: Optional[Path]) -> Dict[str, Any]:
     }
 
 
+def _evidence_reference(
+    root: Path, value: Any, label: str
+) -> Tuple[Path, Dict[str, Any]]:
+    if not isinstance(value, dict):
+        raise AnalysisError("%s must be a path/SHA-256 object" % label)
+    relative_value = value.get("path")
+    if not isinstance(relative_value, str) or not relative_value:
+        raise AnalysisError("%s lacks a relative path" % label)
+    relative = Path(relative_value)
+    if relative.is_absolute():
+        raise AnalysisError("%s path must be relative" % label)
+    root = Path(root).resolve()
+    candidate = (root / relative).resolve()
+    try:
+        inside_root = os.path.commonpath((str(root), str(candidate))) == str(root)
+    except ValueError:
+        inside_root = False
+    if not inside_root:
+        raise AnalysisError("%s path escapes its evidence directory" % label)
+    if not candidate.is_file():
+        raise AnalysisError("%s referenced file is missing" % label)
+    expected = _hash_value(value, label)
+    observed = sha256_file(candidate)
+    if observed != expected:
+        raise AnalysisError("%s SHA-256 mismatch" % label)
+    return candidate, {
+        "path": relative.as_posix(),
+        "sha256": observed,
+        "bytes": candidate.stat().st_size,
+    }
+
+
+def _commit_value(value: Any, label: str) -> str:
+    if not isinstance(value, str):
+        raise AnalysisError("%s lacks a commit SHA" % label)
+    commit = value.lower()
+    if len(commit) != 40 or any(
+        character not in "0123456789abcdef" for character in commit
+    ):
+        raise AnalysisError("%s lacks a 40-character commit SHA" % label)
+    return commit
+
+
+def _last_nonempty_line(path: Path, label: str) -> str:
+    try:
+        lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()]
+    except (OSError, UnicodeError) as exc:
+        raise AnalysisError("%s is not valid UTF-8 text" % label) from exc
+    nonempty = [line for line in lines if line]
+    if not nonempty:
+        raise AnalysisError("%s is empty" % label)
+    return nonempty[-1]
+
+
+def _jsonl_object_count(path: Path, label: str) -> int:
+    count = 0
+    try:
+        with Path(path).open("r", encoding="utf-8") as source:
+            for line_number, line in enumerate(source, 1):
+                if not line.strip():
+                    continue
+                try:
+                    value = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise AnalysisError(
+                        "%s line %d is not valid JSON" % (label, line_number)
+                    ) from exc
+                if not isinstance(value, dict):
+                    raise AnalysisError(
+                        "%s line %d is not a JSON object" % (label, line_number)
+                    )
+                count += 1
+    except (OSError, UnicodeError) as exc:
+        raise AnalysisError("%s is not valid UTF-8 JSONL" % label) from exc
+    return count
+
+
+def _validate_ci_benchmark_artifacts(
+    paths: Dict[str, Path], label: str
+) -> Dict[str, Any]:
+    manifest = _read_json(paths["manifest.json"])
+    if manifest.get("schema_version") != RUN_SCHEMA:
+        raise AnalysisError("%s manifest schema mismatch" % label)
+    if manifest.get("timing_is_measured") is not False:
+        raise AnalysisError("%s unexpectedly measures timing" % label)
+    if not isinstance(manifest.get("config"), dict):
+        raise AnalysisError("%s manifest config is missing" % label)
+    trace_hashes = manifest.get("trace_hashes")
+    if not isinstance(trace_hashes, dict) or not trace_hashes:
+        raise AnalysisError("%s manifest trace hashes are missing" % label)
+
+    request_rows = _jsonl_object_count(paths["requests.jsonl"], "%s requests" % label)
+    run_rows, run_fields = _read_csv(paths["runs.csv"])
+    _require_exact_fields(run_fields, RUN_FIELDS, "%s runs" % label)
+    if not request_rows or not run_rows:
+        raise AnalysisError("%s is empty" % label)
+    run_ids = []
+    total_requests = 0
+    for row in run_rows:
+        if row["schema_version"] != RUN_SCHEMA:
+            raise AnalysisError("%s run uses a stale schema" % label)
+        run_id = row["run_id"]
+        if not run_id or run_id in run_ids:
+            raise AnalysisError("%s has missing or duplicate run IDs" % label)
+        run_ids.append(run_id)
+        requests = _integer(row["requests"], "%s run requests" % label)
+        if requests <= 0:
+            raise AnalysisError("%s run request count is not positive" % label)
+        total_requests += requests
+        workload = row["workload"]
+        if trace_hashes.get(workload) != row["trace_hash"]:
+            raise AnalysisError("%s run trace hash does not match its manifest" % label)
+    if manifest.get("run_ids") != run_ids:
+        raise AnalysisError("%s manifest run IDs do not match runs.csv" % label)
+    if request_rows != total_requests:
+        raise AnalysisError("%s request rows do not match runs.csv" % label)
+    return {
+        "schema_version": RUN_SCHEMA,
+        "timing_is_measured": False,
+        "request_rows": request_rows,
+        "run_rows": len(run_rows),
+        "run_ids": run_ids,
+        "trace_hashes": dict(sorted(trace_hashes.items())),
+    }
+
+
+def _sha256_list(path: Path, label: str) -> Dict[str, str]:
+    entries: Dict[str, str] = {}
+    try:
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError) as exc:
+        raise AnalysisError("%s is not valid UTF-8 text" % label) from exc
+    for line_number, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        parts = line.split(None, 1)
+        if len(parts) != 2:
+            raise AnalysisError("%s line %d is invalid" % (label, line_number))
+        digest = _hash_value(parts[0], "%s line %d" % (label, line_number))
+        name = parts[1].strip()
+        if name.startswith("*"):
+            name = name[1:]
+        if not name or name in entries or Path(name).name != name:
+            raise AnalysisError("%s line %d has an invalid name" % (label, line_number))
+        entries[name] = digest
+    return entries
+
+
+def _load_host_verification(path: Optional[Path]) -> Dict[str, Any]:
+    if path is None:
+        return {
+            "result": None,
+            "report": _pending_report(path, "clean-host verification unavailable"),
+        }
+    evidence_path = Path(path)
+    if not evidence_path.is_file():
+        return {
+            "result": None,
+            "report": _pending_report(path, "clean-host verification file is missing"),
+        }
+    evidence = _read_json(evidence_path)
+    if evidence.get("schema_version") != HOST_VERIFICATION_SCHEMA:
+        return {
+            "result": None,
+            "report": _pending_report(
+                path, "clean-host verification schema is stale", status="stale"
+            ),
+        }
+    if evidence.get("status") != "pass":
+        raise AnalysisError("clean-host verification status is not pass")
+    source_commit = _commit_value(
+        evidence.get("source_commit"), "clean-host verification"
+    )
+    if evidence.get("baseline_ancestor_verified") is not True:
+        raise AnalysisError("clean-host baseline ancestry was not verified")
+    python = evidence.get("python")
+    if not isinstance(python, dict) or python.get("implementation") != "CPython":
+        raise AnalysisError("clean-host verification did not use CPython")
+    if python.get("version") != "3.12.13":
+        raise AnalysisError("clean-host verification did not use Python 3.12.13")
+
+    root = evidence_path.resolve().parent
+    dependency = evidence.get("dependency_lock")
+    if not isinstance(dependency, dict):
+        raise AnalysisError("clean-host dependency lock metadata is missing")
+    for key, expected in (
+        ("require_hashes", True),
+        ("only_binary", True),
+        ("index_url", "https://pypi.org/simple"),
+    ):
+        if dependency.get(key) != expected:
+            raise AnalysisError("clean-host dependency control %s is invalid" % key)
+    _, dependency_report = _evidence_reference(
+        root, dependency, "clean-host dependency lock"
+    )
+    log_path, log_report = _evidence_reference(
+        root, evidence.get("verification_log"), "clean-host verification log"
+    )
+    if _last_nonempty_line(log_path, "clean-host verification log") != "[verify] PASS":
+        raise AnalysisError("clean-host verification log does not end in PASS")
+
+    benchmark = evidence.get("benchmark_artifacts")
+    expected_names = ("manifest.json", "requests.jsonl", "runs.csv")
+    if not isinstance(benchmark, dict) or set(benchmark) != set(expected_names):
+        raise AnalysisError("clean-host benchmark artifact set is incomplete")
+    benchmark_report = {}
+    benchmark_paths = {}
+    for name in expected_names:
+        artifact_path, artifact_report = _evidence_reference(
+            root, benchmark[name], "clean-host benchmark %s" % name
+        )
+        benchmark_paths[name] = artifact_path
+        benchmark_report[name] = artifact_report
+    benchmark_validation = _validate_ci_benchmark_artifacts(
+        benchmark_paths, "clean-host deterministic benchmark"
+    )
+
+    report = {
+        "status": "verified",
+        "path": str(evidence_path.resolve()),
+        "schema_version": HOST_VERIFICATION_SCHEMA,
+        "sha256": sha256_file(evidence_path),
+        "source_commit": source_commit,
+        "python": python,
+        "platform": evidence.get("platform"),
+        "dependency_lock": dependency_report,
+        "verification_log": log_report,
+        "benchmark_artifacts": benchmark_report,
+        "benchmark_validation": benchmark_validation,
+        "benchmark_request_rows": benchmark_validation["request_rows"],
+        "benchmark_run_rows": benchmark_validation["run_rows"],
+    }
+    return {"result": evidence, "report": report}
+
+
+def _load_container_reproducibility(path: Optional[Path]) -> Dict[str, Any]:
+    if path is None:
+        return {
+            "result": None,
+            "report": _pending_report(path, "paired-container evidence unavailable"),
+        }
+    evidence_path = Path(path)
+    if not evidence_path.is_file():
+        return {
+            "result": None,
+            "report": _pending_report(path, "paired-container evidence file is missing"),
+        }
+    evidence = _read_json(evidence_path)
+    if evidence.get("schema_version") != CONTAINER_REPRODUCIBILITY_SCHEMA:
+        return {
+            "result": None,
+            "report": _pending_report(
+                path, "paired-container evidence schema is stale", status="stale"
+            ),
+        }
+    if evidence.get("status") != "pass":
+        raise AnalysisError("paired-container evidence status is not pass")
+    source_commit = _commit_value(
+        evidence.get("source_commit"), "paired-container evidence"
+    )
+    image_id = evidence.get("image_id")
+    if not isinstance(image_id, str) or not image_id.startswith("sha256:"):
+        raise AnalysisError("paired-container image ID is invalid")
+    _hash_value(image_id[len("sha256:") :], "paired-container image ID")
+    if evidence.get("platform") != "linux/amd64":
+        raise AnalysisError("paired-container platform is not linux/amd64")
+    if evidence.get("fresh_container_count") != 2:
+        raise AnalysisError("paired-container evidence does not contain two fresh runs")
+
+    controls = evidence.get("controls")
+    required_controls = {
+        "runtime_network": "none",
+        "capabilities_dropped": "ALL",
+        "no_new_privileges": True,
+        "dependency_hashes_required": True,
+        "binary_only_dependencies": True,
+        "dependency_index_url": "https://pypi.org/simple",
+        "checkout_credentials_persisted": False,
+        "generated_lock_check_passed": True,
+    }
+    if not isinstance(controls, dict) or any(
+        controls.get(key) != expected for key, expected in required_controls.items()
+    ):
+        raise AnalysisError("paired-container security or dependency controls are invalid")
+    comparisons = evidence.get("comparisons")
+    required_comparisons = (
+        "non_timing_logs_identical",
+        "hash_lists_identical",
+        "manifest_json_identical",
+        "requests_jsonl_identical",
+        "runs_csv_identical",
+    )
+    if not isinstance(comparisons, dict) or any(
+        comparisons.get(name) is not True for name in required_comparisons
+    ):
+        raise AnalysisError("paired-container comparisons did not all pass")
+
+    root = evidence_path.resolve().parent
+    _, dependency_report = _evidence_reference(
+        root, evidence.get("dependency_lock"), "container dependency lock"
+    )
+    _, build_log_report = _evidence_reference(
+        root, evidence.get("build_log"), "container build log"
+    )
+    runs = evidence.get("runs")
+    if not isinstance(runs, list) or len(runs) != 2:
+        raise AnalysisError("paired-container run evidence is incomplete")
+    run_reports = []
+    observed_labels = []
+    comparison_files = {name: [] for name in required_comparisons[:2]}
+    benchmark_pairs = {name: [] for name in ("manifest.json", "requests.jsonl", "runs.csv")}
+    for run in runs:
+        if not isinstance(run, dict):
+            raise AnalysisError("paired-container run entry is invalid")
+        label = run.get("label")
+        if label not in ("docker-run-1", "docker-run-2"):
+            raise AnalysisError("paired-container run label is invalid")
+        observed_labels.append(label)
+        raw_path, raw_report = _evidence_reference(
+            root, run.get("raw_log"), "%s raw log" % label
+        )
+        if _last_nonempty_line(raw_path, "%s raw log" % label) != "[verify] PASS":
+            raise AnalysisError("%s raw log does not end in PASS" % label)
+        non_timing_path, non_timing_report = _evidence_reference(
+            root, run.get("non_timing_log"), "%s non-timing log" % label
+        )
+        hash_list_path, hash_list_report = _evidence_reference(
+            root, run.get("hash_list"), "%s hash list" % label
+        )
+        hash_list = _sha256_list(hash_list_path, "%s hash list" % label)
+        comparison_files["non_timing_logs_identical"].append(non_timing_path)
+        comparison_files["hash_lists_identical"].append(hash_list_path)
+        benchmark = run.get("benchmark_artifacts")
+        if not isinstance(benchmark, dict) or set(benchmark) != set(benchmark_pairs):
+            raise AnalysisError("%s benchmark artifact set is incomplete" % label)
+        benchmark_report = {}
+        benchmark_paths = {}
+        for name in benchmark_pairs:
+            artifact_path, artifact_report = _evidence_reference(
+                root, benchmark[name], "%s benchmark %s" % (label, name)
+            )
+            benchmark_pairs[name].append(artifact_path)
+            benchmark_paths[name] = artifact_path
+            benchmark_report[name] = artifact_report
+        if set(hash_list) != set(benchmark_pairs):
+            raise AnalysisError("%s hash list artifact set is incomplete" % label)
+        for name, artifact_report in benchmark_report.items():
+            if hash_list[name] != artifact_report["sha256"]:
+                raise AnalysisError(
+                    "%s hash list does not match benchmark %s" % (label, name)
+                )
+        benchmark_validation = _validate_ci_benchmark_artifacts(
+            benchmark_paths, "%s deterministic benchmark" % label
+        )
+        run_reports.append(
+            {
+                "label": label,
+                "raw_log": raw_report,
+                "non_timing_log": non_timing_report,
+                "hash_list": hash_list_report,
+                "benchmark_artifacts": benchmark_report,
+                "benchmark_validation": benchmark_validation,
+            }
+        )
+    if sorted(observed_labels) != ["docker-run-1", "docker-run-2"]:
+        raise AnalysisError("paired-container run labels are not unique")
+    for label, paths in comparison_files.items():
+        if paths[0].read_bytes() != paths[1].read_bytes():
+            raise AnalysisError("paired-container %s files differ" % label)
+    for name, paths in benchmark_pairs.items():
+        if paths[0].read_bytes() != paths[1].read_bytes():
+            raise AnalysisError("paired-container benchmark %s files differ" % name)
+
+    report = {
+        "status": "verified",
+        "path": str(evidence_path.resolve()),
+        "schema_version": CONTAINER_REPRODUCIBILITY_SCHEMA,
+        "sha256": sha256_file(evidence_path),
+        "source_commit": source_commit,
+        "image_id": image_id,
+        "platform": evidence["platform"],
+        "fresh_container_count": 2,
+        "controls": required_controls,
+        "comparisons": {name: True for name in required_comparisons},
+        "dependency_lock": dependency_report,
+        "build_log": build_log_report,
+        "runs": run_reports,
+    }
+    return {"result": evidence, "report": report}
+
+
 def _build_gate_audit(
     full: Dict[str, Any],
     integration: Dict[str, Any],
     qqp: Dict[str, Any],
     moss: Dict[str, Any],
+    host: Dict[str, Any],
+    container: Dict[str, Any],
 ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     gates: Dict[str, Dict[str, Any]] = {}
+
+    host_verified = host["report"].get("status") == "verified"
+    container_verified = container["report"].get("status") == "verified"
+    if host_verified and container_verified:
+        if host["report"]["source_commit"] != container["report"]["source_commit"]:
+            raise AnalysisError(
+                "host and paired-container evidence use different source commits"
+            )
+        if (
+            host["report"]["dependency_lock"]["sha256"]
+            != container["report"]["dependency_lock"]["sha256"]
+        ):
+            raise AnalysisError(
+                "host and paired-container evidence use different dependency locks"
+            )
 
     integrity_failures = []
     for row in integration["rows"]:
@@ -1276,16 +1706,23 @@ def _build_gate_audit(
             integrity_failures.append("%s false_hits" % row["run_id"])
         if _integer(row["stale_candidates"], "integration stale candidates"):
             integrity_failures.append("%s stale_candidates" % row["run_id"])
-    gate_1_status = "fail" if integrity_failures else "pending"
+    gate_1_status = (
+        "fail" if integrity_failures else "pass" if host_verified else "pending"
+    )
     gates["gate_1_correctness"] = {
         "status": gate_1_status,
-        "claimable": gate_1_status == "fail",
+        "claimable": gate_1_status in ("pass", "fail"),
         "criterion": "all relevant tests pass and all integrity failures are zero",
         "observed_integrity_failures": integrity_failures,
+        "host_verification": host["report"],
         "reason": (
             "an observed integration integrity violation fails the gate"
             if integrity_failures
-            else "test-suite result artifact was not supplied"
+            else (
+                "clean-host verifier passed and integration integrity failures are zero"
+                if host_verified
+                else "verified clean-host test evidence was not supplied"
+            )
         ),
     }
 
@@ -1379,14 +1816,20 @@ def _build_gate_audit(
             "how their per-seed p95/resource values adjudicate one gate"
         ),
     }
+    gate_8_status = "pass" if container_verified else "pending"
     gates["gate_8_reproducibility"] = {
-        "status": "pending",
-        "claimable": False,
+        "status": gate_8_status,
+        "claimable": gate_8_status == "pass",
         "criterion": (
             "two clean Docker CI runs have identical non-timing logs and "
             "all pinned downloads verify without credentials"
         ),
-        "reason": "paired Docker-run evidence was not supplied",
+        "reason": (
+            "two fresh locked containers passed and all declared comparisons match"
+            if container_verified
+            else "verified paired Docker-run evidence was not supplied"
+        ),
+        "container_reproducibility": container["report"],
         "partial_provenance": {
             "full_git": full["report"].get("git_provenance"),
             "qqp": qqp["report"].get("provenance"),
@@ -2183,7 +2626,12 @@ def _hash_value(value: Any, label: str) -> str:
         result = value.get("sha256")
     else:
         result = None
-    if not isinstance(result, str) or len(result) != 64:
+    if not isinstance(result, str):
+        raise AnalysisError("%s lacks a valid SHA-256" % label)
+    result = result.lower()
+    if len(result) != 64 or any(
+        character not in "0123456789abcdef" for character in result
+    ):
         raise AnalysisError("%s lacks a valid SHA-256" % label)
     return result
 
@@ -2332,6 +2780,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--qqp-result", type=Path, default=None)
     parser.add_argument("--moss-dir", type=Path, default=None)
+    parser.add_argument(
+        "--host-verification",
+        type=Path,
+        default=None,
+        help="clean-host carma-host-verification-v1 JSON evidence",
+    )
+    parser.add_argument(
+        "--container-reproducibility",
+        type=Path,
+        default=None,
+        help="paired-container carma-container-reproducibility-v1 JSON evidence",
+    )
     parser.add_argument("--output", type=Path, required=True)
     return parser
 
@@ -2344,6 +2804,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         integration_dirs=args.integration_dir,
         qqp_result=args.qqp_result,
         moss_dir=args.moss_dir,
+        host_verification=args.host_verification,
+        container_reproducibility=args.container_reproducibility,
     )
     print(json.dumps(result, sort_keys=True, indent=2, allow_nan=False))
     # A scientific gate failure is a successful analysis outcome. Technical
