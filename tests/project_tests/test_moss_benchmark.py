@@ -156,6 +156,67 @@ def test_prepare_streams_fixture_and_derives_context_sensitive_concepts(tmp_path
     ).read_bytes()
 
 
+def test_prepare_resolves_real_source_sentinel_ids_and_turn_count_mismatch(
+    tmp_path,
+):
+    def source_row(meta_instruction, declared_turns):
+        return {
+            "conversation_id": -1,
+            "meta_instruction": meta_instruction,
+            "num_turns": declared_turns,
+            "chat": {
+                "turn_1": {
+                    "Human": "question",
+                    "Inner Thoughts": "private trace",
+                    "Commands": "",
+                    "Tool Responses": "",
+                    "MOSS": "recorded answer",
+                }
+            },
+            "category": "tool",
+        }
+
+    archive = tmp_path / "moss-irregular-fixture.zip"
+    payload = "\n".join(
+        json.dumps(row, sort_keys=True)
+        for row in (source_row("first", 2), source_row("second", 1))
+    ) + "\n"
+    with zipfile.ZipFile(
+        archive, mode="w", compression=zipfile.ZIP_DEFLATED
+    ) as bundle:
+        bundle.writestr("moss-irregular.jsonl", payload.encode("utf-8"))
+
+    output = tmp_path / "irregular-prepared"
+    manifest = prepare_archive(
+        archive,
+        output,
+        sample_size=2,
+        seed=0,
+        source_spec=fixture_source_spec(archive),
+        token_counter=FixtureTokenCounter(),
+    )
+    rows = _jsonl(output / "pool.jsonl")
+
+    assert len({row["source_conversation_key"] for row in rows}) == 2
+    assert len({row["concept_id"] for row in rows}) == 2
+    assert all(row["conversation_id"] == -1 for row in rows)
+    assert sorted(row["source_row_number"] for row in rows) == [1, 2]
+    assert sorted(
+        (row["declared_num_turns"], row["actual_num_turns"]) for row in rows
+    ) == [(1, 1), (2, 1)]
+    assert manifest["source_irregularities"] == {
+        "negative_sentinel_conversation_id_rows": 2,
+        "declared_turn_count_mismatches": 1,
+        "negative_id_identity_rule": (
+            "SHA-256 of canonical source-row JSON; the declared ID is retained"
+        ),
+        "turn_count_resolution": (
+            "contiguous chat keys turn_1..turn_k are authoritative; the "
+            "declared num_turns value is retained"
+        ),
+    }
+
+
 def test_recorded_response_replay_has_no_model_calls_and_is_deterministic(tmp_path):
     archive, source = _archive(tmp_path)
     first_output = tmp_path / "first"
@@ -174,7 +235,13 @@ def test_recorded_response_replay_has_no_model_calls_and_is_deterministic(tmp_pa
     manifest = run_benchmark(archive, first_output, **kwargs)
     run_benchmark(archive, second_output, **kwargs)
 
-    for name in ("pool.jsonl", "requests.jsonl", "runs.csv", "manifest.json"):
+    for name in (
+        "pool.jsonl",
+        "requests.jsonl",
+        "runs.csv",
+        "prepare-manifest.json",
+        "manifest.json",
+    ):
         assert (first_output / name).read_bytes() == (second_output / name).read_bytes()
     requests = _jsonl(first_output / "requests.jsonl")
     with (first_output / "runs.csv").open(newline="") as source_file:
@@ -191,6 +258,10 @@ def test_recorded_response_replay_has_no_model_calls_and_is_deterministic(tmp_pa
     assert run["live_model_calls"] == "0"
     assert run["false_hits"] == "0"
     assert manifest["no_live_llm_or_api"] is True
+    assert manifest["prepared_manifest_sha256"] == manifest["artifacts"][
+        "prepare-manifest.json"
+    ]
+    assert manifest["preparation"]["raw_conversations"] == 3
 
 
 def test_novel_long_selection_is_unique_and_replays_every_miss(tmp_path):

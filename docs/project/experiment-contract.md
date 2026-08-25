@@ -30,9 +30,11 @@ an untouched semantic-safety test. Negative pairs whose endpoints collapse
 into the same positive component are removed and counted. Policy-created
 clusters never define answer correctness.
 
-For MOSS, a concept is the stable hash of conversation ID, round, and prior
-context. On a miss the recorded response is replayed. No live model or paid API
-is part of the benchmark.
+For MOSS, a concept is the stable hash of a source conversation key, round, and
+prior context. The key is the declared nonnegative conversation ID; for the
+source's negative sentinel ID it is the SHA-256 of canonical source-row JSON.
+On a miss the recorded response is replayed. No live model or paid API is part
+of the benchmark.
 
 `valid_hit` means the returned answer ID is allowed for the request's ground
 truth concept. `false_hit` means a raw hit returned another concept. A reuse
@@ -121,6 +123,18 @@ non-hot concepts; 834 dimensions), with all thresholds, seeds, gates, and
 selection rules unchanged. A disjoint seed-`20260000` structural preflight now
 constructs every trace, verifies five equal shift phases and the 30/40/30 scan
 with 4,000 distinct cold concepts, and must pass before validation begins.
+
+Pre-replay MOSS schema amendment: the first full-archive prepare attempt stopped
+before sampling, replay, or result publication when source row 178,581 declared
+two turns but contained only `turn_1`. A complete structural scan then found
+2,727 such declared-count mismatches and 30,000 rows using the source sentinel
+`conversation_id=-1`; the other 271,332 IDs were unique. The parser now treats
+contiguous `turn_1..turn_k` keys as authoritative while retaining the declared
+count, and disambiguates negative sentinel IDs with the canonical-row hash
+defined above. The manifest records both anomaly counts. This amendment was
+made before any MOSS workload result was produced; archive revision, checksum,
+selection, token buckets, requests, capacity, and every success gate remain
+unchanged.
 
 ## Frozen tuning procedure
 

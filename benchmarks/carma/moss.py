@@ -15,6 +15,7 @@ import io
 import json
 import math
 import os
+import shutil
 import stat
 import tempfile
 import urllib.request
@@ -25,7 +26,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-SCHEMA_VERSION = "carma-moss-recorded-response-v1"
+SCHEMA_VERSION = "carma-moss-recorded-response-v2"
 SOURCE_REPOSITORY = "OpenMOSS-Team/moss-003-sft-data"
 SOURCE_REVISION = "42e216d3e3fb331c18d5fa6e7cb4f1c53eef24a4"
 SOURCE_LICENSE = "cc-by-4.0"
@@ -92,6 +93,10 @@ OFFICIAL_SOURCE = SourceSpec(
 @dataclass(frozen=True)
 class RawTurn:
     conversation_id: int
+    source_conversation_key: str
+    source_row_number: int
+    declared_num_turns: int
+    actual_num_turns: int
     round_index: int
     category: str
     concept_id: str
@@ -295,6 +300,8 @@ def prepare_archive(
     seen_conversations = set()
     raw_conversations = 0
     raw_turns = 0
+    sentinel_conversation_ids = 0
+    declared_turn_count_mismatches = 0
     with zipfile.ZipFile(Path(archive), mode="r") as bundle:
         member_info = bundle.infolist()[0]
         with bundle.open(member_info, mode="r") as member:
@@ -315,14 +322,20 @@ def prepare_archive(
                         "invalid MOSS JSON at member line %d" % line_number
                     ) from exc
                 turns = _conversation_turns(value, line_number, seed)
-                conversation_id = turns[0].conversation_id
-                if conversation_id in seen_conversations:
+                first_turn = turns[0]
+                conversation_key = first_turn.source_conversation_key
+                if conversation_key in seen_conversations:
                     raise ValueError(
-                        "duplicate MOSS conversation_id %s" % conversation_id
+                        "duplicate MOSS source conversation key %s"
+                        % conversation_key
                     )
-                seen_conversations.add(conversation_id)
+                seen_conversations.add(conversation_key)
                 raw_conversations += 1
                 raw_turns += len(turns)
+                sentinel_conversation_ids += int(first_turn.conversation_id < 0)
+                declared_turn_count_mismatches += int(
+                    first_turn.declared_num_turns != first_turn.actual_num_turns
+                )
                 for turn in turns:
                     priority = int(turn.sample_priority, 16)
                     item = (-priority, turn.concept_id, turn)
@@ -369,8 +382,10 @@ def prepare_archive(
         },
         "ground_truth": {
             "concept": (
-                "SHA-256 of canonical conversation_id, round, and prior "
-                "context SHA-256"
+                "SHA-256 of source conversation key, round, and prior context "
+                "SHA-256. The source conversation key is the declared nonnegative "
+                "conversation_id, or the canonical-row SHA-256 for a negative "
+                "sentinel ID."
             ),
             "response": "SHA-256 of the exact recorded MOSS field",
             "policy_clusters_define_correctness": False,
@@ -384,6 +399,17 @@ def prepare_archive(
         },
         "raw_conversations": raw_conversations,
         "raw_turns": raw_turns,
+        "source_irregularities": {
+            "negative_sentinel_conversation_id_rows": sentinel_conversation_ids,
+            "declared_turn_count_mismatches": declared_turn_count_mismatches,
+            "negative_id_identity_rule": (
+                "SHA-256 of canonical source-row JSON; the declared ID is retained"
+            ),
+            "turn_count_resolution": (
+                "contiguous chat keys turn_1..turn_k are authoritative; the "
+                "declared num_turns value is retained"
+            ),
+        },
         "pool_rows": len(pool_rows),
         "pool_sha256": sha256_file(pool_path),
         "no_live_llm_or_api": True,
@@ -451,6 +477,17 @@ def replay_prepared(
         "pool_sha256": sha256_file(prepared_dir / "pool.jsonl"),
         "token_accounting": prepared_manifest["token_accounting"],
         "ground_truth": prepared_manifest["ground_truth"],
+        "preparation": {
+            "schema": prepared_manifest["schema"],
+            "sampling": prepared_manifest["sampling"],
+            "token_scope": prepared_manifest["token_scope"],
+            "raw_conversations": prepared_manifest["raw_conversations"],
+            "raw_turns": prepared_manifest["raw_turns"],
+            "pool_rows": prepared_manifest["pool_rows"],
+            "source_irregularities": prepared_manifest[
+                "source_irregularities"
+            ],
+        },
         "replay": {
             "policy": "RECORDED_RESPONSE_EXACT_LRU",
             "capacity": capacity,
@@ -503,7 +540,13 @@ def run_benchmark(
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    names = ("pool.jsonl", "requests.jsonl", "runs.csv", "manifest.json")
+    names = (
+        "pool.jsonl",
+        "requests.jsonl",
+        "runs.csv",
+        "prepare-manifest.json",
+        "manifest.json",
+    )
     with tempfile.TemporaryDirectory(prefix=".moss-", dir=str(output_dir)) as temp:
         staging = Path(temp)
         prepare_archive(
@@ -513,6 +556,9 @@ def run_benchmark(
             seed=sample_seed,
             source_spec=source_spec,
             token_counter=token_counter,
+        )
+        shutil.copyfile(
+            staging / "manifest.json", staging / "prepare-manifest.json"
         )
         result = replay_prepared(
             staging,
@@ -524,6 +570,9 @@ def run_benchmark(
             repeat_passes=repeat_passes,
         )
         result["artifacts"]["pool.jsonl"] = sha256_file(staging / "pool.jsonl")
+        result["artifacts"]["prepare-manifest.json"] = sha256_file(
+            staging / "prepare-manifest.json"
+        )
         _write_json(staging / "manifest.json", result)
         for name in names:
             os.replace(str(staging / name), str(output_dir / name))
@@ -584,13 +633,31 @@ def _conversation_turns(value: Any, line_number: int, seed: int) -> List[RawTurn
         raise ValueError("MOSS row %d has invalid num_turns" % line_number)
     if not isinstance(chat, dict):
         raise ValueError("MOSS row %d has invalid chat" % line_number)
-    expected_turns = {"turn_%d" % index for index in range(1, num_turns + 1)}
+    actual_num_turns = len(chat)
+    if actual_num_turns < 1:
+        raise ValueError("MOSS row %d has no chat turns" % line_number)
+    expected_turns = {
+        "turn_%d" % index for index in range(1, actual_num_turns + 1)
+    }
     if set(chat) != expected_turns:
-        raise ValueError("MOSS row %d turn keys do not match num_turns" % line_number)
+        raise ValueError("MOSS row %d has non-contiguous turn keys" % line_number)
+
+    if conversation_id < 0:
+        canonical_row = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        source_conversation_key = "row-sha256:" + hashlib.sha256(
+            canonical_row.encode("utf-8")
+        ).hexdigest()
+    else:
+        source_conversation_key = "id:%d" % conversation_id
 
     prior_turns: List[Dict[str, str]] = []
     result = []
-    for round_index in range(1, num_turns + 1):
+    for round_index in range(1, actual_num_turns + 1):
         turn = chat["turn_%d" % round_index]
         if not isinstance(turn, dict) or set(turn) != set(TURN_FIELDS):
             raise ValueError(
@@ -613,7 +680,7 @@ def _conversation_turns(value: Any, line_number: int, seed: int) -> List[RawTurn
         )
         context_hash = hashlib.sha256(context_text.encode("utf-8")).hexdigest()
         concept_payload = {
-            "conversation_id": conversation_id,
+            "source_conversation_key": source_conversation_key,
             "round": round_index,
             "prior_context_sha256": context_hash,
         }
@@ -634,6 +701,10 @@ def _conversation_turns(value: Any, line_number: int, seed: int) -> List[RawTurn
         result.append(
             RawTurn(
                 conversation_id=conversation_id,
+                source_conversation_key=source_conversation_key,
+                source_row_number=line_number,
+                declared_num_turns=num_turns,
+                actual_num_turns=actual_num_turns,
                 round_index=round_index,
                 category=category,
                 concept_id=concept_id,
@@ -660,6 +731,10 @@ def _tokenized_row(turn: RawTurn, counter: Any) -> Dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
         "conversation_id": turn.conversation_id,
+        "source_conversation_key": turn.source_conversation_key,
+        "source_row_number": turn.source_row_number,
+        "declared_num_turns": turn.declared_num_turns,
+        "actual_num_turns": turn.actual_num_turns,
         "round": turn.round_index,
         "category": turn.category,
         "concept_id": turn.concept_id,
@@ -790,6 +865,8 @@ def _replay_exact_lru(
                 "request_index": request_index,
                 "pass_index": row["pass_index"],
                 "conversation_id": row["conversation_id"],
+                "source_conversation_key": row["source_conversation_key"],
+                "source_row_number": row["source_row_number"],
                 "round": row["round"],
                 "category": row["category"],
                 "concept_id": concept_id,
