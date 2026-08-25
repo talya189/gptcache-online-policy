@@ -1,0 +1,36 @@
+# CARMA's reproducible CPU-only environment for Python 3.12.13.
+#
+# Install this file before installing the checkout with:
+#   python -m pip install --no-deps -e .
+# Keeping the editable install dependency-free prevents GPTCache's unpinned
+# upstream requirements from widening this deliberately small environment.
+
+# Build tooling
+pip==26.2.1
+setuptools==84.0.0
+wheel==0.48.0
+
+# GPTCache core and the supported SQLite/FAISS path
+cachetools==7.1.7
+faiss-cpu==1.15.0
+numpy==2.5.2
+requests==2.34.2
+SQLAlchemy==2.0.52
+
+# Test and benchmark support
+coverage==7.15.4
+psutil==7.2.2
+pytest==9.1.1
+pytest-cov==7.1.0
+
+# Fully pinned transitive dependencies for the packages above
+certifi==2026.7.22
+charset-normalizer==3.5.1
+greenlet==3.5.5
+idna==3.19
+iniconfig==2.3.0
+packaging==26.3
+pluggy==1.6.0
+Pygments==2.21.0
+typing_extensions==4.16.0
+urllib3==2.7.0

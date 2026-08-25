@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1.7
+
+# Multi-architecture digest for python:3.12.13-slim-bookworm, resolved on
+# 2026-08-25. Pinning both the interpreter patch and image digest removes tag
+# drift while preserving native linux/amd64 and linux/arm64 builds.
+FROM python:3.12.13-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_ROOT_USER_ACTION=ignore
+
+WORKDIR /workspace
+
+# Cache dependency installation separately from source changes. The checkout
+# is installed with --no-deps below, so setup.py cannot expand this lock.
+COPY requirements-project.txt ./
+RUN python -m pip install --no-cache-dir --requirement requirements-project.txt
+
+# Copy only executable project inputs; repository metadata, local environments,
+# result directories, and unrelated documentation never enter the image.
+COPY setup.py README.md requirements.txt ./
+COPY gptcache ./gptcache
+COPY gptcache_server ./gptcache_server
+COPY benchmarks ./benchmarks
+COPY examples/benchmark ./examples/benchmark
+COPY tests ./tests
+COPY scripts ./scripts
+RUN python -m pip install --no-cache-dir --no-deps --no-build-isolation --editable . \
+    && addgroup --system project \
+    && adduser --system --ingroup project --home /home/project project \
+    && chown -R project:project /workspace /home/project
+
+USER project
+
+ENTRYPOINT ["bash", "scripts/verify_project.sh"]

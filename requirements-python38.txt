@@ -1,0 +1,28 @@
+# Minimal lock for GPTCache's declared Python >=3.8.1 compatibility floor.
+# Optional SQLite/FAISS integration remains covered by requirements-project.txt
+# and the reproducible Python 3.12.13 job.
+
+# Build tooling (last releases in these lines with Python 3.8 support)
+pip==24.3.1
+setuptools==75.3.2
+wheel==0.45.1
+
+# GPTCache core and CARMA's NumPy-only policy
+cachetools==5.5.2
+numpy==1.24.4
+requests==2.32.3
+
+# Backend-free CARMA test support
+pytest==8.3.5
+
+# Fully pinned transitive dependencies
+certifi==2025.1.31
+charset-normalizer==3.4.1
+exceptiongroup==1.2.2
+idna==3.10
+iniconfig==2.0.0
+packaging==24.2
+pluggy==1.5.0
+tomli==2.2.1
+typing_extensions==4.12.2
+urllib3==2.2.3
