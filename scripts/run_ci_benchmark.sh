@@ -3,7 +3,13 @@ set -Eeuo pipefail
 
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 readonly OUTPUT_DIR="${1:-${PROJECT_ROOT}/artifacts/carma-ci}"
-readonly PYTHON_BIN="${PYTHON_BIN:-python}"
+
+if [[ -x "${PROJECT_ROOT}/.venv/bin/python" ]]; then
+  PYTHON_BIN="${PYTHON_BIN:-${PROJECT_ROOT}/.venv/bin/python}"
+else
+  PYTHON_BIN="${PYTHON_BIN:-python3}"
+fi
+readonly PYTHON_BIN
 
 first_run="$(mktemp -d "${TMPDIR:-/tmp}/carma-ci-first.XXXXXX")"
 second_run="$(mktemp -d "${TMPDIR:-/tmp}/carma-ci-second.XXXXXX")"
