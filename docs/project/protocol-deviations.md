@@ -1,10 +1,12 @@
-# Post-execution synthetic protocol deviations
+# Post-execution protocol deviations
 
-Recorded: 2026-08-26, after completion of the full synthetic run.
+Recorded: 2026-08-26, after completion of the full synthetic and integration
+runs.
 
 This note is a deviation ledger, not an amendment to the frozen experiment
 contract and not a claim that the completed run complied retroactively. It
-applies specifically to `artifacts/carma-full-20260826/`.
+applies to `artifacts/carma-full-20260826/` and the five
+`artifacts/integration-full-2026090{1,2,3,4,5}/` directories.
 
 ## Immutable run identity
 
@@ -126,9 +128,33 @@ separately identified post-execution supplement, or preregister them for a new
 full run. Such results must not be inserted into the historical bundle or
 treated as if they shared its preregistered execution status.
 
+### 5. Integration timing used precomputed synthetic vectors, not the frozen ONNX embedding
+
+Contract commitment: use GPTCache `paraphrase-albert-onnx` on CPU as the
+default integration embedding.
+
+Observed: each of the five completed SQLite/FAISS integration manifests records
+`precomputed_embeddings=true`. The runner replays the controlled synthetic
+catalog's 2,982-dimensional vectors and does not invoke the ONNX embedding
+model. Its `total` timer begins at cache search and therefore measures the
+post-embedding cache path; embedding generation is excluded.
+
+Impact: these runs are valid evidence about CARMA's policy cost, storage
+cleanup, SQLite/FAISS consistency, and post-embedding cache-path behavior on
+the frozen synthetic geometry. They are not evidence for embedding latency or
+for a complete ONNX-backed request path. Although every seed satisfies the
+individual numerical Gate 7 limits, the frozen contract also omitted an
+across-seed aggregation rule. Gate 7 is therefore reported as a diagnostic
+pending result rather than a confirmatory pass.
+
+Prospective remediation: a new, separately identified integration run must
+invoke the pinned ONNX model inside the measured request path, freeze how the
+five seeds are aggregated, and publish that rule before results are observed.
+It must not replace or relabel the existing precomputed-vector manifests.
+
 ## Interpretation boundary
 
 This ledger changes no selected configuration, threshold, seed, success gate,
-trace, run summary, or artifact hash from the completed run. It narrows the
+trace, run summary, or artifact hash from the completed runs. It narrows the
 claims that may be made from that evidence and records which safeguards apply
 only to future executions.
