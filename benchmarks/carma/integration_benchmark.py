@@ -206,13 +206,13 @@ def _delta(after: Dict[str, Any], before: Dict[str, Any], key: str) -> Any:
 
 
 def _catalog_for(config: IntegrationConfig) -> Catalog:
-    # pollution_scan needs requests/3 unique concepts outside topic zero.  Size
+    # pollution_scan needs 40% unique concepts outside topic zero. Size
     # the deterministic catalog before timing while keeping vectors compact.
     topics = 6
     cells = 4
     concepts = 32
     if config.workload == "pollution_scan":
-        scan_count = config.requests // 3
+        scan_count = 4 * config.requests // 10
         concepts = max(concepts, int(math.ceil(scan_count / ((topics - 1) * cells))) + 2)
     elif config.workload in ("stationary", "novel"):
         concepts = max(concepts, int(math.ceil(config.requests / (topics * cells))) + 2)
