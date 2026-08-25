@@ -29,6 +29,7 @@ from benchmarks.carma.runner import (
     SCHEMA_VERSION,
     BenchmarkConfig,
     CacheSimulation,
+    RunResult,
 )
 from benchmarks.carma.statistics import (
     bootstrap_mean_ci,
@@ -87,6 +88,7 @@ ARTIFACT_NAMES = (
     "validation_runs.csv",
     "runs.csv",
     "aggregate.csv",
+    "requests.jsonl",
     "metadata.json",
 )
 
@@ -412,11 +414,15 @@ def _execute_experiment(
     protocol_preflight = _preflight_protocol(
         catalog, test_requests, test_capacity
     )
+    request_path = output_dir / "requests.jsonl"
+    with request_path.open("w", encoding="utf-8"):
+        pass
     validation_rows, validation_run_rows, chosen, trace_hashes = _run_validation(
         catalog,
         validation_seeds,
         validation_requests,
         validation_capacity,
+        request_path=request_path,
     )
     _write_csv(
         output_dir / "validation.csv",
@@ -446,6 +452,7 @@ def _execute_experiment(
         request_count=test_requests,
         capacity=test_capacity,
         policies=("LRU", "LFU", "CARMA", "CARMA_NO_CLUSTER"),
+        request_path=request_path,
     )
     test_rows.extend(primary_rows)
     trace_hashes.update(primary_hashes)
@@ -460,6 +467,7 @@ def _execute_experiment(
         capacity=test_capacity,
         policies=("LRU", "LFU", "CARMA", "CARMA_NO_CLUSTER"),
         hit_threshold=HARD_NEGATIVE_HIT_THRESHOLD,
+        request_path=request_path,
     )
     test_rows.extend(diagnostic_rows)
     trace_hashes.update(diagnostic_hashes)
@@ -476,6 +484,7 @@ def _execute_experiment(
             capacity=test_capacity,
             policies=("CARMA",),
             policy_labels={"CARMA": "CARMA_NO_DECAY"},
+            request_path=request_path,
         )
         test_rows.extend(ablation_rows)
         trace_hashes.update(ablation_hashes)
@@ -497,6 +506,7 @@ def _execute_experiment(
                 policies=("CARMA",),
                 policy_labels={"CARMA": label},
                 policy_overrides=overrides,
+                request_path=request_path,
             )
             test_rows.extend(ablation_rows)
             trace_hashes.update(ablation_hashes)
@@ -513,6 +523,7 @@ def _execute_experiment(
                 capacity=capacity,
                 policies=("LRU", "LFU", "CARMA"),
                 trace_capacity=PRIMARY_CAPACITY,
+                request_path=request_path,
             )
             test_rows.extend(sweep_rows)
             trace_hashes.update(sweep_hashes)
@@ -620,6 +631,23 @@ def _execute_experiment(
             "and quota_strength."
         ),
         "selection_uses_test_results": False,
+        "request_log": {
+            "included": True,
+            "path": "requests.jsonl",
+            "scope": "validation and every emitted fixed-stage run",
+            "write_mode": "streamed after each completed synthetic request",
+            "resource_samples_included": False,
+            "timing_measured": False,
+            "stage_latency_included": False,
+        },
+        "policy_execution_order": {
+            "method": (
+                "deterministic per-seed SHA-256 ranking of policy names "
+                "with domain separator carma-policy-order-v1"
+            ),
+            "scope": "fixed synthetic stages; validation has one policy",
+            "timing_measured": False,
+        },
         "validation_seeds": list(validation_seeds),
         "test_seeds": list(test_seeds),
         "seeds_are_disjoint": not bool(set(validation_seeds) & set(test_seeds)),
@@ -727,6 +755,7 @@ def _execute_experiment(
             ),
             "runs.csv": _file_hash(output_dir / "runs.csv"),
             "aggregate.csv": _file_hash(output_dir / "aggregate.csv"),
+            "requests.jsonl": _file_hash(request_path),
         },
     }
     with (output_dir / "metadata.json").open("w", encoding="utf-8") as output:
@@ -740,6 +769,7 @@ def _run_validation(
     seeds: Sequence[int],
     request_count: int,
     capacity: int,
+    request_path: Optional[Path] = None,
 ) -> Tuple[
     List[Dict[str, Any]],
     List[Dict[str, Any]],
@@ -765,9 +795,14 @@ def _run_validation(
     for parameters in grids:
         for (workload, seed), (requests, digest) in traces.items():
             config = _benchmark_config(parameters, seed, capacity, request_count)
-            result = CacheSimulation(
+            simulation = CacheSimulation(
                 "CARMA", config, workload, requests, digest
-            ).execute()
+            )
+            result = _execute_simulation(
+                simulation,
+                request_path,
+                _request_record_context("validation", parameters),
+            )
             summary = result.summary
             run_metrics[parameters.config_id].append(summary)
             trace_best[(workload, seed)] = max(
@@ -880,6 +915,7 @@ def _run_fixed_stage(
     trace_capacity: Optional[int] = None,
     hit_threshold: float = HIT_THRESHOLD,
     policy_overrides: Optional[Dict[str, Any]] = None,
+    request_path: Optional[Path] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
     labels = policy_labels or {}
     rows: List[Dict[str, Any]] = []
@@ -902,7 +938,7 @@ def _run_fixed_stage(
                 request_count,
                 hit_threshold=hit_threshold,
             )
-            for policy in policies:
+            for policy in _policy_order(policies, seed):
                 label = labels.get(policy, policy)
                 simulation = CacheSimulation(
                     policy, config, workload, requests, digest
@@ -921,7 +957,11 @@ def _run_fixed_stage(
                     simulation.run_id = _variant_run_id(
                         simulation.run_id, label, policy_overrides
                     )
-                result = simulation.execute()
+                result = _execute_simulation(
+                    simulation,
+                    request_path,
+                    _request_record_context(stage, parameters),
+                )
                 summary = dict(result.summary)
                 summary["stage"] = stage
                 summary["config_id"] = parameters.config_id
@@ -934,6 +974,69 @@ def _run_fixed_stage(
                 summary["policy"] = label
                 rows.append(summary)
     return rows, hashes
+
+
+def _policy_order(policies: Sequence[str], seed: int) -> Tuple[str, ...]:
+    """Return a stable pseudo-random policy permutation for one seed.
+
+    Hash ranking is independent of the caller's input order, which makes the
+    permutation reproducible across Python versions and repeated workloads.
+    Policy simulations remain state-isolated; only their execution order is
+    changed.
+    """
+
+    if len(set(policies)) != len(policies):
+        raise ValueError("policy execution order requires unique names")
+
+    def rank(policy: str) -> Tuple[bytes, str]:
+        encoded = ("carma-policy-order-v1|%s|%s" % (seed, policy)).encode(
+            "utf-8"
+        )
+        return hashlib.sha256(encoded).digest(), policy
+
+    return tuple(sorted(policies, key=rank))
+
+
+def _request_record_context(
+    stage: str, parameters: Parameters
+) -> Dict[str, Any]:
+    return {
+        "experiment_schema_version": EXPERIMENT_SCHEMA,
+        "stage": stage,
+        "config_id": parameters.config_id,
+        "topic_threshold": parameters.topic_threshold,
+        "cell_threshold": parameters.cell_threshold,
+        "demand_half_life": _half_life_label(parameters.demand_half_life),
+        "quota_strength": parameters.quota_strength,
+    }
+
+
+def _execute_simulation(
+    simulation: CacheSimulation,
+    request_path: Optional[Path],
+    context: Dict[str, Any],
+) -> RunResult:
+    """Execute one isolated policy run and optionally append request JSONL."""
+
+    if request_path is None:
+        return simulation.execute()
+
+    with request_path.open("a", encoding="utf-8") as output:
+
+        def stream(record: Dict[str, Any]) -> None:
+            row = dict(context)
+            row.update(record)
+            output.write(
+                json.dumps(
+                    row,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    allow_nan=False,
+                )
+                + "\n"
+            )
+
+        return simulation.execute(record_sink=stream)
 
 
 def _benchmark_config(

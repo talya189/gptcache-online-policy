@@ -342,7 +342,19 @@ class CacheSimulation:
                 best_similarity = similarity
         return best_key, best_similarity
 
-    def execute(self) -> RunResult:
+    def execute(
+        self,
+        record_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ) -> RunResult:
+        """Replay the trace and optionally stream each completed request record.
+
+        ``record_sink`` is observational: it is called only after the request
+        state and invariants have been finalized, and before the same record is
+        included in the in-memory summary.  This lets higher-level experiment
+        drivers persist request evidence incrementally without changing cache
+        decisions or run-level metrics.
+        """
+
         records: List[Dict[str, Any]] = []
         latencies_ns: List[int] = []
         wall_start = time.perf_counter_ns() if self.config.measure_latency else 0
@@ -426,6 +438,10 @@ class CacheSimulation:
                 "latency_ns": latency_ns,
             }
             records.append(record)
+            if record_sink is not None:
+                streamed_record = dict(record)
+                streamed_record["evicted_ids"] = list(record["evicted_ids"])
+                record_sink(streamed_record)
 
         wall_ns = (
             time.perf_counter_ns() - wall_start if self.config.measure_latency else 0
