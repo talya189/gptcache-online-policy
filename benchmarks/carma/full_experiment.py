@@ -9,10 +9,14 @@ zero false hits. Ties use a fixed lexicographic parameter order.
 import argparse
 import csv
 import hashlib
+from importlib import metadata as importlib_metadata
 import itertools
 import json
 import math
 import os
+import platform
+import subprocess
+import sys
 import tempfile
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
@@ -44,6 +48,9 @@ from benchmarks.carma.synthetic import (
 
 
 EXPERIMENT_SCHEMA = "carma-full-experiment-v1"
+BASELINE_COMMIT = "c59fb3a6152a4458b2a070ca183b61c4b614095f"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+EXPERIMENT_CONTRACT = PROJECT_ROOT / "docs/project/experiment-contract.md"
 WORKLOADS = ("stationary", "phase_shift", "pollution_scan")
 VALIDATION_SEEDS = (20260825, 20260826, 20260827)
 TEST_SEEDS = tuple(range(20260901, 20260911))
@@ -298,6 +305,12 @@ def _execute_experiment(
     if mode not in ("smoke", "full"):
         raise ValueError("mode must be smoke or full")
 
+    # Capture provenance before any potentially long replay begins. The
+    # manifest can therefore identify the exact frozen inputs even if an
+    # unrelated file is created in the checkout while the experiment runs.
+    experiment_identity = _experiment_identity()
+    environment = _environment_metadata()
+
     if mode == "full":
         validation_seeds = VALIDATION_SEEDS
         test_seeds = TEST_SEEDS
@@ -445,6 +458,9 @@ def _execute_experiment(
 
     metadata = {
         "schema_version": EXPERIMENT_SCHEMA,
+        "baseline_commit": BASELINE_COMMIT,
+        "experiment_identity": experiment_identity,
+        "environment": environment,
         "mode": mode,
         "inferential_test_run": mode == "full",
         "workloads": list(WORKLOADS),
@@ -1188,6 +1204,65 @@ def _file_hash(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _experiment_identity() -> Dict[str, Any]:
+    if not EXPERIMENT_CONTRACT.is_file():
+        raise RuntimeError("experiment contract is missing")
+    source_paths = (
+        Path(__file__).resolve(),
+        PROJECT_ROOT / "benchmarks/carma/runner.py",
+        PROJECT_ROOT / "benchmarks/carma/statistics.py",
+        PROJECT_ROOT / "benchmarks/carma/synthetic.py",
+        PROJECT_ROOT / "gptcache/manager/eviction/carma.py",
+    )
+    sources = {
+        str(path.relative_to(PROJECT_ROOT)): _file_hash(path)
+        for path in source_paths
+    }
+    try:
+        head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(PROJECT_ROOT),
+            text=True,
+        ).strip()
+        status = subprocess.check_output(
+            ["git", "status", "--porcelain=v1", "--untracked-files=normal"],
+            cwd=str(PROJECT_ROOT),
+            text=True,
+        ).splitlines()
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        raise RuntimeError(
+            "full experiment requires an identifiable Git checkout"
+        ) from exc
+    return {
+        "git_head_commit": head,
+        "git_worktree_clean_at_start": not status,
+        "git_status_at_start": status,
+        "experiment_contract_path": str(
+            EXPERIMENT_CONTRACT.relative_to(PROJECT_ROOT)
+        ),
+        "experiment_contract_sha256": _file_hash(EXPERIMENT_CONTRACT),
+        "source_sha256": sources,
+    }
+
+
+def _environment_metadata() -> Dict[str, Any]:
+    packages = {}
+    for name in ("cachetools", "numpy", "pytest", "scipy"):
+        try:
+            packages[name] = importlib_metadata.version(name)
+        except importlib_metadata.PackageNotFoundError:
+            packages[name] = None
+    return {
+        "python": platform.python_version(),
+        "python_implementation": platform.python_implementation(),
+        "executable": sys.executable,
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "python_hash_seed": os.environ.get("PYTHONHASHSEED"),
+        "packages": packages,
+    }
 
 
 def build_parser() -> argparse.ArgumentParser:
