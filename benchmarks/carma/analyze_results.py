@@ -29,6 +29,8 @@ REPORT_TEXT_WIDTH_IN = 7.05
 PUBLICATION_FIGURE_WIDTH_IN = 8.0
 MAX_PUBLICATION_FIGURE_WIDTH_IN = 8.2
 MAX_CAPACITY_FIGURE_HEIGHT_IN = 6.6
+CAPACITY_RATE_DOMAIN_PERCENT = (0, 80)
+CAPACITY_RATE_TICKS_PERCENT = (0, 20, 40, 60, 80)
 MIN_SOURCE_FONT_PT = 12.5
 MIN_REPORT_FONT_PT = 10.0
 PNG_DPI = 220
@@ -1754,6 +1756,8 @@ def _plot_capacity_curve(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
             labels[workload], fontsize=MIN_SOURCE_FONT_PT + 1.0, loc="left"
         )
         axis.set_xticks(capacities)
+        axis.set_ylim(*CAPACITY_RATE_DOMAIN_PERCENT)
+        axis.set_yticks(CAPACITY_RATE_TICKS_PERCENT)
     legend_handles, legend_labels = axes[0].get_legend_handles_labels()
     legend_axis.axis("off")
     legend_axis.legend(
@@ -1791,7 +1795,15 @@ def _plot_capacity_curve(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
         wspace=0.18,
         hspace=0.38,
     )
-    return _save_figure(figure, output, "capacity-curve", plotted)
+    report = _save_figure(figure, output, "capacity-curve", plotted)
+    report["value_axis"] = {
+        "metric": "valid_hit_rate",
+        "unit": "percent",
+        "domain": list(CAPACITY_RATE_DOMAIN_PERCENT),
+        "ticks": list(CAPACITY_RATE_TICKS_PERCENT),
+        "shared_across_panels": True,
+    }
+    return report
 
 
 def _plot_latency_resources(

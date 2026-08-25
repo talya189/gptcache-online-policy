@@ -9,6 +9,8 @@ import pytest
 from benchmarks.carma.analyze_results import (
     AGGREGATE_FIELDS,
     ANALYSIS_SCHEMA,
+    CAPACITY_RATE_DOMAIN_PERCENT,
+    CAPACITY_RATE_TICKS_PERCENT,
     FULL_RUN_FIELDS,
     INTEGRATION_FIELDS,
     MAX_CAPACITY_FIGURE_HEIGHT_IN,
@@ -705,6 +707,13 @@ def test_publication_figures_enforce_final_size_typography_contract(tmp_path):
     assert result["figures"]["capacity-curve"]["publication_contract"][
         "source_height_in"
     ] <= MAX_CAPACITY_FIGURE_HEIGHT_IN
+    assert result["figures"]["capacity-curve"]["value_axis"] == {
+        "metric": "valid_hit_rate",
+        "unit": "percent",
+        "domain": list(CAPACITY_RATE_DOMAIN_PERCENT),
+        "ticks": list(CAPACITY_RATE_TICKS_PERCENT),
+        "shared_across_panels": True,
+    }
 
 
 def test_missing_sources_are_pending_without_placeholder_figures(tmp_path):
