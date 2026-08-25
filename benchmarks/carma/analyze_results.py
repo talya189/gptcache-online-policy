@@ -13,6 +13,7 @@ import json
 import math
 import os
 from pathlib import Path
+import subprocess
 import tempfile
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -295,12 +296,15 @@ def analyze_results(
             % (MATPLOTLIB_VERSION, observed_matplotlib)
         )
 
+    git_head = _current_git_head()
     full = _load_full(full_dir)
     integration = _load_integrations(integration_dirs)
     qqp = _load_qqp(qqp_result)
     moss = _load_moss(moss_dir)
-    host = _load_host_verification(host_verification)
-    container = _load_container_reproducibility(container_reproducibility)
+    host = _load_host_verification(host_verification, git_head)
+    container = _load_container_reproducibility(
+        container_reproducibility, git_head
+    )
     gates, supplemental = _build_gate_audit(
         full, integration, qqp, moss, host, container
     )
@@ -349,18 +353,18 @@ def analyze_results(
                 ),
                 *(
                     [
-                        "Gate 1 remains pending unless a verified clean-host "
-                        "test artifact is supplied."
+                        "Gate 1 remains pending unless verified clean-host test "
+                        "evidence is exact-commit-bound to current Git HEAD."
                     ]
-                    if host["report"].get("status") != "verified"
+                    if not _evidence_is_claimable(host["report"])
                     else []
                 ),
                 *(
                     [
                         "Gate 8 remains pending unless verified paired-container "
-                        "evidence is supplied."
+                        "evidence is exact-commit-bound to current Git HEAD."
                     ]
-                    if container["report"].get("status") != "verified"
+                    if not _evidence_is_claimable(container["report"])
                     else []
                 ),
             ],
@@ -1327,6 +1331,111 @@ def _commit_value(value: Any, label: str) -> str:
     return commit
 
 
+def _current_git_head() -> Dict[str, Any]:
+    """Return the exact commit checked out at the analyzer's project root."""
+
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(PROJECT_ROOT),
+                "rev-parse",
+                "--show-toplevel",
+                "HEAD^{commit}",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {
+            "status": "unavailable",
+            "head_commit": None,
+            "reason": "Git metadata is unavailable at the project root",
+        }
+    lines = completed.stdout.splitlines()
+    if completed.returncode != 0 or len(lines) != 2:
+        return {
+            "status": "unavailable",
+            "head_commit": None,
+            "reason": "Git metadata is unavailable at the project root",
+        }
+    try:
+        repository_root = Path(lines[0]).resolve()
+        head_commit = _commit_value(lines[1].strip(), "current Git HEAD")
+    except (AnalysisError, OSError):
+        return {
+            "status": "unavailable",
+            "head_commit": None,
+            "reason": "Git metadata is invalid at the project root",
+        }
+    if repository_root != PROJECT_ROOT.resolve():
+        return {
+            "status": "unavailable",
+            "head_commit": None,
+            "reason": "Git metadata does not belong to the project root",
+        }
+    return {
+        "status": "available",
+        "head_commit": head_commit,
+        "project_root": str(repository_root),
+    }
+
+
+def _commit_binding(
+    source_commit: str, label: str, git_head: Dict[str, Any]
+) -> Dict[str, Any]:
+    current = git_head.get("head_commit")
+    if git_head.get("status") != "available" or current is None:
+        return {
+            "status": "unavailable",
+            "evidence_source_commit": source_commit,
+            "current_git_head": None,
+            "reason": git_head.get(
+                "reason", "current Git HEAD could not be determined"
+            ),
+        }
+    if source_commit != current:
+        raise AnalysisError(
+            "%s source commit does not match current Git HEAD" % label
+        )
+    return {
+        "status": "verified",
+        "evidence_source_commit": source_commit,
+        "current_git_head": current,
+        "exact_match": True,
+    }
+
+
+def _pending_commit_binding(
+    git_head: Dict[str, Any], reason: str
+) -> Dict[str, Any]:
+    if git_head.get("status") != "available":
+        return {
+            "status": "unavailable",
+            "evidence_source_commit": None,
+            "current_git_head": None,
+            "reason": git_head.get(
+                "reason", "current Git HEAD could not be determined"
+            ),
+        }
+    return {
+        "status": "not_evaluated",
+        "evidence_source_commit": None,
+        "current_git_head": git_head["head_commit"],
+        "reason": reason,
+    }
+
+
+def _evidence_is_claimable(report: Dict[str, Any]) -> bool:
+    return (
+        report.get("status") == "verified"
+        and report.get("commit_binding", {}).get("status") == "verified"
+    )
+
+
 def _last_nonempty_line(path: Path, label: str) -> str:
     try:
         lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()]
@@ -1432,30 +1541,47 @@ def _sha256_list(path: Path, label: str) -> Dict[str, str]:
     return entries
 
 
-def _load_host_verification(path: Optional[Path]) -> Dict[str, Any]:
+def _load_host_verification(
+    path: Optional[Path], git_head: Dict[str, Any]
+) -> Dict[str, Any]:
     if path is None:
+        report = _pending_report(path, "clean-host verification unavailable")
+        report["commit_binding"] = _pending_commit_binding(
+            git_head, "clean-host evidence was not supplied"
+        )
         return {
             "result": None,
-            "report": _pending_report(path, "clean-host verification unavailable"),
+            "report": report,
         }
     evidence_path = Path(path)
     if not evidence_path.is_file():
+        report = _pending_report(path, "clean-host verification file is missing")
+        report["commit_binding"] = _pending_commit_binding(
+            git_head, "clean-host evidence could not be loaded"
+        )
         return {
             "result": None,
-            "report": _pending_report(path, "clean-host verification file is missing"),
+            "report": report,
         }
     evidence = _read_json(evidence_path)
     if evidence.get("schema_version") != HOST_VERIFICATION_SCHEMA:
+        report = _pending_report(
+            path, "clean-host verification schema is stale", status="stale"
+        )
+        report["commit_binding"] = _pending_commit_binding(
+            git_head, "clean-host evidence schema is stale"
+        )
         return {
             "result": None,
-            "report": _pending_report(
-                path, "clean-host verification schema is stale", status="stale"
-            ),
+            "report": report,
         }
     if evidence.get("status") != "pass":
         raise AnalysisError("clean-host verification status is not pass")
     source_commit = _commit_value(
         evidence.get("source_commit"), "clean-host verification"
+    )
+    commit_binding = _commit_binding(
+        source_commit, "clean-host verification", git_head
     )
     if evidence.get("baseline_ancestor_verified") is not True:
         raise AnalysisError("clean-host baseline ancestry was not verified")
@@ -1507,6 +1633,7 @@ def _load_host_verification(path: Optional[Path]) -> Dict[str, Any]:
         "schema_version": HOST_VERIFICATION_SCHEMA,
         "sha256": sha256_file(evidence_path),
         "source_commit": source_commit,
+        "commit_binding": commit_binding,
         "python": python,
         "platform": evidence.get("platform"),
         "dependency_lock": dependency_report,
@@ -1519,30 +1646,47 @@ def _load_host_verification(path: Optional[Path]) -> Dict[str, Any]:
     return {"result": evidence, "report": report}
 
 
-def _load_container_reproducibility(path: Optional[Path]) -> Dict[str, Any]:
+def _load_container_reproducibility(
+    path: Optional[Path], git_head: Dict[str, Any]
+) -> Dict[str, Any]:
     if path is None:
+        report = _pending_report(path, "paired-container evidence unavailable")
+        report["commit_binding"] = _pending_commit_binding(
+            git_head, "paired-container evidence was not supplied"
+        )
         return {
             "result": None,
-            "report": _pending_report(path, "paired-container evidence unavailable"),
+            "report": report,
         }
     evidence_path = Path(path)
     if not evidence_path.is_file():
+        report = _pending_report(path, "paired-container evidence file is missing")
+        report["commit_binding"] = _pending_commit_binding(
+            git_head, "paired-container evidence could not be loaded"
+        )
         return {
             "result": None,
-            "report": _pending_report(path, "paired-container evidence file is missing"),
+            "report": report,
         }
     evidence = _read_json(evidence_path)
     if evidence.get("schema_version") != CONTAINER_REPRODUCIBILITY_SCHEMA:
+        report = _pending_report(
+            path, "paired-container evidence schema is stale", status="stale"
+        )
+        report["commit_binding"] = _pending_commit_binding(
+            git_head, "paired-container evidence schema is stale"
+        )
         return {
             "result": None,
-            "report": _pending_report(
-                path, "paired-container evidence schema is stale", status="stale"
-            ),
+            "report": report,
         }
     if evidence.get("status") != "pass":
         raise AnalysisError("paired-container evidence status is not pass")
     source_commit = _commit_value(
         evidence.get("source_commit"), "paired-container evidence"
+    )
+    commit_binding = _commit_binding(
+        source_commit, "paired-container evidence", git_head
     )
     image_id = evidence.get("image_id")
     if not isinstance(image_id, str) or not image_id.startswith("sha256:"):
@@ -1663,6 +1807,7 @@ def _load_container_reproducibility(path: Optional[Path]) -> Dict[str, Any]:
         "schema_version": CONTAINER_REPRODUCIBILITY_SCHEMA,
         "sha256": sha256_file(evidence_path),
         "source_commit": source_commit,
+        "commit_binding": commit_binding,
         "image_id": image_id,
         "platform": evidence["platform"],
         "fresh_container_count": 2,
@@ -1685,9 +1830,11 @@ def _build_gate_audit(
 ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     gates: Dict[str, Dict[str, Any]] = {}
 
-    host_verified = host["report"].get("status") == "verified"
-    container_verified = container["report"].get("status") == "verified"
-    if host_verified and container_verified:
+    host_contents_verified = host["report"].get("status") == "verified"
+    container_contents_verified = container["report"].get("status") == "verified"
+    host_verified = _evidence_is_claimable(host["report"])
+    container_verified = _evidence_is_claimable(container["report"])
+    if host_contents_verified and container_contents_verified:
         if host["report"]["source_commit"] != container["report"]["source_commit"]:
             raise AnalysisError(
                 "host and paired-container evidence use different source commits"
@@ -1721,7 +1868,11 @@ def _build_gate_audit(
             else (
                 "clean-host verifier passed and integration integrity failures are zero"
                 if host_verified
-                else "verified clean-host test evidence was not supplied"
+                else (
+                    "clean-host evidence could not be bound to current Git HEAD"
+                    if host_contents_verified
+                    else "verified clean-host test evidence was not supplied"
+                )
             )
         ),
     }
@@ -1827,7 +1978,11 @@ def _build_gate_audit(
         "reason": (
             "two fresh locked containers passed and all declared comparisons match"
             if container_verified
-            else "verified paired Docker-run evidence was not supplied"
+            else (
+                "paired Docker-run evidence could not be bound to current Git HEAD"
+                if container_contents_verified
+                else "verified paired Docker-run evidence was not supplied"
+            )
         ),
         "container_reproducibility": container["report"],
         "partial_provenance": {

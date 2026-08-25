@@ -3,6 +3,7 @@
 import csv
 import json
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -20,6 +21,7 @@ from benchmarks.carma.analyze_results import (
     MIN_SOURCE_FONT_PT,
     MOSS_FIELDS,
     PNG_DPI,
+    PROJECT_ROOT,
     PUBLICATION_FIGURE_WIDTH_IN,
     REPORT_TEXT_WIDTH_IN,
     RUN_FIELDS,
@@ -38,6 +40,13 @@ CONFIG_ID = "fixture-config"
 WORKLOADS = ("stationary", "phase_shift", "pollution_scan")
 POLICIES = ("LRU", "LFU", "CARMA")
 TEST_SEEDS = tuple(range(20260901, 20260911))
+
+
+def _git_head():
+    return subprocess.check_output(
+        ["git", "-C", str(PROJECT_ROOT), "rev-parse", "HEAD"],
+        universal_newlines=True,
+    ).strip()
 
 
 def _write_csv(path, fields, rows):
@@ -122,7 +131,9 @@ def _ci_benchmark_fixture(root):
     return root
 
 
-def _host_verification_fixture(root, source_commit="1" * 40, lock_text="lock\n"):
+def _host_verification_fixture(root, source_commit=None, lock_text="lock\n"):
+    if source_commit is None:
+        source_commit = _git_head()
     root.mkdir(parents=True, exist_ok=True)
     lock = root / "requirements-project.lock"
     lock.write_text(lock_text, encoding="utf-8")
@@ -154,8 +165,10 @@ def _host_verification_fixture(root, source_commit="1" * 40, lock_text="lock\n")
 
 
 def _container_reproducibility_fixture(
-    root, source_commit="1" * 40, lock_text="lock\n"
+    root, source_commit=None, lock_text="lock\n"
 ):
+    if source_commit is None:
+        source_commit = _git_head()
     root.mkdir(parents=True, exist_ok=True)
     lock = root / "requirements-project.lock"
     lock.write_text(lock_text, encoding="utf-8")
@@ -928,6 +941,7 @@ def test_interrupted_staging_directory_is_not_ingested(tmp_path):
 
 def test_verified_host_and_container_evidence_pass_gates_1_and_8(tmp_path):
     assert ANALYSIS_SCHEMA == "carma-post-analysis-v2"
+    head = _git_head()
     host = _host_verification_fixture(tmp_path / "host")
     container = _container_reproducibility_fixture(tmp_path / "container")
 
@@ -939,6 +953,20 @@ def test_verified_host_and_container_evidence_pass_gates_1_and_8(tmp_path):
 
     assert result["sources"]["host_verification"]["status"] == "verified"
     assert result["sources"]["container_reproducibility"]["status"] == "verified"
+    assert result["sources"]["host_verification"]["commit_binding"] == {
+        "status": "verified",
+        "evidence_source_commit": head,
+        "current_git_head": head,
+        "exact_match": True,
+    }
+    assert result["sources"]["container_reproducibility"][
+        "commit_binding"
+    ] == {
+        "status": "verified",
+        "evidence_source_commit": head,
+        "current_git_head": head,
+        "exact_match": True,
+    }
     assert result["sources"]["host_verification"]["benchmark_validation"] == {
         "schema_version": "carma-benchmark-v2",
         "timing_is_measured": False,
@@ -964,27 +992,116 @@ def test_host_evidence_hash_tamper_is_rejected(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("container_commit", "container_lock", "message"),
+    ("evidence_kind", "message"),
     (
-        ("3" * 40, "lock\n", "different source commits"),
-        ("1" * 40, "different lock\n", "different dependency locks"),
+        ("host", "clean-host verification source commit does not match"),
+        ("container", "paired-container evidence source commit does not match"),
     ),
 )
-def test_host_container_source_or_lock_mismatch_is_rejected(
-    tmp_path, container_commit, container_lock, message
-):
-    host = _host_verification_fixture(tmp_path / "host")
-    container = _container_reproducibility_fixture(
-        tmp_path / "container",
-        source_commit=container_commit,
-        lock_text=container_lock,
-    )
+def test_stale_evidence_commit_is_rejected(tmp_path, evidence_kind, message):
+    stale = "0" * 40
+    if stale == _git_head():
+        stale = "f" * 40
+    if evidence_kind == "host":
+        arguments = {
+            "host_verification": _host_verification_fixture(
+                tmp_path / "host", source_commit=stale
+            )
+        }
+    else:
+        arguments = {
+            "container_reproducibility": _container_reproducibility_fixture(
+                tmp_path / "container", source_commit=stale
+            )
+        }
 
     with pytest.raises(AnalysisError, match=message):
+        analyze_results(tmp_path / "analysis", **arguments)
+
+
+def test_host_container_dependency_lock_mismatch_is_rejected(tmp_path):
+    host = _host_verification_fixture(tmp_path / "host")
+    container = _container_reproducibility_fixture(
+        tmp_path / "container", lock_text="different lock\n"
+    )
+
+    with pytest.raises(AnalysisError, match="different dependency locks"):
         analyze_results(
             tmp_path / "analysis",
             host_verification=host,
             container_reproducibility=container,
+        )
+
+
+def test_no_git_keeps_verified_evidence_nonclaimable(tmp_path, monkeypatch):
+    host = _host_verification_fixture(tmp_path / "host")
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    monkeypatch.setattr(
+        "benchmarks.carma.analyze_results._current_git_head",
+        lambda: {
+            "status": "unavailable",
+            "head_commit": None,
+            "reason": "fixture has no Git metadata",
+        },
+    )
+
+    result = analyze_results(
+        tmp_path / "analysis",
+        host_verification=host,
+        container_reproducibility=container,
+    )
+
+    for source in ("host_verification", "container_reproducibility"):
+        report = result["sources"][source]
+        assert report["status"] == "verified"
+        assert report["commit_binding"] == {
+            "status": "unavailable",
+            "evidence_source_commit": _git_head(),
+            "current_git_head": None,
+            "reason": "fixture has no Git metadata",
+        }
+    for gate in ("gate_1_correctness", "gate_8_reproducibility"):
+        assert result["gates"][gate]["status"] == "pending"
+        assert result["gates"][gate]["claimable"] is False
+
+
+def test_host_evidence_path_escape_is_rejected(tmp_path):
+    outside = tmp_path / "outside.lock"
+    outside.write_text("lock\n", encoding="utf-8")
+    host = _host_verification_fixture(tmp_path / "host")
+    evidence = json.loads(host.read_text(encoding="utf-8"))
+    evidence["dependency_lock"].update(
+        {"path": "../outside.lock", "sha256": sha256_file(outside)}
+    )
+    _write_json(host, evidence)
+
+    with pytest.raises(AnalysisError, match="path escapes its evidence directory"):
+        analyze_results(tmp_path / "analysis", host_verification=host)
+
+
+def test_false_container_control_is_rejected(tmp_path):
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    evidence = json.loads(container.read_text(encoding="utf-8"))
+    evidence["controls"]["no_new_privileges"] = False
+    _write_json(container, evidence)
+
+    with pytest.raises(
+        AnalysisError, match="security or dependency controls are invalid"
+    ):
+        analyze_results(
+            tmp_path / "analysis", container_reproducibility=container
+        )
+
+
+def test_container_benchmark_artifact_tamper_is_rejected(tmp_path):
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    runs = container.parent / "docker-run-1" / "benchmark" / "runs.csv"
+    with runs.open("a", encoding="utf-8") as output:
+        output.write("tampered\n")
+
+    with pytest.raises(AnalysisError, match="benchmark runs.csv SHA-256 mismatch"):
+        analyze_results(
+            tmp_path / "analysis", container_reproducibility=container
         )
 
 
