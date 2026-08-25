@@ -3,6 +3,7 @@
 import csv
 import json
 from pathlib import Path
+import shutil
 import subprocess
 
 import pytest
@@ -29,6 +30,7 @@ from benchmarks.carma.analyze_results import (
     VALIDATION_FIELDS,
     VALIDATION_RUN_FIELDS,
     AnalysisError,
+    _current_git_head,
     _wilson_lower,
     analyze_results,
     main,
@@ -43,10 +45,29 @@ TEST_SEEDS = tuple(range(20260901, 20260911))
 
 
 def _git_head():
-    return subprocess.check_output(
-        ["git", "-C", str(PROJECT_ROOT), "rev-parse", "HEAD"],
-        universal_newlines=True,
-    ).strip()
+    if shutil.which("git") is None:
+        return "1" * 40
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(PROJECT_ROOT), "rev-parse", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            universal_newlines=True,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "1" * 40
+
+
+def _bind_analyzer_to_fixture_head(monkeypatch):
+    head = _git_head()
+    monkeypatch.setattr(
+        "benchmarks.carma.analyze_results._current_git_head",
+        lambda: {
+            "status": "available",
+            "head_commit": head,
+            "project_root": str(PROJECT_ROOT.resolve()),
+        },
+    )
+    return head
 
 
 def _write_csv(path, fields, rows):
@@ -939,9 +960,20 @@ def test_interrupted_staging_directory_is_not_ingested(tmp_path):
     assert "metadata.json" in result["sources"]["full"]["reason"]
 
 
-def test_verified_host_and_container_evidence_pass_gates_1_and_8(tmp_path):
+def test_current_git_head_matches_repository_when_available():
+    if shutil.which("git") is None or not (PROJECT_ROOT / ".git").exists():
+        pytest.skip("Git metadata is intentionally absent from the container")
+    observed = _current_git_head()
+    assert observed["status"] == "available"
+    assert observed["head_commit"] == _git_head()
+    assert Path(observed["project_root"]) == PROJECT_ROOT.resolve()
+
+
+def test_verified_host_and_container_evidence_pass_gates_1_and_8(
+    tmp_path, monkeypatch
+):
     assert ANALYSIS_SCHEMA == "carma-post-analysis-v2"
-    head = _git_head()
+    head = _bind_analyzer_to_fixture_head(monkeypatch)
     host = _host_verification_fixture(tmp_path / "host")
     container = _container_reproducibility_fixture(tmp_path / "container")
 
@@ -998,7 +1030,10 @@ def test_host_evidence_hash_tamper_is_rejected(tmp_path):
         ("container", "paired-container evidence source commit does not match"),
     ),
 )
-def test_stale_evidence_commit_is_rejected(tmp_path, evidence_kind, message):
+def test_stale_evidence_commit_is_rejected(
+    tmp_path, monkeypatch, evidence_kind, message
+):
+    _bind_analyzer_to_fixture_head(monkeypatch)
     stale = "0" * 40
     if stale == _git_head():
         stale = "f" * 40
@@ -1105,7 +1140,10 @@ def test_container_benchmark_artifact_tamper_is_rejected(tmp_path):
         )
 
 
-def test_cli_accepts_host_and_container_evidence_flags(tmp_path, capsys):
+def test_cli_accepts_host_and_container_evidence_flags(
+    tmp_path, capsys, monkeypatch
+):
+    _bind_analyzer_to_fixture_head(monkeypatch)
     host = _host_verification_fixture(tmp_path / "host")
     container = _container_reproducibility_fixture(tmp_path / "container")
     output = tmp_path / "analysis"
