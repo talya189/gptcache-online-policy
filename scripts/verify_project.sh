@@ -28,9 +28,9 @@ python - <<'PY'
 import platform
 import sys
 
-if sys.version_info[:2] != (3, 12):
+if sys.version_info[:3] != (3, 12, 13):
     raise SystemExit(
-        f"CARMA requires Python 3.12.x; found {platform.python_version()}"
+        f"CARMA requires Python 3.12.13; found {platform.python_version()}"
     )
 print(f"python={platform.python_version()} platform={platform.platform()}")
 PY

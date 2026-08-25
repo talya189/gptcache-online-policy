@@ -1,6 +1,7 @@
 # Minimal lock for GPTCache's declared Python >=3.8.1 compatibility floor.
 # Optional SQLite/FAISS integration remains covered by requirements-project.txt
 # and the reproducible Python 3.12.13 job.
+# This is the human-reviewed pin input for requirements-python38.lock.
 
 # Build tooling (last releases in these lines with Python 3.8 support)
 pip==24.3.1

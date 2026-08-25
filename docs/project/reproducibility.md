@@ -2,29 +2,43 @@
 
 ## Supported environment
 
-The project target is Python 3.12.13 on CPU with SQLite and FAISS. The complete
-project dependency set, including transitive packages and build tools, is
-exactly pinned in `requirements-project.txt`. Optional GPTCache backends are
-intentionally excluded because their upstream lazy imports can run a bare
-`pip` against an interpreter other than the active environment.
+The project target is exactly Python 3.12.13 on CPU with SQLite and FAISS. The
+human-reviewed direct and transitive pins live in `requirements-project.txt`;
+`requirements-project.lock` authenticates every allowed wheel with SHA-256.
+Optional GPTCache backends are intentionally excluded because their upstream
+lazy imports can run a bare `pip` against an interpreter other than the active
+environment.
 
 Create a clean environment from the repository root with:
 
 ```bash
 python3.12 -m venv .venv
-.venv/bin/python -m pip install --requirement requirements-project.txt
+.venv/bin/python -m pip --isolated --disable-pip-version-check install \
+  --no-input \
+  --index-url https://pypi.org/simple \
+  --require-hashes \
+  --only-binary=:all: \
+  --requirement requirements-project.lock
 .venv/bin/python -m pip install --no-deps --no-build-isolation --editable .
 PATH="$PWD/.venv/bin:$PATH" bash scripts/verify_project.sh
 ```
 
 The final editable-install command is deliberately dependency-free: only the
-audited lock may define the environment.
+audited lock may define the environment. `requirements-python38.lock` protects
+the floor-version compatibility job, and the flattened
+`requirements-benchmark.lock` protects the optional full-analysis environment.
+Regenerate all three from their exact-pin inputs with
+`python scripts/generate_hashed_locks.py`, then review the lock diff.
+
+The final local evidence gate creates its own temporary clean environment, so
+the manual environment above is useful for development but is not itself Gate
+1 or Gate 8 evidence.
 
 ## Verification contract
 
 `scripts/verify_project.sh` is the single host and container entrypoint. It:
 
-1. requires Python 3.12 and a consistent installed dependency graph;
+1. requires exactly Python 3.12.13 and a consistent installed dependency graph;
 2. verifies that the feature branch descends from GPTCache commit
    `c59fb3a6152a4458b2a070ca183b61c4b614095f` when Git metadata is available;
 3. disables package-index access before tests, making any runtime lazy-install
@@ -37,23 +51,86 @@ audited lock may define the environment.
 Set `CARMA_ARTIFACT_DIR` to retain benchmark outputs. Without it, verification
 uses a private temporary directory and removes it on exit.
 
+From a clean committed checkout with an exact CPython 3.12.13 interpreter, run
+the complete local evidence workflow with:
+
+```bash
+CARMA_PYTHON=/absolute/path/to/python3.12 \
+  bash scripts/run_reproducibility_gate.sh
+```
+
+The workflow refuses a dirty checkout, binds all evidence to the full current
+commit, installs the primary hash lock into a fresh temporary virtual
+environment, runs the host verifier, builds the committed Git archive for
+`linux/amd64`, and executes two distinct fresh containers. It retains Docker
+image and container inspections so the evidence writer can validate the actual
+platform, image ID, network isolation, dropped capabilities,
+`no-new-privileges`, artifact mount, and successful exit status. Only successful
+pytest summary-line elapsed values are normalized; the rest of both logs must
+be byte-identical.
+
+The canonical output targets are `artifacts/ci/host-verification.json` and
+`artifacts/container-reproducibility.json`, with the two retained run roots at
+`artifacts/docker-run-1/` and `artifacts/docker-run-2/`. The writer never
+overwrites evidence. Archive an earlier run first, or select a new empty root:
+
+```bash
+CARMA_EVIDENCE_ROOT="$(mktemp -d "$PWD/../carma-repro-evidence.XXXXXX")" \
+CARMA_PYTHON=/absolute/path/to/python3.12 \
+  bash scripts/run_reproducibility_gate.sh
+```
+
+When a custom root is used, its status files are at
+`$CARMA_EVIDENCE_ROOT/ci/host-verification.json` and
+`$CARMA_EVIDENCE_ROOT/container-reproducibility.json`.
+
 ## Container and CI
 
 `Dockerfile.project` pins the multi-architecture digest of
-`python:3.12.13-slim-bookworm`, installs only `requirements-project.txt`, copies
-only executable project inputs, and runs as an unprivileged user. Build and run
-it with:
+`python:3.12.13-slim-bookworm`, installs only the authenticated wheel lock from
+the public PyPI index, copies an allowlisted build context, and runs as an
+unprivileged user. For a debugging run that is not paired Gate 8 evidence, build
+and retain its artifacts with:
 
 ```bash
-docker build --file Dockerfile.project --tag carma-project:local .
-docker run --rm carma-project:local
+docker build --no-cache --pull \
+  --platform linux/amd64 \
+  --file Dockerfile.project --tag carma-project:local .
+CARMA_CONTAINER_OUTPUT="$(mktemp -d "$PWD/../carma-container-output.XXXXXX")"
+chmod 0777 "$CARMA_CONTAINER_OUTPUT"
+docker run --rm --network none \
+  --platform linux/amd64 \
+  --cap-drop ALL --security-opt=no-new-privileges \
+  --mount "type=bind,src=$CARMA_CONTAINER_OUTPUT,dst=/artifacts" \
+  --env CARMA_ARTIFACT_DIR=/artifacts \
+  carma-project:local
+printf 'retained artifacts: %s\n' "$CARMA_CONTAINER_OUTPUT"
 ```
 
 `.github/workflows/carma-ci.yml` repeats the same verification on Ubuntu 24.04
-both directly and in the pinned container. GitHub Actions are referenced by
-immutable commit hashes, and benchmark artifacts are uploaded when present.
+both directly and in the pinned container on every pushed commit and pull
+request. A separate clean job installs `requirements-benchmark.lock` with
+binary-only hash enforcement and runs `pip check`. The container job is
+configured to run two fresh network-isolated instances, retain their outputs
+and Docker inspections, derive pytest-only non-timing logs, compare all retained
+non-timing data, and upload the paired evidence. GitHub Actions are referenced
+by immutable commit hashes and checkout credentials are not persisted. These
+are prospective CI controls; they do not replace the historical validation
+record below until the workflow has actually passed and its uploaded hosted
+evidence is retained.
+
+A successful host job writes `artifacts/ci/host-verification.json` with schema
+`carma-host-verification-v1`. A successful paired-container comparison writes
+`artifacts/container-reproducibility.json` with schema
+`carma-container-reproducibility-v1`. Each status file is created only after its
+checks pass and names the retained logs, locks, artifacts, and SHA-256 values;
+absence is not a passing result. Host install/package inventory and Docker
+image/runtime inspection files are also hash-bound into these status files.
 
 ## Validation record: 2026-08-25
+
+The bullets below are retained as the pre-hardening historical record. They do
+not validate the generated hash locks or paired-container controls added later.
 
 - A fresh Python 3.12 virtual environment installed every pin, passed
   `pip check`, and imported GPTCache, NumPy, FAISS, and SQLAlchemy.

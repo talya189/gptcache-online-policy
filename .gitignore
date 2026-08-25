@@ -51,6 +51,12 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# LaTeX build intermediates (the final project PDF is committed explicitly).
+*.aux
+*.out
+*.toc
+*.xdv
+
 # Translations
 *.mo
 *.pot

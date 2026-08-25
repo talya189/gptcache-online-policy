@@ -1,0 +1,23 @@
+# Allow only inputs named by Dockerfile.project into the build context. This
+# excludes Git metadata, credentials, local environments, datasets, and results.
+*
+!Dockerfile.project
+!requirements-project.lock
+!setup.py
+!README.md
+!requirements.txt
+!gptcache/
+!gptcache/**
+!gptcache_server/
+!gptcache_server/**
+!benchmarks/
+!benchmarks/**
+!examples/
+!examples/benchmark/
+!examples/benchmark/**
+!tests/
+!tests/**
+!scripts/
+!scripts/run_ci_benchmark.sh
+!scripts/verify_project.sh
+!scripts/write_reproducibility_evidence.py

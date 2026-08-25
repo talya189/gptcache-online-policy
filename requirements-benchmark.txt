@@ -1,4 +1,6 @@
-# Optional full-analysis environment. Core CI needs only requirements-project.txt.
+# Human-reviewed pins for the optional full-analysis environment. Core CI uses
+# requirements-project.lock; generate the flattened requirements-benchmark.lock
+# for full protocol runs.
 -r requirements-project.txt
 
 # GPTCache ALBERT ONNX semantic-safety validation
@@ -11,7 +13,6 @@ filelock==3.32.4
 fsspec==2026.7.0
 hf-xet==1.6.0
 PyYAML==6.0.3
-regex==2026.7.19
 tqdm==4.70.0
 coloredlogs==15.0.1
 humanfriendly==10.0
@@ -20,15 +21,6 @@ protobuf==7.36.0
 sympy==1.14.0
 mpmath==1.3.0
 
-# Statistics, figures, and recorded-response token accounting
+# Optional full-protocol statistics. Figure rendering and recorded-response
+# token accounting are part of primary verification in requirements-project.txt.
 scipy==1.16.3
-matplotlib==3.10.8
-tiktoken==0.14.0
-contourpy==1.3.3
-cycler==0.12.1
-fonttools==4.63.0
-kiwisolver==1.5.0
-pillow==12.3.0
-pyparsing==3.3.2
-python-dateutil==2.9.0.post0
-six==1.17.0
