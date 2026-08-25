@@ -11,7 +11,13 @@ from benchmarks.carma.analyze_results import (
     ANALYSIS_SCHEMA,
     FULL_RUN_FIELDS,
     INTEGRATION_FIELDS,
+    MAX_PUBLICATION_FIGURE_WIDTH_IN,
+    MIN_REPORT_FONT_PT,
+    MIN_SOURCE_FONT_PT,
     MOSS_FIELDS,
+    PNG_DPI,
+    PUBLICATION_FIGURE_WIDTH_IN,
+    REPORT_TEXT_WIDTH_IN,
     RUN_FIELDS,
     VALIDATION_FIELDS,
     VALIDATION_RUN_FIELDS,
@@ -670,6 +676,31 @@ def test_analysis_outputs_are_byte_deterministic(tmp_path):
     assert first_names == sorted(path.name for path in second.iterdir())
     for name in first_names:
         assert (first / name).read_bytes() == (second / name).read_bytes()
+
+
+def test_publication_figures_enforce_final_size_typography_contract(tmp_path):
+    assert PUBLICATION_FIGURE_WIDTH_IN <= MAX_PUBLICATION_FIGURE_WIDTH_IN
+    assert (
+        MIN_SOURCE_FONT_PT
+        * min(1.0, REPORT_TEXT_WIDTH_IN / PUBLICATION_FIGURE_WIDTH_IN)
+        >= MIN_REPORT_FONT_PT
+    )
+
+    full, integrations, qqp, moss = _complete_inputs(tmp_path)
+    output = tmp_path / "analysis"
+    result = analyze_results(output, full, integrations, qqp, moss)
+    for stem in ("vhr-deltas", "scan-return", "capacity-curve", "latency-resources"):
+        contract = result["figures"][stem]["publication_contract"]
+        assert contract["source_width_in"] <= MAX_PUBLICATION_FIGURE_WIDTH_IN
+        assert contract["minimum_source_font_pt"] >= MIN_SOURCE_FONT_PT
+        assert (
+            contract["minimum_font_at_report_width_pt"]
+            >= MIN_REPORT_FONT_PT
+        )
+        png_header = (output / (stem + ".png")).read_bytes()[:24]
+        assert int.from_bytes(png_header[16:20], "big") == round(
+            PUBLICATION_FIGURE_WIDTH_IN * PNG_DPI
+        )
 
 
 def test_missing_sources_are_pending_without_placeholder_figures(tmp_path):

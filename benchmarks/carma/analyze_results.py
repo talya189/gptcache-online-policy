@@ -25,6 +25,12 @@ INTEGRATION_SCHEMA = "carma-sqlite-faiss-v1"
 QQP_SCHEMA = "carma-qqp-v1"
 MOSS_SCHEMA = "carma-moss-recorded-response-v2"
 MATPLOTLIB_VERSION = "3.10.8"
+REPORT_TEXT_WIDTH_IN = 7.05
+PUBLICATION_FIGURE_WIDTH_IN = 8.0
+MAX_PUBLICATION_FIGURE_WIDTH_IN = 8.2
+MIN_SOURCE_FONT_PT = 12.5
+MIN_REPORT_FONT_PT = 10.0
+PNG_DPI = 220
 QQP_ARCHIVE_SHA256 = (
     "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58"
 )
@@ -338,7 +344,22 @@ def analyze_results(
                 "version": observed_matplotlib,
                 "backend": "Agg",
                 "svg_hashsalt": ANALYSIS_SCHEMA,
-                "png_dpi": 220,
+                "png_dpi": PNG_DPI,
+                "publication_contract": {
+                    "report_text_width_in": REPORT_TEXT_WIDTH_IN,
+                    "source_width_in": PUBLICATION_FIGURE_WIDTH_IN,
+                    "maximum_source_width_in": MAX_PUBLICATION_FIGURE_WIDTH_IN,
+                    "minimum_source_font_pt": MIN_SOURCE_FONT_PT,
+                    "minimum_report_font_pt": MIN_REPORT_FONT_PT,
+                    "nominal_scale_to_report_width": _round(
+                        REPORT_TEXT_WIDTH_IN / PUBLICATION_FIGURE_WIDTH_IN
+                    ),
+                    "nominal_minimum_font_at_report_width_pt": _round(
+                        MIN_SOURCE_FONT_PT
+                        * REPORT_TEXT_WIDTH_IN
+                        / PUBLICATION_FIGURE_WIDTH_IN
+                    ),
+                },
             },
             "artifacts": {},
         }
@@ -1514,7 +1535,7 @@ def _plot_vhr_deltas(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
     lows = [_number(row["delta_ci_low"], "VHR CI") * 100 for row in rows]
     highs = [_number(row["delta_ci_high"], "VHR CI") * 100 for row in rows]
     plt = _pyplot()
-    figure, axis = plt.subplots(figsize=(8.2, 4.6))
+    figure, axis = plt.subplots(figsize=(PUBLICATION_FIGURE_WIDTH_IN, 5.2))
     y = list(range(len(labels)))
     axis.errorbar(
         values,
@@ -1539,7 +1560,7 @@ def _plot_vhr_deltas(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
         figure,
         "Valid-hit-rate delta vs stronger baseline",
         (
-            "Paired seed mean and 95%% bootstrap CI; primary capacity %d; %s"
+            "Paired seed mean and 95%% bootstrap CI; primary capacity %d.\n%s."
             % (capacity, _full_scope_label(full))
         ),
     )
@@ -1565,7 +1586,7 @@ def _plot_scan_return(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
     lows = [_number(row["delta_ci_low"], "scan CI") * 100 for row in rows]
     highs = [_number(row["delta_ci_high"], "scan CI") * 100 for row in rows]
     plt = _pyplot()
-    figure, axis = plt.subplots(figsize=(8.2, 4.6))
+    figure, axis = plt.subplots(figsize=(PUBLICATION_FIGURE_WIDTH_IN, 5.2))
     y = list(range(len(labels)))
     axis.errorbar(
         values,
@@ -1605,7 +1626,7 @@ def _plot_scan_return(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
         rotation_mode="anchor",
         ha="center",
         va="bottom",
-        fontsize=8.0,
+        fontsize=MIN_SOURCE_FONT_PT,
         color=gate_color,
     )
     badge_label = "Gate 4: %s" % gate_outcome.upper()
@@ -1616,7 +1637,7 @@ def _plot_scan_return(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
         transform=axis.transAxes,
         ha="right",
         va="bottom",
-        fontsize=8.5,
+        fontsize=MIN_SOURCE_FONT_PT,
         fontweight="bold" if gate_outcome == "FAIL" else "normal",
         color=gate_color,
         bbox={
@@ -1638,7 +1659,7 @@ def _plot_scan_return(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
         figure,
         "Pollution scan return-phase valid-hit-rate delta",
         (
-            "Paired seed mean and 95%% bootstrap CI; primary capacity %d; %s"
+            "Paired seed mean and 95%% bootstrap CI; primary capacity %d.\n%s."
             % (capacity, _full_scope_label(full))
         ),
     )
@@ -1687,7 +1708,13 @@ def _plot_capacity_curve(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
             "files": [],
         }
     plt = _pyplot()
-    figure, axes = plt.subplots(1, 3, figsize=(12.6, 4.4), sharey=True)
+    figure, axes = plt.subplots(
+        3,
+        1,
+        figsize=(PUBLICATION_FIGURE_WIDTH_IN, 9.0),
+        sharex=True,
+        sharey=True,
+    )
     palette = {"LRU": "#7c838c", "LFU": "#79a9cf", "CARMA": "#1769aa"}
     markers = {"LRU": "o", "LFU": "s", "CARMA": "D"}
     labels = {
@@ -1720,19 +1747,25 @@ def _plot_capacity_curve(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
                 label=policy,
             )
             plotted += len(series)
-        axis.set_title(labels[workload], fontsize=10.5, loc="left")
-        axis.set_xlabel("Cache capacity (entries)")
+        axis.set_title(
+            labels[workload], fontsize=MIN_SOURCE_FONT_PT + 1.0, loc="left"
+        )
         axis.set_xticks(capacities)
-    axes[0].set_ylabel("Valid-hit rate (%)")
+    axes[-1].set_xlabel("Cache capacity (entries)")
+    axes[1].set_ylabel("Valid-hit rate (%)")
     axes[-1].legend(frameon=False, loc="best")
     _title(
         figure,
         "Valid-hit rate across cache capacities",
         (
             "95%% bootstrap CIs; fixed capacity-100 traces. Capacity 100 uses "
-            "10 seeds; exploratory sweep points use 5; %s."
+            "10 seeds.\nExploratory sweep points use 5; %s."
             % _full_scope_label(full)
         ),
+        top=0.79,
+        left=0.16,
+        bottom=0.10,
+        hspace=0.32,
     )
     return _save_figure(figure, output, "capacity-curve", plotted)
 
@@ -1752,7 +1785,7 @@ def _plot_latency_resources(
             "files": [],
         }
     metrics = (
-        ("total_p95_us", "End-to-end p95 latency", 0.001, "ms"),
+        ("total_p95_us", "Post-embedding cache-path p95", 0.001, "ms"),
         ("policy_p95_us", "Policy-only p95 latency", 1.0, "µs"),
         ("throughput_qps", "Throughput", 1.0, "requests/s"),
         ("rss_peak_sampled_bytes", "Sampled peak RSS", 1 / (1024 * 1024), "MiB"),
@@ -1762,7 +1795,9 @@ def _plot_latency_resources(
         for policy in policies
     }
     plt = _pyplot()
-    figure, axes = plt.subplots(2, 2, figsize=(10.4, 7.2))
+    figure, axes = plt.subplots(
+        2, 2, figsize=(PUBLICATION_FIGURE_WIDTH_IN, 7.6)
+    )
     palette = {"LRU": "#7c838c", "LFU": "#79a9cf", "CARMA": "#1769aa"}
     hatches = {"LRU": "//", "LFU": "..", "CARMA": ""}
     for axis, (field, title, scale, unit) in zip(axes.flat, metrics):
@@ -1792,7 +1827,7 @@ def _plot_latency_resources(
                 linewidth=0.7,
                 zorder=3,
             )
-        axis.set_title(title, fontsize=10.5, loc="left")
+        axis.set_title(title, fontsize=MIN_SOURCE_FONT_PT + 1.0, loc="left")
         axis.set_ylabel(unit)
         axis.set_ylim(bottom=0)
     seeds = integration["report"].get("distinct_seeds", [])
@@ -1801,10 +1836,16 @@ def _plot_latency_resources(
         figure,
         "SQLite/FAISS latency and resource measurements",
         (
-            "Descriptive means with per-seed points; n=%d seed(s), mode=%s. "
-            "No across-seed Gate 7 rule is frozen."
+            "Precomputed vectors; embedding excluded. Descriptive per-seed "
+            "means.\n"
+            "n=%d seed(s), mode=%s; no across-seed Gate 7 rule is frozen."
         )
         % (len(seeds), "/".join(modes)),
+        top=0.78,
+        left=0.14,
+        bottom=0.11,
+        wspace=0.42,
+        hspace=0.50,
     )
     return _save_figure(
         figure,
@@ -1821,7 +1862,12 @@ def _pyplot() -> Any:
     matplotlib.rcParams.update(
         {
             "font.family": "DejaVu Sans",
-            "font.size": 9.5,
+            "font.size": MIN_SOURCE_FONT_PT,
+            "axes.labelsize": MIN_SOURCE_FONT_PT,
+            "axes.titlesize": MIN_SOURCE_FONT_PT + 1.0,
+            "xtick.labelsize": MIN_SOURCE_FONT_PT,
+            "ytick.labelsize": MIN_SOURCE_FONT_PT,
+            "legend.fontsize": MIN_SOURCE_FONT_PT,
             "axes.edgecolor": "#30343b",
             "axes.labelcolor": "#30343b",
             "axes.titlecolor": "#20242a",
@@ -1850,10 +1896,44 @@ def _full_scope_label(full: Dict[str, Any]) -> str:
     )
 
 
-def _title(figure: Any, title: str, subtitle: str) -> None:
-    figure.suptitle(title, x=0.08, y=0.985, ha="left", fontsize=14, color="#20242a")
-    figure.text(0.08, 0.94, subtitle, ha="left", va="top", fontsize=9, color="#555d66")
-    figure.subplots_adjust(top=0.82, left=0.14, right=0.97, bottom=0.15, wspace=0.28, hspace=0.38)
+def _title(
+    figure: Any,
+    title: str,
+    subtitle: str,
+    *,
+    top: float = 0.77,
+    left: float = 0.23,
+    right: float = 0.97,
+    bottom: float = 0.15,
+    wspace: float = 0.30,
+    hspace: float = 0.42,
+) -> None:
+    figure.suptitle(
+        title,
+        x=0.07,
+        y=0.985,
+        ha="left",
+        fontsize=MIN_SOURCE_FONT_PT + 3.5,
+        color="#20242a",
+    )
+    figure.text(
+        0.07,
+        0.925,
+        subtitle,
+        ha="left",
+        va="top",
+        fontsize=MIN_SOURCE_FONT_PT,
+        color="#555d66",
+        linespacing=1.25,
+    )
+    figure.subplots_adjust(
+        top=top,
+        left=left,
+        right=right,
+        bottom=bottom,
+        wspace=wspace,
+        hspace=hspace,
+    )
 
 
 def _annotate_horizontal(
@@ -1870,7 +1950,7 @@ def _annotate_horizontal(
             "%+.2f%s" % (value, suffix),
             va="center",
             ha="left" if value >= 0 else "right",
-            fontsize=8.5,
+            fontsize=MIN_SOURCE_FONT_PT,
             color="#30343b",
         )
     axis.margins(x=0.20)
@@ -1879,19 +1959,18 @@ def _annotate_horizontal(
 def _save_figure(
     figure: Any, output: Path, stem: str, observations: int
 ) -> Dict[str, Any]:
+    publication_contract = _validate_figure_publication_contract(figure, stem)
     svg = output / (stem + ".svg")
     png = output / (stem + ".png")
     figure.savefig(
         svg,
         format="svg",
-        bbox_inches="tight",
         metadata={"Date": None, "Creator": ANALYSIS_SCHEMA},
     )
     figure.savefig(
         png,
         format="png",
-        dpi=220,
-        bbox_inches="tight",
+        dpi=PNG_DPI,
         metadata={"Software": ANALYSIS_SCHEMA},
     )
     from matplotlib import pyplot
@@ -1901,7 +1980,55 @@ def _save_figure(
         "status": "rendered",
         "observations": observations,
         "files": [svg.name, png.name],
+        "publication_contract": publication_contract,
         "sha256": {svg.name: sha256_file(svg), png.name: sha256_file(png)},
+    }
+
+
+def _validate_figure_publication_contract(
+    figure: Any, stem: str
+) -> Dict[str, Any]:
+    """Enforce the lecturer's 10 pt rule after report-width scaling."""
+
+    figure.canvas.draw()
+    width, height = (float(value) for value in figure.get_size_inches())
+    if width > MAX_PUBLICATION_FIGURE_WIDTH_IN + 1e-9:
+        raise AnalysisError(
+            "%s figure width %.3f exceeds %.3f inches"
+            % (stem, width, MAX_PUBLICATION_FIGURE_WIDTH_IN)
+        )
+    text_sizes = [
+        float(artist.get_fontsize())
+        for artist in figure.findobj()
+        if hasattr(artist, "get_text")
+        and hasattr(artist, "get_fontsize")
+        and artist.get_visible()
+        and str(artist.get_text()).strip()
+    ]
+    if not text_sizes:
+        raise AnalysisError("%s figure has no rendered text labels" % stem)
+    minimum_source = min(text_sizes)
+    if minimum_source < MIN_SOURCE_FONT_PT - 1e-9:
+        raise AnalysisError(
+            "%s figure uses %.3f pt text below the %.3f pt source minimum"
+            % (stem, minimum_source, MIN_SOURCE_FONT_PT)
+        )
+    report_scale = min(1.0, REPORT_TEXT_WIDTH_IN / width)
+    minimum_at_report_width = minimum_source * report_scale
+    if minimum_at_report_width < MIN_REPORT_FONT_PT - 1e-9:
+        raise AnalysisError(
+            "%s figure scales to %.3f pt text below the %.3f pt report minimum"
+            % (stem, minimum_at_report_width, MIN_REPORT_FONT_PT)
+        )
+    return {
+        "source_width_in": _round(width),
+        "source_height_in": _round(height),
+        "report_width_in": REPORT_TEXT_WIDTH_IN,
+        "scale_to_report_width": _round(report_scale),
+        "minimum_source_font_pt": _round(minimum_source),
+        "minimum_font_at_report_width_pt": _round(minimum_at_report_width),
+        "required_minimum_report_font_pt": MIN_REPORT_FONT_PT,
+        "rendered_text_labels_checked": len(text_sizes),
     }
 
 
