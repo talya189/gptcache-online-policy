@@ -28,6 +28,7 @@ MATPLOTLIB_VERSION = "3.10.8"
 REPORT_TEXT_WIDTH_IN = 7.05
 PUBLICATION_FIGURE_WIDTH_IN = 8.0
 MAX_PUBLICATION_FIGURE_WIDTH_IN = 8.2
+MAX_CAPACITY_FIGURE_HEIGHT_IN = 6.6
 MIN_SOURCE_FONT_PT = 12.5
 MIN_REPORT_FONT_PT = 10.0
 PNG_DPI = 220
@@ -1708,13 +1709,15 @@ def _plot_capacity_curve(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
             "files": [],
         }
     plt = _pyplot()
-    figure, axes = plt.subplots(
-        3,
-        1,
-        figsize=(PUBLICATION_FIGURE_WIDTH_IN, 9.0),
+    figure, axes_grid = plt.subplots(
+        2,
+        2,
+        figsize=(PUBLICATION_FIGURE_WIDTH_IN, MAX_CAPACITY_FIGURE_HEIGHT_IN),
         sharex=True,
         sharey=True,
     )
+    axes = (axes_grid[0, 0], axes_grid[0, 1], axes_grid[1, 0])
+    legend_axis = axes_grid[1, 1]
     palette = {"LRU": "#7c838c", "LFU": "#79a9cf", "CARMA": "#1769aa"}
     markers = {"LRU": "o", "LFU": "s", "CARMA": "D"}
     labels = {
@@ -1751,9 +1754,28 @@ def _plot_capacity_curve(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
             labels[workload], fontsize=MIN_SOURCE_FONT_PT + 1.0, loc="left"
         )
         axis.set_xticks(capacities)
-    axes[-1].set_xlabel("Cache capacity (entries)")
-    axes[1].set_ylabel("Valid-hit rate (%)")
-    axes[-1].legend(frameon=False, loc="best")
+    legend_handles, legend_labels = axes[0].get_legend_handles_labels()
+    legend_axis.axis("off")
+    legend_axis.legend(
+        legend_handles,
+        legend_labels,
+        frameon=False,
+        loc="center",
+    )
+    figure.supxlabel(
+        "Cache capacity (entries)",
+        x=0.52,
+        y=0.055,
+        fontsize=MIN_SOURCE_FONT_PT,
+        color="#30343b",
+    )
+    figure.supylabel(
+        "Valid-hit rate (%)",
+        x=0.055,
+        y=0.46,
+        fontsize=MIN_SOURCE_FONT_PT,
+        color="#30343b",
+    )
     _title(
         figure,
         "Valid-hit rate across cache capacities",
@@ -1762,10 +1784,12 @@ def _plot_capacity_curve(full: Dict[str, Any], output: Path) -> Dict[str, Any]:
             "10 seeds.\nExploratory sweep points use 5; %s."
             % _full_scope_label(full)
         ),
-        top=0.79,
-        left=0.16,
-        bottom=0.10,
-        hspace=0.32,
+        top=0.77,
+        left=0.13,
+        right=0.98,
+        bottom=0.14,
+        wspace=0.18,
+        hspace=0.38,
     )
     return _save_figure(figure, output, "capacity-curve", plotted)
 

@@ -11,6 +11,7 @@ from benchmarks.carma.analyze_results import (
     ANALYSIS_SCHEMA,
     FULL_RUN_FIELDS,
     INTEGRATION_FIELDS,
+    MAX_CAPACITY_FIGURE_HEIGHT_IN,
     MAX_PUBLICATION_FIGURE_WIDTH_IN,
     MIN_REPORT_FONT_PT,
     MIN_SOURCE_FONT_PT,
@@ -701,6 +702,9 @@ def test_publication_figures_enforce_final_size_typography_contract(tmp_path):
         assert int.from_bytes(png_header[16:20], "big") == round(
             PUBLICATION_FIGURE_WIDTH_IN * PNG_DPI
         )
+    assert result["figures"]["capacity-curve"]["publication_contract"][
+        "source_height_in"
+    ] <= MAX_CAPACITY_FIGURE_HEIGHT_IN
 
 
 def test_missing_sources_are_pending_without_placeholder_figures(tmp_path):
