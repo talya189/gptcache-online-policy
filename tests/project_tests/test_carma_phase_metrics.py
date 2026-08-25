@@ -2,7 +2,11 @@
 
 import json
 
-from benchmarks.carma.full_experiment import _evaluate_synthetic_success_gates
+from benchmarks.carma.full_experiment import (
+    CompactCatalog,
+    _evaluate_synthetic_success_gates,
+    _preflight_protocol,
+)
 from benchmarks.carma.runner import (
     _phase_metrics,
     phase_recovery_summary,
@@ -179,3 +183,27 @@ def test_synthetic_gate_boundaries_are_programmatically_adjudicated():
     aggregate[1]["delta_mean"] = 0.049999
     gates = _evaluate_synthetic_success_gates(aggregate)
     assert gates["gate_4_scan_return_vhr"]["passes"] is False
+
+
+def test_full_protocol_preflight_has_enough_distinct_pollution_concepts():
+    catalog = CompactCatalog(concepts_per_cell=200)
+    preflight = _preflight_protocol(catalog, request_count=10_000, capacity=100)
+
+    assert catalog.concepts[0].embedding.size == 834
+    assert preflight["status"] == "passed_before_validation"
+    assert preflight[
+        "seed_disjoint_from_validation_test_and_diagnostic"
+    ] is True
+    assert preflight["phase_shift_counts"] == {
+        "shift-0": 2000,
+        "shift-1": 2000,
+        "shift-2": 2000,
+        "shift-3": 2000,
+        "shift-4": 2000,
+    }
+    assert preflight["pollution_counts"] == {
+        "scan-warm": 3000,
+        "scan-unique": 4000,
+        "scan-return": 3000,
+    }
+    assert preflight["pollution_unique_concepts"] == 4000

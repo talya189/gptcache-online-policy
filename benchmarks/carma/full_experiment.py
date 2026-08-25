@@ -272,6 +272,69 @@ def _measure_catalog_geometry(catalog: CompactCatalog) -> Dict[str, Dict[str, fl
     return measured
 
 
+def _preflight_protocol(
+    catalog: CompactCatalog, request_count: int, capacity: int
+) -> Dict[str, Any]:
+    """Validate frozen trace structure without opening a test or tuning seed."""
+
+    seed = 20260000
+    traces = {
+        workload: build_trace(workload, catalog, request_count, seed, capacity)
+        for workload in WORKLOADS
+    }
+    if any(len(rows) != request_count for rows in traces.values()):
+        raise RuntimeError("protocol preflight produced a short trace")
+
+    shift_counts = {
+        "shift-%d" % phase: sum(
+            int(row.phase == "shift-%d" % phase)
+            for row in traces["phase_shift"]
+        )
+        for phase in range(5)
+    }
+    if max(shift_counts.values()) - min(shift_counts.values()) > 1:
+        raise RuntimeError("phase-shift trace is not split into five equal phases")
+
+    scan_counts = {
+        phase: sum(int(row.phase == phase) for row in traces["pollution_scan"])
+        for phase in ("scan-warm", "scan-unique", "scan-return")
+    }
+    expected_scan = {
+        "scan-warm": 3 * request_count // 10,
+        "scan-unique": 4 * request_count // 10,
+        "scan-return": request_count
+        - 3 * request_count // 10
+        - 4 * request_count // 10,
+    }
+    if scan_counts != expected_scan:
+        raise RuntimeError("pollution trace does not have a 30/40/30 split")
+    scanned = [
+        row.concept_id
+        for row in traces["pollution_scan"]
+        if row.phase == "scan-unique"
+    ]
+    if len(scanned) != len(set(scanned)):
+        raise RuntimeError("pollution preflight contains a repeated scan concept")
+
+    return {
+        "status": "passed_before_validation",
+        "seed": seed,
+        "seed_disjoint_from_validation_test_and_diagnostic": (
+            seed not in VALIDATION_SEEDS
+            and seed not in TEST_SEEDS
+            and seed not in DIAGNOSTIC_SEEDS
+        ),
+        "request_count": request_count,
+        "capacity": capacity,
+        "phase_shift_counts": shift_counts,
+        "pollution_counts": scan_counts,
+        "pollution_unique_concepts": len(set(scanned)),
+        "trace_hashes": {
+            workload: trace_hash(rows) for workload, rows in sorted(traces.items())
+        },
+    }
+
+
 def run_experiment(
     mode: str,
     output_dir: Path,
@@ -327,7 +390,7 @@ def _execute_experiment(
         test_requests = FULL_TEST_REQUESTS
         validation_capacity = PRIMARY_CAPACITY
         test_capacity = PRIMARY_CAPACITY
-        concepts_per_cell = 192
+        concepts_per_cell = 200
         diagnostic_seeds = DIAGNOSTIC_SEEDS
         diagnostic_requests = HARD_NEGATIVE_REQUESTS
     else:
@@ -346,6 +409,9 @@ def _execute_experiment(
 
     catalog = CompactCatalog(concepts_per_cell=concepts_per_cell)
     catalog_geometry = _measure_catalog_geometry(catalog)
+    protocol_preflight = _preflight_protocol(
+        catalog, test_requests, test_capacity
+    )
     validation_rows, validation_run_rows, chosen, trace_hashes = _run_validation(
         catalog,
         validation_seeds,
@@ -512,6 +578,7 @@ def _execute_experiment(
             },
             "measured_cosine_ranges": catalog_geometry,
         },
+        "protocol_preflight": protocol_preflight,
         "validation_grid": {
             "topic_threshold": list(TOPIC_THRESHOLDS),
             "cell_threshold": list(CELL_THRESHOLDS),

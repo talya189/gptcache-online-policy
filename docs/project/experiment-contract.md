@@ -99,7 +99,7 @@ Pre-execution scalability amendment: the full synthetic catalog reuses
 orthogonal cell-local feature blocks across topics. It preserves the exact
 within-topic cosine hierarchy (`0.72`, `0.88`, and `0.96`); cross-topic cosine
 is at most `0.12`, below every topic threshold. The full catalog therefore has
-802 rather than more than 8,000 dimensions. The benchmark records measured
+834 rather than more than 8,000 dimensions. The benchmark records measured
 cosine extrema and aborts on geometry drift.
 
 Pre-execution coverage amendment: the first full command was interrupted after
@@ -110,6 +110,17 @@ recovery-lag definition above before restarting validation from the beginning.
 The same pre-restart audit corrected two builder drifts to the already-frozen
 workloads: category shift now uses five phases with 80% hot demand, and the
 pollution split is exactly 30% warm, 40% unique scan, and 30% return.
+
+Failed-run capacity correction: the next full command completed validation
+and began primary-test computation, then stopped after 267.47 seconds before
+publishing or printing any selected configuration or result. The exception
+showed that 192 concepts per cell supplied 3,840 non-hot concepts, fewer than
+the frozen 4,000-request unique scan. No observed performance value informed a
+decision. The catalog was increased to 200 concepts per cell (exactly 4,000
+non-hot concepts; 834 dimensions), with all thresholds, seeds, gates, and
+selection rules unchanged. A disjoint seed-`20260000` structural preflight now
+constructs every trace, verifies five equal shift phases and the 30/40/30 scan
+with 4,000 distinct cold concepts, and must pass before validation begins.
 
 ## Frozen tuning procedure
 
