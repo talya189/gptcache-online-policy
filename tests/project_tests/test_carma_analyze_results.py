@@ -353,7 +353,7 @@ def _container_reproducibility_fixture(
                         "Privileged": False,
                         "CapAdd": None,
                         "CapDrop": ["ALL"],
-                        "SecurityOpt": ["no-new-privileges:true"],
+                        "SecurityOpt": ["no-new-privileges=true"],
                     },
                     "Path": "bash",
                     "Args": ["scripts/verify_project.sh"],
@@ -1932,6 +1932,24 @@ def test_forged_runtime_inspect_is_rejected(tmp_path):
 
 
 @pytest.mark.parametrize(
+    "security_opt",
+    (["no-new-privileges:true"], ["no-new-privileges=true"]),
+)
+def test_portable_no_new_privileges_forms_are_accepted(tmp_path, security_opt):
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    evidence = json.loads(container.read_text(encoding="utf-8"))
+    runtime_ref = evidence["runs"][0]["container_inspect"]
+    inspect_path = container.parent / runtime_ref["path"]
+    inspection = json.loads(inspect_path.read_text(encoding="utf-8"))
+    inspection[0]["HostConfig"]["SecurityOpt"] = security_opt
+    _write_json(inspect_path, inspection)
+    runtime_ref["sha256"] = sha256_file(inspect_path)
+    _write_json(container, evidence)
+
+    analyze_results(tmp_path / "analysis", container_reproducibility=container)
+
+
+@pytest.mark.parametrize(
     ("location", "field", "value", "message"),
     (
         ("root", "Path", "python", "execute the verifier entrypoint"),
@@ -1951,6 +1969,12 @@ def test_forged_runtime_inspect_is_rejected(tmp_path):
             "host",
             "SecurityOpt",
             ["no-new-privileges:false"],
+            "enable no-new-privileges",
+        ),
+        (
+            "host",
+            "SecurityOpt",
+            ["no-new-privileges=true-extra"],
             "enable no-new-privileges",
         ),
         (
@@ -1980,6 +2004,23 @@ def test_forged_runtime_execution_contract_is_rejected(
     _write_json(container, evidence)
 
     with pytest.raises(AnalysisError, match=message):
+        analyze_results(
+            tmp_path / "analysis", container_reproducibility=container
+        )
+
+
+def test_forged_runtime_absent_security_option_is_rejected(tmp_path):
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    evidence = json.loads(container.read_text(encoding="utf-8"))
+    runtime_ref = evidence["runs"][0]["container_inspect"]
+    inspect_path = container.parent / runtime_ref["path"]
+    inspection = json.loads(inspect_path.read_text(encoding="utf-8"))
+    del inspection[0]["HostConfig"]["SecurityOpt"]
+    _write_json(inspect_path, inspection)
+    runtime_ref["sha256"] = sha256_file(inspect_path)
+    _write_json(container, evidence)
+
+    with pytest.raises(AnalysisError, match="enable no-new-privileges"):
         analyze_results(
             tmp_path / "analysis", container_reproducibility=container
         )

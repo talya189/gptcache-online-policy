@@ -308,7 +308,7 @@ def _container_inputs(root, second_phase=b"completed phase in 1s\n"):
                             "Privileged": False,
                             "CapAdd": None,
                             "CapDrop": ["ALL"],
-                            "SecurityOpt": ["no-new-privileges:true"],
+                            "SecurityOpt": ["no-new-privileges=true"],
                         },
                         "Config": {
                             "User": "project",
@@ -470,12 +470,61 @@ def test_runtime_contract_rejects_changed_args(tmp_path):
         )
 
 
-def test_runtime_contract_rejects_false_no_new_privileges(tmp_path):
+@pytest.mark.parametrize(
+    "security_opt",
+    (["no-new-privileges:true"], ["no-new-privileges=true"]),
+)
+def test_runtime_contract_accepts_portable_no_new_privileges_forms(
+    tmp_path, security_opt
+):
     root = tmp_path / "container"
     _container_inputs(root)
     inspect_path = root / "docker-run-1.inspect.json"
     payload = json.loads(inspect_path.read_text(encoding="utf-8"))
-    payload[0]["HostConfig"]["SecurityOpt"] = ["no-new-privileges:false"]
+    payload[0]["HostConfig"]["SecurityOpt"] = security_opt
+    inspect_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    evidence._validate_container_inspect(
+        inspect_path,
+        "sha256:" + "2" * 64,
+        root / "docker-run-1",
+    )
+
+
+@pytest.mark.parametrize(
+    "security_opt",
+    (
+        None,
+        [],
+        ["no-new-privileges:false"],
+        ["no-new-privileges=true", "seccomp=unconfined"],
+        ["no-new-privileges=true-extra"],
+    ),
+)
+def test_runtime_contract_rejects_invalid_no_new_privileges(
+    tmp_path, security_opt
+):
+    root = tmp_path / "container"
+    _container_inputs(root)
+    inspect_path = root / "docker-run-1.inspect.json"
+    payload = json.loads(inspect_path.read_text(encoding="utf-8"))
+    payload[0]["HostConfig"]["SecurityOpt"] = security_opt
+    inspect_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(evidence.EvidenceError, match="exact no-new-privileges"):
+        evidence._validate_container_inspect(
+            inspect_path,
+            "sha256:" + "2" * 64,
+            root / "docker-run-1",
+        )
+
+
+def test_runtime_contract_rejects_absent_no_new_privileges(tmp_path):
+    root = tmp_path / "container"
+    _container_inputs(root)
+    inspect_path = root / "docker-run-1.inspect.json"
+    payload = json.loads(inspect_path.read_text(encoding="utf-8"))
+    del payload[0]["HostConfig"]["SecurityOpt"]
     inspect_path.write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(evidence.EvidenceError, match="exact no-new-privileges"):

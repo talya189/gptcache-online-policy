@@ -2167,9 +2167,10 @@ def _validate_container_inspect(
     } != {"ALL"}:
         raise AnalysisError("%s did not drop all capabilities" % label)
     security = host.get("SecurityOpt")
-    if not isinstance(security, list) or {
-        str(value).lower() for value in security
-    } != {"no-new-privileges:true"}:
+    if security not in (
+        ["no-new-privileges:true"],
+        ["no-new-privileges=true"],
+    ):
         raise AnalysisError("%s did not enable no-new-privileges" % label)
     config = item.get("Config")
     if not isinstance(config, dict):

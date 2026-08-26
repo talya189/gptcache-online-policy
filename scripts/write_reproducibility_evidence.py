@@ -658,9 +658,10 @@ def _validate_container_inspect(
     }:
         raise EvidenceError("container did not drop all capabilities")
     security = host.get("SecurityOpt")
-    if not isinstance(security, list) or {
-        str(value).lower() for value in security
-    } != {"no-new-privileges:true"}:
+    if security not in (
+        ["no-new-privileges:true"],
+        ["no-new-privileges=true"],
+    ):
         raise EvidenceError("container did not enable exact no-new-privileges=true")
     config = item.get("Config")
     if not isinstance(config, dict):
