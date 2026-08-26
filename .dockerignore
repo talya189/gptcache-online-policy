@@ -13,11 +13,14 @@
 !benchmarks/
 !benchmarks/**
 !examples/
+examples/**
 !examples/benchmark/
 !examples/benchmark/**
 !tests/
 !tests/**
 !scripts/
+scripts/**
 !scripts/run_ci_benchmark.sh
+!scripts/run_qqp_validation.sh
 !scripts/verify_project.sh
 !scripts/write_reproducibility_evidence.py

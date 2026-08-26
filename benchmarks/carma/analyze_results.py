@@ -1403,8 +1403,7 @@ def _current_git_head() -> Dict[str, Any]:
 
 def _is_packaging_path(path: str) -> bool:
     return (
-        path == "README.md"
-        or path.startswith("docs/project/")
+        path.startswith("docs/project/")
         or path.startswith("artifacts/samples/")
     )
 

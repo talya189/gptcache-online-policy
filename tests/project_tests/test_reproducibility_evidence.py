@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -6,6 +7,40 @@ from scripts import write_reproducibility_evidence as evidence
 
 
 SOURCE_COMMIT = "a" * 40
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_docker_context_parent_exceptions_remain_tight():
+    wrapper = PROJECT_ROOT / "scripts" / "run_qqp_validation.sh"
+    assert wrapper.is_file()
+
+    dockerignore = PROJECT_ROOT / ".dockerignore"
+    if dockerignore.is_file():
+        active_patterns = [
+            line.strip()
+            for line in dockerignore.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        examples_parent = active_patterns.index("!examples/")
+        examples_reexclude = active_patterns.index("examples/**")
+        examples_benchmark = active_patterns.index("!examples/benchmark/")
+        examples_contents = active_patterns.index("!examples/benchmark/**")
+        assert examples_parent < examples_reexclude < examples_benchmark
+        assert examples_benchmark < examples_contents
+
+        scripts_parent = active_patterns.index("!scripts/")
+        scripts_reexclude = active_patterns.index("scripts/**")
+        required_scripts = (
+            "!scripts/run_ci_benchmark.sh",
+            "!scripts/run_qqp_validation.sh",
+            "!scripts/verify_project.sh",
+            "!scripts/write_reproducibility_evidence.py",
+        )
+        assert scripts_parent < scripts_reexclude
+        assert all(
+            scripts_reexclude < active_patterns.index(pattern)
+            for pattern in required_scripts
+        )
 
 
 def _stub_source_checks(monkeypatch):

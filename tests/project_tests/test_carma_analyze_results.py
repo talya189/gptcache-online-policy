@@ -1093,7 +1093,6 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
             return (current + " " + source + "\n").encode("ascii")
         if "diff" in command:
             return (
-                b"M\0README.md\0"
                 b"A\0docs/project/report.pdf\0"
                 b"A\0artifacts/samples/verification/evidence.json\0"
             )
@@ -1105,7 +1104,6 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
     assert _packaging_descendant_changes(
         source, current, "fixture evidence"
     ) == [
-        {"status": "M", "path": "README.md"},
         {"status": "A", "path": "docs/project/report.pdf"},
         {
             "status": "A",
@@ -1121,6 +1119,7 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
         b"R100\0docs/project/old.md\0docs/project/new.md\0",
         b"T\0artifacts/samples/verification/evidence.json\0",
         b"M\0benchmarks/carma/analyze_results.py\0",
+        b"M\0README.md\0",
         b"",
     ),
 )
@@ -1172,7 +1171,7 @@ def test_packaging_descendant_evidence_is_claimable(tmp_path, monkeypatch):
     current = "b" * 40
     changes = [
         {"status": "A", "path": "artifacts/samples/verification/evidence.json"},
-        {"status": "M", "path": "README.md"},
+        {"status": "M", "path": "docs/project/report.pdf"},
     ]
     monkeypatch.setattr(
         "benchmarks.carma.analyze_results._current_git_head",
