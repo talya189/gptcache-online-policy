@@ -16,6 +16,166 @@ Slash Your LLM API Costs by 10x 💰, Boost Speed by 100x ⚡
 
 **NOTE:** As the number of large models is growing explosively and their API shape is constantly evolving, we no longer add support for new API or models. We encourage the usage of using the get and set API in gptcache, here is the demo code: https://github.com/zilliztech/GPTCache/blob/main/examples/adapter/api.py
 
+## CARMA project extension
+
+This feature branch adds **CARMA (Cluster-Adaptive Reuse and Miss-pressure
+Admission)**, an opt-in online eviction policy for GPTCache. CARMA learns
+bounded semantic topics and fine-grained cells during the request stream,
+decays old demand, apportions topic quotas, discounts redundant residents, and
+rejects weak one-shot admissions. It does not call an LLM, use token cost as a
+policy input, or change GPTCache's answer-matching threshold. Existing policies
+and the default LRU behavior are unchanged.
+
+The project is evaluated against GPTCache commit
+`c59fb3a6152a4458b2a070ca183b61c4b614095f` and motivated by
+[SCALM](https://arxiv.org/abs/2406.00025). The frozen protocol, equations, and
+known limitations are in:
+
+- [`docs/project/baseline-justification.md`](docs/project/baseline-justification.md)
+- [`docs/project/policy-design.md`](docs/project/policy-design.md)
+- [`docs/project/experiment-contract.md`](docs/project/experiment-contract.md)
+- [`docs/project/protocol-deviations.md`](docs/project/protocol-deviations.md)
+- [`docs/project/reproducibility.md`](docs/project/reproducibility.md)
+
+### Install and verify the project
+
+The audited primary target is Python 3.12.13. All project and transitive
+dependencies are pinned; benchmark execution requires no API key.
+
+```bash
+python3.12 -m venv .venv
+.venv/bin/python -m pip --isolated --disable-pip-version-check install \
+  --no-input \
+  --index-url https://pypi.org/simple \
+  --require-hashes \
+  --only-binary=:all: \
+  --requirement requirements-project.lock
+.venv/bin/python -m pip --isolated --disable-pip-version-check install \
+  --no-deps --no-build-isolation --editable .
+PATH="$PWD/.venv/bin:$PATH" bash scripts/verify_project.sh
+```
+
+The exact-commit reproducibility gate creates a fresh hash-locked host
+environment, runs the verifier, builds the committed source archive for
+`linux/amd64`, and compares two distinct unprivileged, network-isolated
+containers. It writes analyzer-ready evidence only after every check passes:
+
+```bash
+scripts/run_reproducibility_gate.sh
+```
+
+The checkout must be clean and the default `artifacts/` evidence paths must be
+empty. The producer never overwrites retained evidence; use a fresh
+`CARMA_EVIDENCE_ROOT=/absolute/path` for a repeat run. The final status files
+are `artifacts/ci/host-verification.json` and
+`artifacts/container-reproducibility.json`. Partial logs without those status
+files are not passing evidence.
+
+### Configure CARMA
+
+CARMA is wired through the existing storage-manager factory so its eviction
+callback always deletes scalar and vector rows together.
+
+```python
+from gptcache.manager.factory import manager_factory
+
+manager = manager_factory(
+    "sqlite,faiss",
+    data_dir="./cache-data",
+    vector_params={"dimension": 768, "top_k": 1},
+    eviction_params={
+        "eviction": "CARMA",
+        "max_size": 100,
+        "clean_size": 1,
+        "policy_params": {
+            "topic_threshold": 0.70,
+            "cell_threshold": 0.97,
+            "demand_half_life": 500,
+            "quota_strength": 1.0,
+            "ghost_support_threshold": 1.5,
+            "admission_margin": 1.05,
+        },
+    },
+)
+```
+
+`topic_threshold` controls coarse semantic assignment; `cell_threshold`
+controls redundancy groups; `demand_half_life` controls adaptation speed;
+`quota_strength` controls how strongly topic pressure changes capacity shares;
+and `ghost_support_threshold` controls how much repeated evidence is required
+for full-cache admission. See the policy design document for bounds, exact
+tie-breaking, complexity, and restart behavior.
+
+### How to benchmark
+
+Start with the bounded deterministic smoke path, then use `full` only for the
+multi-million-request frozen study:
+
+```bash
+scripts/run_ci_benchmark.sh artifacts/carma-ci
+scripts/run_full_benchmark.sh smoke artifacts/carma-full-smoke
+scripts/run_integration_benchmark.sh smoke artifacts/carma-integration-smoke
+```
+
+The complete commands are:
+
+```bash
+# The held-out QQP run needs the hash-locked full-analysis dependency superset.
+.venv/bin/python -m pip --isolated --disable-pip-version-check install \
+  --no-input \
+  --index-url https://pypi.org/simple \
+  --require-hashes --only-binary=:all: \
+  --requirement requirements-benchmark.lock
+scripts/run_full_benchmark.sh full artifacts/carma-full
+for seed in 20260901 20260902 20260903 20260904 20260905; do
+  scripts/run_integration_benchmark.sh full \
+    "artifacts/carma-integration-$seed" --seed "$seed"
+done
+CARMA_ONNX_WORKERS=8 CARMA_ONNX_THREADS=1 \
+  scripts/run_qqp_validation.sh artifacts/qqp
+scripts/run_moss_benchmark.sh run /path/to/checksum-pinned-moss.zip artifacts/carma-moss
+```
+
+Analyze only completed, manifest-endorsed artifacts; the analyzer rejects
+tampered hashes, partial staging directories, and incompatible legacy schemas.
+
+```bash
+scripts/analyze_carma_results.sh \
+  --full-dir artifacts/carma-full \
+  --integration-dir artifacts/carma-integration-20260901 \
+  --integration-dir artifacts/carma-integration-20260902 \
+  --integration-dir artifacts/carma-integration-20260903 \
+  --integration-dir artifacts/carma-integration-20260904 \
+  --integration-dir artifacts/carma-integration-20260905 \
+  --qqp-result artifacts/qqp/evaluation/result.json \
+  --moss-dir artifacts/carma-moss \
+  --host-verification artifacts/ci/host-verification.json \
+  --container-reproducibility artifacts/container-reproducibility.json \
+  --output artifacts/carma-analysis
+```
+
+Every benchmark writes machine-readable CSV/JSON plus source, environment,
+configuration, trace, and checksum metadata. Curated sample logs, result
+tables, gate adjudication, and report figures live under
+[`artifacts/samples/`](artifacts/samples/).
+
+### Result headline
+
+The selected configuration (`topic=.70`, `cell=.97`, half-life `500`, quota
+strength `1.0`) improved ten-seed category-shift valid-hit rate by **4.885
+percentage points** over the per-seed stronger LRU/LFU baseline (95% paired CI
+`[4.677, 5.088]`, Holm-adjusted `p=0.0234`). It passed stationary and safe
+token-saving gates. Five fresh SQLite/FAISS seeds stayed within the frozen
+per-seed latency, throughput, and RSS limits on a precomputed synthetic-vector
+path. That system result is diagnostic rather than a formal Gate 7 pass because
+the frozen contract named an ONNX embedding path and did not specify an
+across-seed aggregation rule.
+
+The preregistered scan-return claim **failed**: CARMA achieved 100% return-phase
+valid hits, but LFU achieved 99.993%, so the stronger-baseline gain was only
+`+0.0067` points rather than the required `+5.0`. This failed gate is retained
+in the report and machine-readable audit.
+
 ## Quick Install
 
 `pip install gptcache`

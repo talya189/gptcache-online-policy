@@ -1,0 +1,2 @@
+schema_version,run_id,policy,workload,trace_hash,requests,capacity,raw_hits,valid_hits,false_hits,misses,reuse_opportunities,valid_hit_rate,false_hit_rate,hit_precision,opportunity_recall,safe_token_saving_ratio,total_tokens,valid_saved_tokens,recorded_response_replays,live_model_calls,evictions,final_cache_entries
+carma-moss-recorded-response-v2,f4c328a8757304c66f24,RECORDED_RESPONSE_EXACT_LRU,moss-recorded-response,6b9de5ed06fb3124cd4b86d4a9d23bfb7ae34854d658996f86f9ce8eb402f430,200,256,0,0,0,200,0,0.0,0.0,0.0,0.0,0.0,557243,0,200,0,0,200

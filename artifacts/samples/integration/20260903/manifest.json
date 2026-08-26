@@ -1,0 +1,98 @@
+{
+  "artifacts": {
+    "resources.jsonl": {
+      "rows": 369,
+      "sha256": "087c99544511ce98af560b2b99152eab93bf1c713381e2ab667d4cd828a14f34"
+    },
+    "runs.csv": {
+      "rows": 3,
+      "sha256": "2b11010908d9ba83d38d833290d12fcb43adfdecff90ce7c45d01ac16320be18"
+    }
+  },
+  "baseline_commit": "c59fb3a6152a4458b2a070ca183b61c4b614095f",
+  "catalog": {
+    "cells_per_topic": 4,
+    "concepts_per_cell": 62,
+    "embedding_dimension": 2982,
+    "topics": 6
+  },
+  "config": {
+    "admission_margin": 1.05,
+    "capacity": 100,
+    "cell_threshold": 0.97,
+    "centroid_alpha": 0.05,
+    "demand_half_life": 500.0,
+    "entry_hit_weight": 0.25,
+    "ghost_support_threshold": 1.5,
+    "hit_threshold": 0.97,
+    "mode": "full",
+    "quota_strength": 1.0,
+    "requests": 3000,
+    "sample_every": 25,
+    "seed": 20260903,
+    "topic_threshold": 0.7,
+    "workload": "pollution_scan"
+  },
+  "environment": {
+    "cachetools": "7.1.7",
+    "faiss": "1.15.0",
+    "machine": "arm64",
+    "numpy": "2.5.2",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "psutil": "7.2.2",
+    "python": "3.12.13",
+    "sqlalchemy": "2.0.52"
+  },
+  "generated_at_utc": "2026-08-25T21:45:03.051869+00:00",
+  "git": {
+    "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+    "worktree_dirty": false
+  },
+  "identical_trace_verified": true,
+  "overhead_interpretation": "policy_p95_us is the closest policy-only comparison. Total latency and QPS are end-to-end outcomes and include each policy's different hit, miss, admission, rejection, and storage-cleanup mix.",
+  "overhead_vs_lru": {
+    "CARMA": {
+      "policy_p95_us_percent": 24570.428016,
+      "throughput_qps_percent": -0.324102,
+      "total_p50_us_percent": -10.742021,
+      "total_p95_us_percent": 3.179892
+    },
+    "LFU": {
+      "policy_p95_us_percent": 24.254215,
+      "throughput_qps_percent": 1.249253,
+      "total_p50_us_percent": -1.803501,
+      "total_p95_us_percent": -0.036217
+    }
+  },
+  "policies": [
+    "LRU",
+    "LFU",
+    "CARMA"
+  ],
+  "precomputed_embeddings": true,
+  "process_isolation": "one fresh child process and TemporaryDirectory per policy",
+  "resource_measurement": "RSS, CPU times, thread count, and process I/O counters are sampled through psutil. io_counters_available is false, with zero I/O deltas, on platforms where psutil has no per-process I/O API (including macOS).",
+  "run_ids": [
+    "576b9893800bf2fd93ab",
+    "955a3fc931dfe94adeb6",
+    "ed980ddbcfcf2722073f"
+  ],
+  "schema_version": "carma-sqlite-faiss-v1",
+  "storage_cleanup": "EvictionManager thresholds are set to zero in each benchmark manager so LRU/LFU and CARMA physically delete every victim immediately.",
+  "timing_scope": {
+    "policy": "eviction put/get exclusive of nested measured cleanup storage",
+    "search": "SSDataManager.search including normalization and FAISS top_k=1",
+    "storage": "measured SQLite and FAISS read/write/add/delete calls; excludes search",
+    "total": "per request: search, scalar lookup, policy hit or full save",
+    "unaccounted": "Python orchestration, normalization, data conversion, and timer overhead",
+    "verification_and_close": "excluded from request latency; lifecycle resource sample retained"
+  },
+  "top_k": 1,
+  "trace_hash": "0529614b90f4cc4af6b04730dfc5e1f94b1fee1a25b2d17f22d812a5ae1e33f5",
+  "verification": {
+    "every_active_embedding_round_trips_through_faiss": true,
+    "false_hits_required": 0,
+    "scalar_vector_counts_equal": true,
+    "stale_candidates_required": 0
+  }
+}

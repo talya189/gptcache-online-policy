@@ -1,0 +1,406 @@
+{
+  "artifacts": {
+    "aggregate.csv": "64974947bacd35dace1661a9ced515990ffcb131fc353b7d9ae6d13afddb564c",
+    "runs.csv": "fc049a34792fd3f144e20861b00b6552fea2ca5c3896c5f7207704a777bb99db",
+    "validation.csv": "dc121bdea10ad50e3c3e618048ebca1d51383bdbd5da444e81c52edac4bf4098",
+    "validation_runs.csv": "1da8c2855fc7ab87df0ecf6bef2f546449c7e6861d678da1fd9ede92757cd6b3"
+  },
+  "baseline_commit": "c59fb3a6152a4458b2a070ca183b61c4b614095f",
+  "bootstrap_resamples": 10000,
+  "capacity_sweep_capacities": [
+    20,
+    50,
+    200
+  ],
+  "capacity_sweep_design": {
+    "note": "Five paired seeds are reused at every capacity; the pollution working set remains fixed at 0.8 * 100.",
+    "status": "exploratory",
+    "trace_capacity": 100,
+    "trace_fixed_across_cache_capacities": true
+  },
+  "capacity_sweep_included": true,
+  "capacity_sweep_seeds": [
+    20260901,
+    20260902,
+    20260903,
+    20260904,
+    20260905
+  ],
+  "catalog": {
+    "cells_per_topic": 4,
+    "concept_count": 4800,
+    "concepts_per_cell": 200,
+    "construction": "Orthogonal cell-local feature blocks are reused across topics; within-topic hierarchy cosines remain exact.",
+    "embedding_dimension": 834,
+    "feature_weights": {
+      "cell": 0.16,
+      "concept": 0.04,
+      "near_group": 0.08,
+      "topic": 0.72
+    },
+    "implementation": "CompactCatalog",
+    "measured_cosine_ranges": {
+      "deliberate_twins": {
+        "max": 0.9600000381,
+        "min": 0.9600000381
+      },
+      "different_topic": {
+        "max": 0.1200000048,
+        "min": 0.0
+      },
+      "same_cell_non_twins": {
+        "max": 0.8800000548,
+        "min": 0.8800000548
+      },
+      "same_topic_different_cell": {
+        "max": 0.7200000286,
+        "min": 0.7200000286
+      }
+    },
+    "pre_test_scalability_amendment": {
+      "comparability": "Within-topic 0.72/0.88/0.96 geometry is preserved. Different topics can share at most 0.12, below the smallest clustering threshold of 0.70.",
+      "rationale": "The global one-hot catalog grows to more than 8,000 dimensions for a 10k pollution trace. Compact blocks make the CPU-only full protocol tractable.",
+      "status": "frozen before the full inferential test"
+    },
+    "topics": 6,
+    "trace_builders": "benchmarks.carma.synthetic.build_trace"
+  },
+  "environment": {
+    "executable": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/.venv/bin/python",
+    "machine": "arm64",
+    "packages": {
+      "cachetools": "7.1.7",
+      "numpy": "2.5.2",
+      "pytest": "9.1.1",
+      "scipy": "1.16.3"
+    },
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.13",
+    "python_hash_seed": "0",
+    "python_implementation": "CPython"
+  },
+  "experiment_identity": {
+    "experiment_contract_path": "docs/project/experiment-contract.md",
+    "experiment_contract_sha256": "7a97eb9ee4891855b1a1025fbe5de703d6c73bc9c1c44968a8ffe9c1c742d776",
+    "git_head_commit": "28129f0b9785232827e741c0e2ff2bb96cc19423",
+    "git_status_at_start": [],
+    "git_worktree_clean_at_start": true,
+    "source_sha256": {
+      "benchmarks/carma/full_experiment.py": "f0520e18e09a76fdaaf77c6f00b0e3d2ea9dc71b2eb7db9bcd137979e2dc4dcd",
+      "benchmarks/carma/runner.py": "8a477c861dffcad8af9e2bbeeb211c4a8a4e859b5f64445f2cda70deef8edfa9",
+      "benchmarks/carma/statistics.py": "87d1e542eabbf7609cfcda5942342096026f6d5cc64e03aeb2c266591adb682d",
+      "benchmarks/carma/synthetic.py": "27dc87690d60dba13c520b31de5177cdb84d0673d4210057dc6ad1b3657b6422",
+      "gptcache/manager/eviction/carma.py": "1d2babec766c2888b9c668c890bc3a35494537594220bddcc5b0c8e474250c11"
+    }
+  },
+  "ghost_support_threshold": 1.5,
+  "hard_negative_diagnostic": {
+    "inferential_role": "exploratory",
+    "policies": [
+      "LRU",
+      "LFU",
+      "CARMA",
+      "CARMA_NO_CLUSTER"
+    ],
+    "rationale": "Distinct-answer twins at cosine 0.96 must exercise false-hit accounting on one identical paired trace per seed.",
+    "requests_per_seed": 200,
+    "seeds": [
+      20261001,
+      20261002,
+      20261003
+    ],
+    "selection_input": false,
+    "threshold": 0.95,
+    "workload": "novel"
+  },
+  "hit_threshold": 0.97,
+  "hit_threshold_role": "Confirmatory synthetic retrieval threshold. Its zero-FHR check is an implementation invariant, not the substantive semantic-safety claim.",
+  "inferential_test_run": true,
+  "metrics": [
+    "valid_hit_rate",
+    "false_hit_rate",
+    "opportunity_recall",
+    "safe_token_saving_ratio",
+    "scan_return_valid_hit_rate",
+    "shift_recovery_lag_mean_requests"
+  ],
+  "mode": "full",
+  "no_decay_ablation_degenerate": false,
+  "no_decay_ablation_executed": true,
+  "no_decay_ablation_included": true,
+  "no_decay_ablation_note": "CARMA_NO_DECAY fixes demand_half_life to infinity.",
+  "no_decay_ablation_requested": true,
+  "policy_flag_ablations": {
+    "CARMA_NO_ADMISSION": {
+      "admission_enabled": false
+    },
+    "CARMA_NO_QUOTA": {
+      "quota_enabled": false
+    }
+  },
+  "policy_flag_ablations_included": true,
+  "pre_test_protocol_amendments": {
+    "status": "frozen before any full inferential test seed was run",
+    "validation_grid": {
+      "amended_cell_thresholds": [
+        0.95,
+        0.97
+      ],
+      "amended_configuration_count": 96,
+      "previous_cell_threshold": 0.88,
+      "previous_configuration_count": 48,
+      "rationale": "The 0.95/0.97 diagnostic grid was declared after CI exposed cell over-merging and before test traces opened."
+    },
+    "validation_requests": {
+      "amended": 2000,
+      "previous": 5000,
+      "rationale": "At 96 configurations, three seeds, and three workloads, 2,000 requests produce 1,728,000 validation replays; 5,000 would produce 4,320,000. The amendment reduces CPU replay work by 60% while retaining all three seeds."
+    }
+  },
+  "protocol_preflight": {
+    "capacity": 100,
+    "phase_shift_counts": {
+      "shift-0": 2000,
+      "shift-1": 2000,
+      "shift-2": 2000,
+      "shift-3": 2000,
+      "shift-4": 2000
+    },
+    "pollution_counts": {
+      "scan-return": 3000,
+      "scan-unique": 4000,
+      "scan-warm": 3000
+    },
+    "pollution_unique_concepts": 4000,
+    "request_count": 10000,
+    "seed": 20260000,
+    "seed_disjoint_from_validation_test_and_diagnostic": true,
+    "status": "passed_before_validation",
+    "trace_hashes": {
+      "phase_shift": "b842e556ef7704183123bd9a5685b0728cdc5c6d4ab9646dbcc22f2e7427ec4d",
+      "pollution_scan": "fc9675ed807667dd08a8e08c0953bcb8dc56bfc2ffdc88c772560531ee91246f",
+      "stationary": "1d755c6d70b8d2b3f72346bf49103dde9f8799771664183f1483fde982befdbe"
+    }
+  },
+  "schema_version": "carma-full-experiment-v2",
+  "seeds_are_disjoint": true,
+  "selected_config": {
+    "cell_threshold": 0.97,
+    "demand_half_life": 500.0,
+    "quota_strength": 1.0,
+    "topic_threshold": 0.7
+  },
+  "selected_config_id": "2976a9153db4de63",
+  "selection_rule": "Maximize mean per-trace VHR divided by the best validation VHR for that workload/seed, subject to total false_hits == 0; ties use ascending topic_threshold, cell_threshold, half-life rank, and quota_strength.",
+  "selection_uses_test_results": false,
+  "semantic_safety_gate": "Held-out QQP precision at its independently calibrated threshold; the synthetic 0.95 diagnostic is not used for model selection.",
+  "statistics": {
+    "confidence_interval": "deterministic percentile bootstrap",
+    "confidence_level": 0.95,
+    "confirmatory_scope": "Only primary-test whole-trace VHR and pollution return-phase VHR comparisons against LRU, LFU, and the per-seed best baseline are confirmatory.",
+    "effect_size": "matched-pairs rank-biserial; positive means CARMA is higher and is beneficial except for false-hit rate and recovery lag",
+    "exploratory_scope": "All other comparison p-values are unadjusted exploratory diagnostics.",
+    "multiple_testing": "Holm adjustment over whole-trace primary VHR and pollution return-phase VHR comparisons against LRU, LFU, and the per-seed best baseline",
+    "paired_test": "exact two-sided Wilcoxon signed-rank",
+    "pairing_keys": [
+      "workload",
+      "capacity",
+      "seed"
+    ],
+    "sampling_unit": "independent seed"
+  },
+  "synthetic_success_gates": {
+    "claimable": true,
+    "evaluated_capacity": 100,
+    "gate_3_phase_shift_vhr": {
+      "observed_ci_high": 0.05088,
+      "observed_ci_low": 0.04677,
+      "observed_delta": 0.04885,
+      "observed_holm_p": 0.0234375,
+      "passes": true,
+      "required_ci_low_strictly_above": 0.0,
+      "required_delta": 0.02,
+      "required_holm_p_at_most": 0.05
+    },
+    "gate_4_scan_return_vhr": {
+      "observed_ci_high": 0.000166665,
+      "observed_ci_low": 0.0,
+      "observed_delta": 6.6666e-05,
+      "observed_holm_p": 1.0,
+      "passes": false,
+      "required_ci_low_strictly_above": 0.0,
+      "required_delta": 0.05,
+      "required_holm_p_at_most": 0.05
+    },
+    "gate_5_stationary_nonregression": {
+      "observed_ci_high": 0.07709025,
+      "observed_ci_low": 0.06572,
+      "observed_delta": 0.07122,
+      "passes": true,
+      "required_ci_low_at_least": -0.01
+    },
+    "gate_6_token_saving_nonregression": {
+      "passes": true,
+      "required_each_workload_ci_low_at_least": -0.005,
+      "workloads": {
+        "phase_shift": {
+          "observed_ci_high": 0.0547527647,
+          "observed_ci_low": 0.0500882964,
+          "observed_delta": 0.052513031
+        },
+        "pollution_scan": {
+          "observed_ci_high": 3.6978e-05,
+          "observed_ci_low": 0.0,
+          "observed_delta": 1.491e-05
+        },
+        "stationary": {
+          "observed_ci_high": 0.1044318435,
+          "observed_ci_low": 0.0864129521,
+          "observed_delta": 0.095032395
+        }
+      }
+    },
+    "scope": "Synthetic gates 3-6 only; correctness, QQP safety, system overhead, and Docker reproducibility are adjudicated elsewhere.",
+    "status": "inferential"
+  },
+  "test_capacity": 100,
+  "test_requests": 10000,
+  "test_seeds": [
+    20260901,
+    20260902,
+    20260903,
+    20260904,
+    20260905,
+    20260906,
+    20260907,
+    20260908,
+    20260909,
+    20260910
+  ],
+  "trace_hashes": {
+    "capacity_sweep/c20/phase_shift/20260901": "12f4d47c01772a0fbea40561b7785dc022dac42fad6f871b9f0faec3d52d9819",
+    "capacity_sweep/c20/phase_shift/20260902": "63228e686ce439ddfffb26b1f101ee07e9ade8c733bf6d57487b0c3c71b98e54",
+    "capacity_sweep/c20/phase_shift/20260903": "0d49568f6f9573c105455f2750d2740c4b8c749d0f70bb5966a5a4b3a74c3ba0",
+    "capacity_sweep/c20/phase_shift/20260904": "7bdfac164be1e5de8f9b7aff405178f34440dd325f2042cf3ef7bc2c2b350792",
+    "capacity_sweep/c20/phase_shift/20260905": "38939b8efe91a6e78fe85b80e78b662885812ccb1cb551e310db83bc3a9eba89",
+    "capacity_sweep/c20/pollution_scan/20260901": "b907ae74d62efb16d0edd971cf59414957ae5165365dac6ea44abdc55b24fe24",
+    "capacity_sweep/c20/pollution_scan/20260902": "bd37c54a996e64686adb5387c1707213768c3ca65f5478e6f87dfdf1ace1249c",
+    "capacity_sweep/c20/pollution_scan/20260903": "2e783243ddaad7d4dd7594420d07dacd9193c15ab2dc0f8c3702dec8b4ed89a4",
+    "capacity_sweep/c20/pollution_scan/20260904": "c4a0a02deaaaecb2783800f6d5a443d457825fd56ccce4fc262d4af90b41d7c8",
+    "capacity_sweep/c20/pollution_scan/20260905": "0fa6d3adfead255147fe857bca6f6daa716fcec745387369bae2c804171c3c5a",
+    "capacity_sweep/c20/stationary/20260901": "7f3a93e37d7e7010fc8b96d1f08ad6db5165c5979c405059d78a870f6ffcd910",
+    "capacity_sweep/c20/stationary/20260902": "46910714c951f6fbbc88236ddffad29f8d953c012a39ca17f76eb1f1739d97e0",
+    "capacity_sweep/c20/stationary/20260903": "a14ee464e7b0c1b1d7227890b71cf8678d10fd53c0ef3b3ff469830070a8adc1",
+    "capacity_sweep/c20/stationary/20260904": "d617955aa4b50b89a3c31a0348f375a374ecfbbb0f4c12e3a7382ccab84658a8",
+    "capacity_sweep/c20/stationary/20260905": "71801167b7fcf28bf68a83541c75a93c367b79240227c9997b39382b7c891f74",
+    "capacity_sweep/c200/phase_shift/20260901": "12f4d47c01772a0fbea40561b7785dc022dac42fad6f871b9f0faec3d52d9819",
+    "capacity_sweep/c200/phase_shift/20260902": "63228e686ce439ddfffb26b1f101ee07e9ade8c733bf6d57487b0c3c71b98e54",
+    "capacity_sweep/c200/phase_shift/20260903": "0d49568f6f9573c105455f2750d2740c4b8c749d0f70bb5966a5a4b3a74c3ba0",
+    "capacity_sweep/c200/phase_shift/20260904": "7bdfac164be1e5de8f9b7aff405178f34440dd325f2042cf3ef7bc2c2b350792",
+    "capacity_sweep/c200/phase_shift/20260905": "38939b8efe91a6e78fe85b80e78b662885812ccb1cb551e310db83bc3a9eba89",
+    "capacity_sweep/c200/pollution_scan/20260901": "b907ae74d62efb16d0edd971cf59414957ae5165365dac6ea44abdc55b24fe24",
+    "capacity_sweep/c200/pollution_scan/20260902": "bd37c54a996e64686adb5387c1707213768c3ca65f5478e6f87dfdf1ace1249c",
+    "capacity_sweep/c200/pollution_scan/20260903": "2e783243ddaad7d4dd7594420d07dacd9193c15ab2dc0f8c3702dec8b4ed89a4",
+    "capacity_sweep/c200/pollution_scan/20260904": "c4a0a02deaaaecb2783800f6d5a443d457825fd56ccce4fc262d4af90b41d7c8",
+    "capacity_sweep/c200/pollution_scan/20260905": "0fa6d3adfead255147fe857bca6f6daa716fcec745387369bae2c804171c3c5a",
+    "capacity_sweep/c200/stationary/20260901": "7f3a93e37d7e7010fc8b96d1f08ad6db5165c5979c405059d78a870f6ffcd910",
+    "capacity_sweep/c200/stationary/20260902": "46910714c951f6fbbc88236ddffad29f8d953c012a39ca17f76eb1f1739d97e0",
+    "capacity_sweep/c200/stationary/20260903": "a14ee464e7b0c1b1d7227890b71cf8678d10fd53c0ef3b3ff469830070a8adc1",
+    "capacity_sweep/c200/stationary/20260904": "d617955aa4b50b89a3c31a0348f375a374ecfbbb0f4c12e3a7382ccab84658a8",
+    "capacity_sweep/c200/stationary/20260905": "71801167b7fcf28bf68a83541c75a93c367b79240227c9997b39382b7c891f74",
+    "capacity_sweep/c50/phase_shift/20260901": "12f4d47c01772a0fbea40561b7785dc022dac42fad6f871b9f0faec3d52d9819",
+    "capacity_sweep/c50/phase_shift/20260902": "63228e686ce439ddfffb26b1f101ee07e9ade8c733bf6d57487b0c3c71b98e54",
+    "capacity_sweep/c50/phase_shift/20260903": "0d49568f6f9573c105455f2750d2740c4b8c749d0f70bb5966a5a4b3a74c3ba0",
+    "capacity_sweep/c50/phase_shift/20260904": "7bdfac164be1e5de8f9b7aff405178f34440dd325f2042cf3ef7bc2c2b350792",
+    "capacity_sweep/c50/phase_shift/20260905": "38939b8efe91a6e78fe85b80e78b662885812ccb1cb551e310db83bc3a9eba89",
+    "capacity_sweep/c50/pollution_scan/20260901": "b907ae74d62efb16d0edd971cf59414957ae5165365dac6ea44abdc55b24fe24",
+    "capacity_sweep/c50/pollution_scan/20260902": "bd37c54a996e64686adb5387c1707213768c3ca65f5478e6f87dfdf1ace1249c",
+    "capacity_sweep/c50/pollution_scan/20260903": "2e783243ddaad7d4dd7594420d07dacd9193c15ab2dc0f8c3702dec8b4ed89a4",
+    "capacity_sweep/c50/pollution_scan/20260904": "c4a0a02deaaaecb2783800f6d5a443d457825fd56ccce4fc262d4af90b41d7c8",
+    "capacity_sweep/c50/pollution_scan/20260905": "0fa6d3adfead255147fe857bca6f6daa716fcec745387369bae2c804171c3c5a",
+    "capacity_sweep/c50/stationary/20260901": "7f3a93e37d7e7010fc8b96d1f08ad6db5165c5979c405059d78a870f6ffcd910",
+    "capacity_sweep/c50/stationary/20260902": "46910714c951f6fbbc88236ddffad29f8d953c012a39ca17f76eb1f1739d97e0",
+    "capacity_sweep/c50/stationary/20260903": "a14ee464e7b0c1b1d7227890b71cf8678d10fd53c0ef3b3ff469830070a8adc1",
+    "capacity_sweep/c50/stationary/20260904": "d617955aa4b50b89a3c31a0348f375a374ecfbbb0f4c12e3a7382ccab84658a8",
+    "capacity_sweep/c50/stationary/20260905": "71801167b7fcf28bf68a83541c75a93c367b79240227c9997b39382b7c891f74",
+    "hard_negative_diagnostic/c100/novel/20261001": "8085e3c53cff14ad7992b2e039f75f476d04967ec8f67da8016b0b1737a4978d",
+    "hard_negative_diagnostic/c100/novel/20261002": "00c72cea610460e2d93812322dbae2f9725a5082f3dcf138fc9cc05d491190a3",
+    "hard_negative_diagnostic/c100/novel/20261003": "8cce31bdcd636dbed7d7d24073b3e59326c5aa718aa09a59d2443f3b8825c24b",
+    "primary_test/c100/phase_shift/20260901": "12f4d47c01772a0fbea40561b7785dc022dac42fad6f871b9f0faec3d52d9819",
+    "primary_test/c100/phase_shift/20260902": "63228e686ce439ddfffb26b1f101ee07e9ade8c733bf6d57487b0c3c71b98e54",
+    "primary_test/c100/phase_shift/20260903": "0d49568f6f9573c105455f2750d2740c4b8c749d0f70bb5966a5a4b3a74c3ba0",
+    "primary_test/c100/phase_shift/20260904": "7bdfac164be1e5de8f9b7aff405178f34440dd325f2042cf3ef7bc2c2b350792",
+    "primary_test/c100/phase_shift/20260905": "38939b8efe91a6e78fe85b80e78b662885812ccb1cb551e310db83bc3a9eba89",
+    "primary_test/c100/phase_shift/20260906": "74633b58c2a8bf4eeee10b82cd5f3643de2344eaf33bbc9d6239a6fc2201b423",
+    "primary_test/c100/phase_shift/20260907": "253c0c4443da1b4c95fdc136c445af604c1a64b49abd24f2eb27a2d0e37db1b0",
+    "primary_test/c100/phase_shift/20260908": "5e6821eab8b179d6efd5c6503fd1e108d4fa42734261e050e7684dccdb4f7c2e",
+    "primary_test/c100/phase_shift/20260909": "07d195c007b002b316d4a0a216a4a99f2914703061d70e433ccb15f51ccae788",
+    "primary_test/c100/phase_shift/20260910": "3006bd1c11329bcdda3bfd7b2dc530f7f25ad3f4d862126cc6efb28011efbf1d",
+    "primary_test/c100/pollution_scan/20260901": "b907ae74d62efb16d0edd971cf59414957ae5165365dac6ea44abdc55b24fe24",
+    "primary_test/c100/pollution_scan/20260902": "bd37c54a996e64686adb5387c1707213768c3ca65f5478e6f87dfdf1ace1249c",
+    "primary_test/c100/pollution_scan/20260903": "2e783243ddaad7d4dd7594420d07dacd9193c15ab2dc0f8c3702dec8b4ed89a4",
+    "primary_test/c100/pollution_scan/20260904": "c4a0a02deaaaecb2783800f6d5a443d457825fd56ccce4fc262d4af90b41d7c8",
+    "primary_test/c100/pollution_scan/20260905": "0fa6d3adfead255147fe857bca6f6daa716fcec745387369bae2c804171c3c5a",
+    "primary_test/c100/pollution_scan/20260906": "d1e429e1f34e50fdddd90d6d7a1cba24de7983ab86bed60873e17a1261feda33",
+    "primary_test/c100/pollution_scan/20260907": "0b2d8d9d6bab61080028695ea0ce5868f737f45db7ddc1d6d097e8989150e21c",
+    "primary_test/c100/pollution_scan/20260908": "f4e337dc44b6acbfb18b7a440e3fcffbb6088fbc6580137779c17b2fd0daa2c2",
+    "primary_test/c100/pollution_scan/20260909": "2e3d89f3add2a453faaa1db75f86b5227be3b89e5b1855958cd67b561e770d70",
+    "primary_test/c100/pollution_scan/20260910": "de607bb718ecbce0cfd53ff689a2b3dec2d71774d4babe62ff9e49ef40155708",
+    "primary_test/c100/stationary/20260901": "7f3a93e37d7e7010fc8b96d1f08ad6db5165c5979c405059d78a870f6ffcd910",
+    "primary_test/c100/stationary/20260902": "46910714c951f6fbbc88236ddffad29f8d953c012a39ca17f76eb1f1739d97e0",
+    "primary_test/c100/stationary/20260903": "a14ee464e7b0c1b1d7227890b71cf8678d10fd53c0ef3b3ff469830070a8adc1",
+    "primary_test/c100/stationary/20260904": "d617955aa4b50b89a3c31a0348f375a374ecfbbb0f4c12e3a7382ccab84658a8",
+    "primary_test/c100/stationary/20260905": "71801167b7fcf28bf68a83541c75a93c367b79240227c9997b39382b7c891f74",
+    "primary_test/c100/stationary/20260906": "fedbfc541b18a3978398313715d137d274869766c1bbb8f22ed973224153d755",
+    "primary_test/c100/stationary/20260907": "9b4ceb57860cc3b79a0b6929370853782bb1ed5086e15b3a7d1f99119508cfca",
+    "primary_test/c100/stationary/20260908": "4090830a36de5cee31d0b94e4eee116b3614629f09f21e7e4e16f53618dfa7d9",
+    "primary_test/c100/stationary/20260909": "4005b647069597ed5bf085e78b45267bd38c72a42b182919ccb36f03881538cb",
+    "primary_test/c100/stationary/20260910": "e3fdc6a798dbf88429868e6eec8d6000ec0e1bc77646c5da1cb909601808abe8",
+    "validation/phase_shift/20260825": "99c899123caeaed41b3977076f025447548335be296044f6cc11b5a85ae06537",
+    "validation/phase_shift/20260826": "81de43b4419be8350ab456efbc0590d7672b9d9fc9439833cad486f9e13de9d3",
+    "validation/phase_shift/20260827": "d58deee8062e8beced482a883a23203f8ae79ca0d6d8b7efcc066e2dc76d792c",
+    "validation/pollution_scan/20260825": "401d4554518b80a7e46a277848c515e5d042e38e7b4f7fe2bebc202dce519f8a",
+    "validation/pollution_scan/20260826": "a6d4cdc2f0b1274344df473a47e4a0ebf7d0be01745243478ce6a21f66c96f05",
+    "validation/pollution_scan/20260827": "5aa43df31ddfecb807f32532d3ed8705ff40dc4b8b5ce8ca9c2a38ba1d11e4e8",
+    "validation/stationary/20260825": "9374588d431b2b5f65c52ae4b5d560f1a6e4357c25a0d1070401790d8e640f14",
+    "validation/stationary/20260826": "a8c33eaf5ac6a184a63ecbb102a95613c22bc664663c58feb40b6ef2b705a884",
+    "validation/stationary/20260827": "9ed7b655432fa9c3c9fee5e68bb4be7779bc68cfc562fdc3fd755d27b236bdde"
+  },
+  "validation_capacity": 100,
+  "validation_grid": {
+    "amendment": "Cell thresholds 0.95 and 0.97 were fixed before test as a diagnostic response to CI cell over-merging.",
+    "cell_threshold": [
+      0.95,
+      0.97
+    ],
+    "configuration_count": 96,
+    "demand_half_life": [
+      100.0,
+      500.0,
+      2000.0,
+      "infinity"
+    ],
+    "quota_strength": [
+      0.0,
+      0.5,
+      1.0,
+      2.0
+    ],
+    "topic_threshold": [
+      0.7,
+      0.8,
+      0.9
+    ]
+  },
+  "validation_requests": 2000,
+  "validation_seeds": [
+    20260825,
+    20260826,
+    20260827
+  ],
+  "workloads": [
+    "stationary",
+    "phase_shift",
+    "pollution_scan"
+  ]
+}

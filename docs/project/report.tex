@@ -1,0 +1,642 @@
+\documentclass[10pt,letterpaper]{article}
+
+\usepackage[margin=0.72in,headheight=14pt]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\graphicspath{{../../}}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage[section]{placeins}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+
+\definecolor{carma}{HTML}{1769AA}
+\definecolor{ink}{HTML}{20252B}
+\definecolor{muted}{HTML}{5D6670}
+\definecolor{pass}{HTML}{237A45}
+\definecolor{fail}{HTML}{B6423C}
+\definecolor{pending}{HTML}{8A6500}
+\hypersetup{colorlinks=true,linkcolor=carma,urlcolor=carma,citecolor=carma}
+\urlstyle{tt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlist{nosep,leftmargin=1.4em}
+\renewcommand{\arraystretch}{1.10}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{CARMA for GPTCache}
+\rhead{Final Project Report}
+\cfoot{\thepage}
+
+\newcommand{\passmark}{\textcolor{pass}{\textbf{PASS}}}
+\newcommand{\failmark}{\textcolor{fail}{\textbf{FAIL}}}
+\newcommand{\pendingmark}{\textcolor{pending}{\textbf{PENDING}}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\reportfigure}[3]{%
+  \begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{#1}
+    \caption{#2}
+    \label{#3}
+  \end{figure}}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{0.55in}
+  {\Huge\bfseries CARMA: Online Cluster-Adaptive Eviction for GPTCache\par}
+  \vspace{0.18in}
+  {\Large Cluster-Adaptive Reuse and Miss-pressure Admission\par}
+  \vspace{0.42in}
+  {\large Matan Goldfarb\par}
+  \vspace{0.10in}
+  {\normalsize Final Project Report --- August 2026\par}
+  \vspace{0.45in}
+
+  \begin{minipage}{0.90\textwidth}
+  \color{ink}
+  \textbf{Executive result.} I added an opt-in, CPU-only eviction policy to
+  GPTCache that learns bounded semantic topics and paraphrase cells online,
+  adapts their quotas with decayed demand and miss pressure, and rejects weak
+  one-shot admissions. The implementation preserves the existing LRU default
+  and aligns SQLite and FAISS deletion through vector-first cleanup, targeted
+  rollback, and fail-closed reconciliation.
+
+  On ten paired 10,000-request seeds at capacity 100, CARMA improved
+  category-shift valid-hit rate by \textbf{4.885 percentage points} over the
+  per-seed stronger LRU/LFU baseline (95\% paired bootstrap CI
+  [4.677, 5.088], Holm-adjusted $p=0.0234$). It also passed stationary
+  non-regression and token-saving gates. Five fresh SQLite/FAISS processes per
+  policy showed worst ratios across seeds of 1.032$\times$ LRU for
+  post-embedding cache-path p95 latency, 0.997$\times$ LRU for throughput, and
+  1.043$\times$ LRU for sampled peak RSS.
+
+  The preregistered scan-return gate \textbf{failed}: CARMA returned
+  30,000/30,000 valid hits, but LFU already returned 29,998/30,000, leaving
+  only +0.0067 percentage points rather than the required +5.0. This report
+  retains that negative result and distinguishes measured evidence from
+  protocol deviations.
+  \end{minipage}
+
+  \vfill
+  \begin{tabular}{@{}ll@{}}
+    Software baseline & GPTCache commit \code{c59fb3a6152a4458b2a070ca183b61c4b614095f} \\
+    Primary paper & SCALM, arXiv:2406.00025v1 \\
+    Feature branch & \code{feature/online-cluster-aware-cache} \\
+    Primary policy config & topic .70, cell .97, half-life 500, quota strength 1.0 \\
+  \end{tabular}
+\end{titlepage}
+
+\section{Introduction and related work}
+
+Semantic caches store responses under vector representations of queries and
+reuse an answer when a later query is sufficiently similar. GPTCache provides
+a modular open-source implementation: embeddings, vector search, similarity
+evaluation, scalar/vector storage, and eviction can be configured separately
+\cite{gptcache-paper}. At the selected commit, the in-memory manager offers
+global LRU, LFU, FIFO, and random replacement over opaque row identifiers.
+Those policies know recency or frequency, but not whether several residents
+cover one redundant paraphrase region or whether a miss belongs to a growing
+topic.
+
+SCALM motivates semantic structure as a cache-management signal. It analyzes
+MOSS and LMSYS conversations, derives hierarchical semantic patterns, ranks
+them using hit/token-saving evidence, and reports large relative gains over
+GPTCache baselines \cite{scalm}. Its pattern discovery is corpus-oriented. The
+question here is deliberately different:
+
+\begin{quote}
+Can a bounded policy discover useful semantic structure \emph{during} the
+request stream, without offline ranking, a learned model, token cost as an
+input, or a paid LLM call?
+\end{quote}
+
+This question leads to three engineering requirements. First, answer
+correctness must remain controlled by GPTCache's retrieval threshold; a policy
+cluster may guide retention but may never declare a response correct. Second,
+all state must remain bounded by cache capacity rather than trace length.
+Third, eviction must remove scalar and vector records together so a rejected
+FAISS vector cannot shadow a valid neighbor at \code{top\_k=1}.
+
+\subsection*{Contribution and claim boundary}
+
+The contribution is CARMA, a deterministic online policy plus backward-
+compatible GPTCache integration, failure-safe cleanup, restart reconstruction,
+tests, and a reproducible evaluation pipeline. The results support an adaptive
+phase-shift benefit; every individual system diagnostic remains within its
+numerical limit, while formal Gate 7 is pending. They do \emph{not}
+support the preregistered claim of a five-point return-phase advantage over the
+stronger scan baseline.
+
+\clearpage
+\section{Extension design}
+
+\subsection{State and online clustering}
+
+Each admitted entry stores a topic, a fine-grained semantic cell, insertion and
+last-hit ticks, and decayed hit mass. Topics retain normalized centroids,
+resident IDs, demand, and miss mass. Cells retain centroids, residents,
+support, and last observation. The bounds are
+$\min(64,C)$ topics and $2C$ cells for capacity $C$.
+
+On a miss, the normalized embedding joins the highest-cosine topic above
+\code{topic\_threshold}, or creates a bounded topic. The same rule assigns a
+cell using \code{cell\_threshold}. Centroids use a normalized exponential
+moving average. Ties always choose the lowest stable state ID. Low-support
+empty cells remain temporarily as bounded ghost history, allowing a second
+similar miss to challenge an incumbent even if the first candidate was
+rejected.
+
+One logical tick occurs per cache hit or inserted miss. A statistic $x$ last
+updated at $t_0$ decays lazily as
+\[
+  x(t)=x(t_0)\,2^{-(t-t_0)/H},
+\]
+where $H$ is \code{demand\_half\_life}; $H=\infty$ disables decay. Lazy decay
+keeps the common hit path constant-time.
+
+\subsection{Quotas, value, and admission}
+
+For topic $c$, recent miss pressure and quota weight are
+\[
+  p_c=\frac{m_c+1}{d_c+2},\qquad
+  w_c=(d_c p_c+\epsilon)^{q},
+\]
+where $m_c$ is miss mass, $d_c$ is demand, and $q$ is
+\code{quota\_strength}. Largest-remainder apportionment produces nonnegative
+integer quotas that sum exactly to capacity. A resident $e$ in cell $s$ has
+retention value
+\[
+  V_e=\frac{\operatorname{support}(s)}{\max(1,|s|)}
+      +0.25\,\operatorname{hitmass}(e).
+\]
+The first term rewards demonstrated semantic coverage and discounts redundant
+residents in the same cell.
+
+Below capacity, every valid candidate is admitted. At capacity, a candidate is
+rejected when its decayed cell support is below 1.5 or its topic quota is zero.
+Otherwise it competes against the weakest eligible resident, either inside its
+topic or in the most over-quota donor topic. Admission requires candidate value
+at least 1.05 times victim value. Victim ties use value, last hit, insertion
+age, and stable ID representation in that order.
+
+\subsection{Complexity and intended trade-off}
+
+Hits are $O(1)$ apart from periodic quota refresh. Miss assignment is
+$O((T+S)D)$ for bounded topics $T$, cells $S$, and dimension $D$; victim
+selection is $O(C)$. CARMA intentionally pays more policy CPU than LRU/LFU in
+exchange for semantic coverage. It should help under phase change and
+pollution, but need not dominate when a simple baseline already retains the
+working set.
+
+\clearpage
+\section{Correctness and GPTCache integration}
+
+CARMA is opt-in; existing callers and the default LRU path are unchanged. The
+factory accepts \code{policy="CARMA"} and binds the storage callback internally,
+avoiding a subtle failure mode in which a prebuilt custom eviction instance is
+not connected to \code{SSDataManager.\_clear}. Insertions pass normalized
+embeddings and persisted metadata through a backward-compatible hook.
+
+\begin{table}[ht]
+\centering
+\begin{tabularx}{\linewidth}{@{}p{0.24\linewidth}X@{}}
+\toprule
+Invariant & Enforcement and test evidence \\
+\midrule
+Count bound & Integer quotas sum to $C$; randomized property sequences assert
+no resident overflow. \\
+Scalar/vector agreement & Victims are deleted from FAISS before scalar
+commit; targeted rollback preserves earlier tombstones and fails closed when
+reconciliation cannot succeed. \\
+Exactly-once callback & Batch victims are deduplicated and filtered against
+final residents before the out-of-lock callback. \\
+Malformed metadata & Missing, non-finite, zero-length, or wrong-dimensional
+embeddings fail safely at full capacity. \\
+Restart & Existing rows are reconstructed with a read-only scalar peek;
+demand/hit mass intentionally relearn from zero. \\
+Determinism & Topic, cell, quota, donor, victim, and ghost-pruning ties each
+have a documented stable ordering. \\
+\bottomrule
+\end{tabularx}
+\caption{Core safety properties exercised by unit, property, failure-path, and
+SQLite/FAISS integration tests.}
+\end{table}
+
+The failure-path suite includes callback exceptions, unhashable and
+representation-colliding IDs, re-admission within one batch, vector-delete
+failure after scalar soft deletion, and close/reopen reconstruction. The
+implementation becomes explicitly unhealthy after unrecoverable cleanup rather
+than continuing with split internal/external state.
+
+\subsection{Validation layers}
+
+The project uses four layers: (1) focused CARMA unit/property tests; (2)
+relevant upstream GPTCache eviction and SQLite/FAISS tests; (3) deterministic
+CI traces with expected schemas/digests; and (4) real SQLite plus FAISS runs in
+fresh child processes. Python 3.12.13 is the primary pinned target; an explicit
+Python 3.8 compatibility slice protects GPTCache's older supported syntax.
+No optional backend may trigger a runtime package installation during
+verification.
+
+\subsection{Restart limitation}
+
+Resident semantic structure is reconstructed from stored embeddings, but
+adaptive demand and hit mass are not persisted. They restart at zero and
+relearn online. Persisting them correctly would require a versioned metadata
+schema and migration rules across GPTCache backends; this is future work, not
+silently simulated state.
+
+\clearpage
+\section{Experimental setup}
+
+The protocol was frozen before the inferential test. Validation and test seeds
+are disjoint, and test results never enter parameter selection. The 96-point
+grid crosses topic thresholds $\{.70,.80,.90\}$, cell thresholds
+$\{.95,.97\}$, half-lives $\{100,500,2000,\infty\}$, and quota strengths
+$\{0,.5,1,2\}$. Three validation seeds and three workloads select the highest
+workload-normalized valid-hit rate subject to zero synthetic false hits. The
+selected configuration is (.70, .97, 500, 1.0).
+
+\begin{table}[ht]
+\centering
+\begin{tabularx}{\linewidth}{@{}p{0.20\linewidth}p{0.32\linewidth}X@{}}
+\toprule
+Workload & Frozen construction & Purpose \\
+\midrule
+Stationary Zipf & 10,000 requests, exponent 1.2, 15\% one-shot & Steady skew
+and non-regression. \\
+Category shift & Five 2,000-request phases; 80\% demand moves & Adaptation to
+new hot topics and recovery lag. \\
+Pollution scan & 3,000 warm, 4,000 unique, 3,000 return & Scan resistance and
+working-set recovery. \\
+MOSS novel-long & Longest quartile, token-bucket stratified, 200 unique &
+Expected-miss overhead and recorded-response/token accounting. \\
+QQP safety & Component-disjoint calibration/test split & Human-labeled semantic
+precision and false-hit control. \\
+\bottomrule
+\end{tabularx}
+\caption{Primary and safety workloads. Synthetic primary runs use capacity 100
+and ten paired seeds; real system runs use five fresh processes per policy
+(15 policy processes total).}
+\end{table}
+
+A hit is \emph{valid} only if the returned answer ID is allowed by the
+request's ground-truth concept. False hits save zero valid tokens. Primary
+metrics are valid-hit rate (VHR), hit precision, false-hit rate, opportunity
+recall, and safe token-saving ratio. System metrics include request latency
+percentiles, throughput, CPU time, sampled RSS, and storage invariants.
+
+Paired deltas use 10,000-resample seed bootstraps. Confirmatory VHR comparisons
+against LRU, LFU, and the per-seed stronger baseline share an exact Wilcoxon
+Holm family. Capacity sweeps use the same capacity-100 traces at capacities 20,
+50, 100, and 200. Ablations disable clustering, decay, admission, or
+quota-aware eviction separately.
+
+The compact synthetic catalog preserves cosine 0.96 within a cell, 0.88 across
+cells in one topic, 0.72 across topic-local concepts, and at most 0.12 across
+topics. It makes the 10,000-request CPU grid tractable while remaining a
+controlled model, not a natural-language claim.
+
+\clearpage
+\section{Synthetic results}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lrrrc@{}}
+\toprule
+Workload & LRU VHR & LFU VHR & CARMA VHR & CARMA vs. stronger \\
+\midrule
+Stationary & 43.457\% & 47.514\% & \textbf{54.636\%} & +7.122 pp \\
+Category shift & 63.376\% & 52.181\% & \textbf{68.261\%} & +4.885 pp \\
+Pollution scan (whole) & 58.400\% & 59.198\% & \textbf{59.200\%} & +0.002 pp \\
+Pollution return phase & 97.333\% & 99.993\% & \textbf{100.000\%} & +0.0067 pp \\
+\bottomrule
+\end{tabular}
+\caption{Ten-seed means at capacity 100. ``Stronger'' is chosen per seed and
+metric before forming paired differences.}
+\end{table}
+
+Figure~\ref{fig:vhr-deltas} summarizes the primary whole-trace comparisons.
+\reportfigure{artifacts/samples/analysis/vhr-deltas.png}{Primary whole-trace VHR
+difference between CARMA and the per-seed stronger LRU/LFU baseline. Error bars
+are paired 95\% bootstrap intervals.}{fig:vhr-deltas}
+
+The category-shift result passes its preregistered gate: +4.885 pp, CI
+[4.677, 5.088], Holm-adjusted $p=0.0234$. Stationary performance also passes
+the non-regression gate with CI lower bound +6.572 pp. Safe token-saving deltas
+pass in all workloads: stationary +9.503 pp [8.641, 10.443], shift +5.251 pp
+[5.009, 5.475], and pollution +0.0015 pp [0, 0.0037].
+
+Figure~\ref{fig:scan-return} makes the failed margin visible against the frozen
+threshold.
+\reportfigure{artifacts/samples/analysis/scan-return.png}{Return-phase scan
+comparison. CARMA is perfect, but LFU misses only two of 30,000 requests; the
+stronger-baseline delta is far below the preregistered +5.0 pp gate.}
+{fig:scan-return}
+
+This is a substantive failed hypothesis, not a measurement failure. The trace
+demonstrates that CARMA protects the original set, but LFU protects it almost
+equally well. The paired delta is +0.0067 pp, CI [0, 0.0167], Holm $p=1.0$.
+In the separate exploratory 0.95-threshold hard-negative diagnostic, every
+policy produced one deliberate false hit per 200 requests (0.5\% FHR), so the
+CARMA--baseline false-hit difference was zero. That diagnostic tests accounting
+and does not enter configuration selection or the primary threshold-0.97 claim.
+
+\section{Sensitivity and ablations}
+
+Figure~\ref{fig:capacity} shows the exploratory fixed-trace capacity sweep.
+\reportfigure{artifacts/samples/analysis/capacity-curve.png}{Valid-hit rate on
+identical traces while cache capacity changes. Capacity 100 uses ten seeds;
+other exploratory points use five.}{fig:capacity}
+
+CARMA's advantage is largest when capacity is constrained and under category
+shift. Averaging only for descriptive orientation across the three workloads,
+its VHR is 43.49\%, 54.35\%, and 63.97\% at capacities 20, 50, and 200,
+respectively, compared with LRU's 33.16\%, 46.41\%, and 60.74\%.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Policy & Stationary & Category shift & Pollution scan \\
+\midrule
+CARMA & 54.636\% & \textbf{68.261\%} & 59.200\% \\
+No clustering & 54.983\% & 67.874\% & 59.200\% \\
+No decay & \textbf{55.108\%} & 59.980\% & 59.200\% \\
+No admission & 53.025\% & 67.850\% & 55.388\% \\
+No quota eviction & 54.983\% & 67.874\% & 59.200\% \\
+\bottomrule
+\end{tabular}
+\caption{Ablation mean VHR at capacity 100. These are descriptive component
+checks, not an additional confirmatory family.}
+\end{table}
+
+Decay is the clearest adaptive component: removing it loses 8.281 points on
+category shift while slightly helping stationary traffic. Admission matters
+most on the scan workload; disabling it loses 3.812 points. In this synthetic
+geometry, no-clustering and no-quota produce identical observable hit/eviction
+behavior despite different topic counts. Their causal effects are therefore
+not separately identifiable here and should not be over-interpreted.
+
+Recovery-lag evidence is weak: CARMA averages 1,808 requests versus the
+2,000-request censoring limit for both baselines. Yet 31/40 CARMA and all 40
+baseline transitions are censored; exploratory exact Wilcoxon $p=0.0625$.
+
+\section{Real-system, MOSS, and semantic-safety evidence}
+
+The system benchmark uses the actual GPTCache \code{SSDataManager}, SQLite,
+and FAISS path, but replays precomputed vectors from the controlled synthetic
+catalog rather than running \code{paraphrase-albert-onnx}. Each policy runs in
+a fresh process on the same 3,000-request pollution trace, with immediate
+physical deletion and a final round-trip check of every active vector. Across
+five seeds, every run has zero false hits, zero stale candidates, and equal
+final scalar/vector counts.
+
+Figure~\ref{fig:system} separates policy-only work from post-embedding cache-path
+cost.
+\reportfigure{artifacts/samples/analysis/latency-resources.png}{Real
+SQLite/FAISS measurements using precomputed synthetic vectors. Bars are
+five-seed means and circles are individual fresh-process runs. Policy-only
+overhead is shown separately from post-embedding cache-path request cost;
+embedding generation is excluded.}{fig:system}
+\FloatBarrier
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Policy & Mean & p50 & p95 & p99 \\
+\midrule
+LRU & 1.804 ms & 1.032 ms & 3.511 ms & 4.602 ms \\
+LFU & 1.724 ms & 0.953 ms & 3.433 ms & 4.181 ms \\
+CARMA & 1.723 ms & 0.875 ms & 3.469 ms & 3.952 ms \\
+\bottomrule
+\end{tabular}
+\caption{Five-seed means of each fresh process's request-latency summaries.
+The measured scope is the post-embedding cache path using precomputed vectors.}
+\end{table}
+
+CARMA adds roughly 354 $\mu$s to policy-only p95, reflecting bounded cosine
+assignment and victim selection. Post-embedding cache-path p95 nevertheless
+ranges from
+0.936$\times$ to 1.032$\times$ LRU because policies create different hit,
+admission, and storage-cleanup mixes. The worst ratio across seeds is
+0.997$\times$ LRU for throughput and 1.043$\times$ LRU (+4.8 MiB) for sampled
+peak RSS. Mean one-core CPU utilization is 96.9\% for CARMA versus 94.1\% for
+LRU. GPU use is not applicable to this CPU-only path, and macOS did not expose
+portable process I/O byte counters. Every seed satisfies the individual
+numerical checks; formal Gate 7 remains pending because the frozen contract
+omitted an across-seed aggregation rule and specified an ONNX integration
+embedding that this run did not use.
+
+Only each run's mean and quantiles were retained; individual request-latency
+samples were not retained in the integration artifacts. Figure~\ref{fig:system}
+therefore shows the
+cross-seed distribution of p95 summaries, not a reconstructable per-request
+CDF. This is an artifact-granularity limitation despite collecting the frozen
+mean, p50, p95, and p99 metrics in process.
+
+\subsection{Pinned MOSS recorded-response replay}
+
+The CC-BY-4.0 MOSS archive \cite{moss-source} is fixed by repository revision
+and SHA-256. A full
+streaming CRC-verified pass covers 301,332 source conversations and 823,634
+actual turns, then retains the lowest stable-hash 2,048-turn sample. The
+200-request longest-quartile trace contains 557,243 context, prompt, and answer
+tokens. All requests are unique by design, so all 200 are expected misses and
+the exact recorded MOSS answer is replayed; live model calls and false hits are
+both zero. Two runs produce byte-identical manifests, pool, requests, and CSV.
+
+The real archive also exposed 30,000 rows with \code{conversation\_id=-1} and
+2,727 declared-turn-count mismatches. Before producing a result, the parser was
+amended to hash canonical rows for negative sentinel IDs and to treat
+contiguous chat keys as authoritative while retaining both declared and actual
+counts. The final manifest records these anomalies and preserves the separate
+prepare manifest.
+
+\subsection{Held-out QQP safety}
+
+\textbf{Final report build note:} this paragraph and the gate table are filled
+from the checksum-linked QQP \code{result.json} after the pinned ONNX embedding,
+calibration-only threshold selection, and one-shot component-disjoint test.
+No synthetic result may select or alter the QQP threshold.
+
+\begin{table}[ht]
+\centering
+\begin{tabularx}{\linewidth}{@{}p{0.07\linewidth}p{0.14\linewidth}X@{}}
+\toprule
+Gate & Status & Current adjudication \\
+\midrule
+1 & \pendingmark & Clean final verifier artifact not yet linked. \\
+2 & \pendingmark & QQP embedding/evaluation in progress; frozen FHR scope is
+ambiguous. \\
+3 & \passmark & Shift VHR +4.885 pp; CI [4.677, 5.088]; Holm $p=.0234$. \\
+4 & \failmark & Return VHR +0.0067 pp versus required +5.0 pp. \\
+5 & \passmark & Stationary VHR delta CI lower bound +6.572 pp. \\
+6 & \passmark & Safe-token delta CI lower bound meets every workload limit. \\
+7 & \pendingmark & Every precomputed-vector seed meets the diagnostics, but no
+frozen aggregation rule and no ONNX-path run. \\
+8 & \pendingmark & Paired clean-container evidence not yet linked. \\
+\bottomrule
+\end{tabularx}
+\caption{Success-gate status reconciled to the machine-readable audit. Pending
+evidence is not counted as a pass, and the failed preregistered gate is retained.}
+\end{table}
+
+\section{Discussion, protocol audit, and limitations}
+
+\subsection{What the experiments establish}
+
+CARMA's strongest evidence is phase adaptation: decay prevents obsolete
+lifetime popularity from dominating after a topic shift, while topic quotas
+preserve coverage. Admission also protects scan performance. The implementation
+cost is measurable in policy-only latency; every tested seed stays inside the
+diagnostic numerical limits on this CPU/SQLite/FAISS path, but the formal
+system gate remains pending.
+
+The scan gate explains why raw perfection is not enough. CARMA achieves 100\%
+return VHR, but the correct comparator is the stronger paired baseline, not
+LRU alone. LFU is already 99.993\%; the prespecified five-point margin is
+impossible to claim from this trace. A future scan workload should make the hot
+set large enough, or interleave enough recurrent cold items, to distinguish
+coverage policies without changing the gate after observation.
+
+\subsection{Post-execution protocol conformance}
+
+The full bundle's hashes, seed pairing, selected configuration, 480 aggregate
+rows, bootstraps, Wilcoxon tests, and Holm adjustment were independently
+recomputed exactly. The audit also found five deviations that this report does
+not hide:
+
+\begin{enumerate}
+  \item the historical full bundle contains summary CSVs/metadata but not the
+  promised per-request and process-resource JSONL, limiting reconstruction of
+  individual phase events from that bundle alone;
+  \item synthetic policy execution order is fixed rather than randomized;
+  state is isolated and timing is disabled, so this is unlikely to bias VHR;
+  \item synthetic false-hit intervals are seed bootstraps, not Wilson bounds;
+  they must not be cited as the substantive semantic-safety interval; and
+  \item the preregistered scale sweep and secondary negative/ceiling controls
+  were not run. Capacity sweeps and the four component ablations were run; and
+  \item the integration runs used precomputed 2,982-dimensional synthetic
+  vectors rather than the frozen ONNX embedding, so their timing covers only
+  the post-embedding cache path and Gate 7 remains diagnostic.
+\end{enumerate}
+
+The exact historical result remains tied to clean commit
+\code{28129f0b9785232827e741c0e2ff2bb96cc19423}; later tooling changes cannot
+retroactively alter its status. A separate deviation ledger documents impact
+and future-run remediation.
+
+\subsection{External validity}
+
+Synthetic vectors isolate eviction behavior but are not natural language.
+QQP tests pairwise semantic matching, not conversational distribution shift.
+MOSS is an exact-key recorded-response negative control rather than a CARMA
+semantic-policy comparison. System timing comes from one Apple-arm64 machine,
+five seeds, one synthetic embedding geometry, capacity 100, and SQLite/FAISS;
+embedding generation is excluded. Restart loses adaptive counters. These
+boundaries limit generalization but make each claim traceable.
+
+\section{Conclusion and future work}
+
+This project delivers a cleanly factored GPTCache feature branch, an online
+cluster-aware policy, robust cross-store deletion, focused and upstream tests,
+frozen paired experiments, real backend measurements, pinned natural-data
+checks, deterministic analysis, container/CI definitions, and an auditable
+report. The central hypothesis is only partly supported: CARMA is compelling
+under category shift and passes the synthetic stationary VHR non-regression
+gate, while its preregistered scan advantage over the strongest baseline
+fails.
+
+The most valuable next steps are to persist versioned adaptive state, replace
+linear victim scans with per-topic heaps, test more embedding models and cache
+sizes on Linux, design a non-saturated pollution workload before collecting
+new results, and separate quota from clustering effects with traces whose
+topic pressures actually diverge. Any new workload or gate must be frozen
+before looking at its test outcomes.
+
+\section*{Lecturer-criterion audit}
+
+\begin{tabularx}{\linewidth}{@{}p{0.18\linewidth}p{0.13\linewidth}X@{}}
+\toprule
+Criterion & Status & Evidence \\
+\midrule
+Correctness (40\%) & \pendingmark & Unit/property/failure/integration and
+upstream slices are implemented; clean final verifier evidence is pending and
+will be retained under \code{artifacts/samples/verification/}. \\
+Reproducibility (30\%) & \pendingmark & Exact pins, Dockerfile, immutable CI
+actions, and deterministic CI/MOSS/analyzer outputs are implemented; paired
+clean-container evidence is pending. \\
+Performance (15\%) & Mixed & Gates 3, 5, 6 pass; each system seed meets the
+diagnostic checks but Gate 7 is pending; Gate 4 fails. \\
+Clarity (15\%) & Complete & One-page baseline rationale, policy/protocol docs,
+README commands, labeled figures, limitations, and this report. \\
+\bottomrule
+\end{tabularx}
+
+\section*{Appendix: Artifact map}
+
+\begingroup
+\renewcommand{\arraystretch}{0.84}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.43\linewidth}>{\raggedright\arraybackslash}X@{}}
+\toprule
+Artifact & Purpose \\
+\midrule
+\path{gptcache/manager/} & \path{eviction/carma.py} implements CARMA;
+\path{factory.py}, \path{data_manager.py}, and \path{eviction_manager.py} provide
+wiring and cleanup. \\
+\path{tests/unit_tests/eviction/test_carma.py};
+\path{tests/project_tests/} & Unit, property, failure-path, protocol, analyzer,
+and real SQLite/FAISS tests. \\
+\path{docs/project/} & \path{baseline-justification.md},
+\path{baseline-validation.md}, \path{policy-design.md}, \path{experiment-contract.md},
+\path{protocol-deviations.md}, \path{reproducibility.md}, and \path{chart-map.md}. \\
+\path{benchmarks/carma/}; \path{scripts/} & Synthetic, integration, QQP, MOSS,
+statistics, and analysis; benchmark, analyzer, and verifier wrappers. \\
+\path{Dockerfile.project}; \path{.dockerignore}; \path{requirements-*.lock};
+\path{scripts/generate_hashed_locks.py} & Pinned container, allowlisted context,
+hashed dependency locks, and lock generator. \\
+\path{README.md}; \path{.github/workflows/carma-ci.yml} & Installation,
+benchmark how-to, and immutable host/container CI. \\
+\path{artifacts/samples/} & \path{full/}, \path{integration/}, \path{moss/}, and
+\path{qqp/} hold curated raw evidence; \path{analysis/}, \path{verification/},
+\path{README.md}, and \path{SHA256SUMS} hold the audit, figures, checks, inventory,
+and hashes. Full source archives, model files, and embeddings are excluded. \\
+\path{docs/project/completion-audit.md}; \path{docs/project/draft-pr.md};
+\path{docs/project/report.pdf} & Rubric map, unpublished upstream PR draft, and this final
+single-PDF handoff. \\
+\bottomrule
+\end{tabularx}
+\endgroup
+
+\begin{thebibliography}{9}
+\bibitem{gptcache-paper}
+F. Bang. ``GPTCache: An Open-Source Semantic Cache for LLM Applications
+Enabling Faster Answers and Cost Savings.'' \emph{NLP-OSS 2023}, pp. 212--218.
+\href{https://doi.org/10.18653/v1/2023.nlposs-1.24}{doi:10.18653/v1/2023.nlposs-1.24}.
+
+\bibitem{scalm}
+J. Li, C. Xu, F. Wang, I. M. von Riedemann, C. Zhang, and J. Liu.
+``SCALM: Towards Semantic Caching for Automated Chat Services with Large
+Language Models.'' arXiv:2406.00025v1, 2024.
+\href{https://arxiv.org/abs/2406.00025}{arxiv.org/abs/2406.00025}.
+
+\bibitem{moss-source}
+OpenMOSS Team. ``moss-003-sft-data,'' revision
+\code{42e216d3e3fb331c18d5fa6e7cb4f1c53eef24a4}, CC-BY-4.0.
+\href{https://huggingface.co/datasets/OpenMOSS-Team/moss-003-sft-data}{Hugging
+Face dataset repository}.
+
+\bibitem{qqp-source}
+Quora. ``First Quora Dataset Release: Question Pairs.'' 2017.
+\href{https://quoradata.quora.com/First-Quora-Dataset-Release-Question-Pairs}{Quora
+Data release page}.
+\end{thebibliography}
+
+\end{document}

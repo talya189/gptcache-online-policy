@@ -1,0 +1,123 @@
+{
+  "archive": {
+    "archive_path": "downloads/moss-003-sft-with-tools-no-text2image.zip",
+    "archive_sha256": "4d4f57df0dd5ad1442b6c08ca69ec1a59705837bb9813e7aae3bd3a9e3adb085",
+    "archive_size": 392830680,
+    "compression": "deflate",
+    "compression_ratio": 5.8822181587,
+    "member_compressed_size": 392830308,
+    "member_crc32": "34c7d393",
+    "member_crc_verified_during_stream": true,
+    "member_name": "conversations_with_tools_with_inner_instruction_no_text2image_train_all_random_meta0.5_0.1_0.01_moss_0709.jsonl",
+    "member_size": 2310713571
+  },
+  "artifacts": {
+    "pool.jsonl": "3c36be19ff50f2ca9f1e40642b649dac8383959c71087ca5d54f6c00d097fa73",
+    "prepare-manifest.json": "74b3c820aa59b303cbdbe147cff0a29130fb1820455bda9389d87838aca4fd70",
+    "requests.jsonl": "e8f55dbd90677c81884cc8ba55dafbb6d6136e9a2d0b138642de4212ad431c78",
+    "runs.csv": "e87ea3731d8f6962884fdf5afda117e69eda9802d2e46882d52a0489f9affc32"
+  },
+  "ground_truth": {
+    "concept": "SHA-256 of source conversation key, round, and prior context SHA-256. The source conversation key is the declared nonnegative conversation_id, or the canonical-row SHA-256 for a negative sentinel ID.",
+    "policy_clusters_define_correctness": false,
+    "response": "SHA-256 of the exact recorded MOSS field"
+  },
+  "inferential_role": "preregistered novel-long negative control",
+  "limitations": [
+    "This component validates recorded-response and token accounting; it is an exact-key LRU replay, not a semantic embedding run.",
+    "The bounded sample is uniform by stable hash but requires a full streaming scan of the compressed JSONL member."
+  ],
+  "no_live_llm_or_api": true,
+  "pool_sha256": "3c36be19ff50f2ca9f1e40642b649dac8383959c71087ca5d54f6c00d097fa73",
+  "preparation": {
+    "pool_rows": 2048,
+    "raw_conversations": 301332,
+    "raw_turns": 823634,
+    "sampling": {
+      "algorithm": "lowest SHA-256 priorities over all turns",
+      "archive_fully_scanned": true,
+      "identity": "SHA-256(seed, context-sensitive concept_id)",
+      "memory_bound_turns": 2048,
+      "requested_turns": 2048,
+      "seed": 0,
+      "selected_turns": 2048
+    },
+    "schema": {
+      "root_fields": [
+        "conversation_id",
+        "meta_instruction",
+        "num_turns",
+        "chat",
+        "category"
+      ],
+      "turn_fields": [
+        "Human",
+        "Inner Thoughts",
+        "Commands",
+        "Tool Responses",
+        "MOSS"
+      ]
+    },
+    "source_irregularities": {
+      "declared_turn_count_mismatches": 2727,
+      "negative_id_identity_rule": "SHA-256 of canonical source-row JSON; the declared ID is retained",
+      "negative_sentinel_conversation_id_rows": 30000,
+      "turn_count_resolution": "contiguous chat keys turn_1..turn_k are authoritative; the declared num_turns value is retained"
+    },
+    "token_scope": {
+      "answer": "current recorded MOSS field",
+      "context": "meta_instruction plus all complete prior turns",
+      "excluded": "current Inner Thoughts and Commands fields",
+      "prompt": "current Human plus current Tool Responses fields"
+    }
+  },
+  "prepared_manifest_sha256": "74b3c820aa59b303cbdbe147cff0a29130fb1820455bda9389d87838aca4fd70",
+  "replay": {
+    "base_requests": 200,
+    "capacity": 256,
+    "live_model_calls": 0,
+    "miss_behavior": "deliver exact recorded MOSS response",
+    "policy": "RECORDED_RESPONSE_EXACT_LRU",
+    "repeat_passes": 1,
+    "requests": 200,
+    "run_id": "f4c328a8757304c66f24",
+    "seed": 0,
+    "selection": "novel-long",
+    "selection_details": {
+      "answer_token_bucket_counts": {
+        "128": 159,
+        "256": 196,
+        "32": 40,
+        "512": 120
+      },
+      "candidate_rows": 515,
+      "longest_quartile_cutoff_total_tokens": 1819,
+      "selection_order": "stable hash within bucket, round-robin across buckets"
+    },
+    "trace_hash": "6b9de5ed06fb3124cd4b86d4a9d23bfb7ae34854d658996f86f9ce8eb402f430"
+  },
+  "schema_version": "carma-moss-recorded-response-v2",
+  "source": {
+    "archive_sha256": "4d4f57df0dd5ad1442b6c08ca69ec1a59705837bb9813e7aae3bd3a9e3adb085",
+    "archive_size": 392830680,
+    "filename": "moss-003-sft-with-tools-no-text2image.zip",
+    "license": "cc-by-4.0",
+    "member_compressed_size": 392830308,
+    "member_crc32": "34c7d393",
+    "member_name": "conversations_with_tools_with_inner_instruction_no_text2image_train_all_random_meta0.5_0.1_0.01_moss_0709.jsonl",
+    "member_size": 2310713571,
+    "repository": "OpenMOSS-Team/moss-003-sft-data",
+    "resolve_url": "https://huggingface.co/datasets/OpenMOSS-Team/moss-003-sft-data/resolve/42e216d3e3fb331c18d5fa6e7cb4f1c53eef24a4/moss-003-sft-with-tools-no-text2image.zip",
+    "revision": "42e216d3e3fb331c18d5fa6e7cb4f1c53eef24a4",
+    "revision_and_checksum_verified": true,
+    "source_kind": "official"
+  },
+  "stage": "replay",
+  "token_accounting": {
+    "encoding": "cl100k_base",
+    "package": "tiktoken",
+    "pinned_production_requirement": "tiktoken==0.14.0",
+    "test_fixture": false,
+    "version": "0.14.0"
+  }
+}
