@@ -34,7 +34,7 @@ The short version is:
   `cfc7167e7604247432f980ed8fb54bc896364fe9`.
 - Previously verified packaging commit:
   `e1775ccbe9b771182db9784085ebe665656be92e`.
-- Planned/private GitHub destination:
+- Published/private GitHub repository:
   <https://github.com/MatanGoldfarB/gptcache-online-policy>.
 - Result: the implementation and reproducibility work are complete, but the
   research hypothesis is only partly supported. Gates 1, 3, 5, 6, and 8 pass;
@@ -892,10 +892,10 @@ Why this exists: a report needs generated evidence that cannot exist before the
 source has been run, but allowing arbitrary post-verification edits would make
 “tested commit” meaningless.
 
-For this handoff/publication refresh, `handoff.md` belongs in the new source
+For each handoff/publication refresh, `handoff.md` belongs in the new source
 commit `S`; the exact host/container gate is run from that clean commit. The
 curated publication evidence is then added in exactly one permitted child `P`
-under `artifacts/samples/verification/publication-20260826/`, with its own
+under a dated directory in `artifacts/samples/verification/`, with its own
 checksum manifest. At published `HEAD`, the analyzer must report
 `verified_packaging_descendant` for Gates 1 and 8. Discover the exact pair with:
 
@@ -1048,10 +1048,10 @@ The published compact bundle is under `artifacts/samples/`. Verify it with:
 (cd artifacts/samples && shasum -a 256 -c SHA256SUMS)
 ```
 
-Also verify the publication-refresh sub-manifest if present:
+Also verify the current publication-refresh sub-manifest:
 
 ```bash
-(cd artifacts/samples/verification/publication-20260826 && \
+(cd artifacts/samples/verification/publication-20260826-ci-refresh && \
   shasum -a 256 -c SHA256SUMS)
 ```
 
@@ -1277,8 +1277,8 @@ and expected-miss behavior without an API. It is explicitly a negative control.
 
 ## 28. Publication and collaboration state
 
-The intended publication is a **private** GitHub repository because this is
-coursework. The upstream GPTCache remote should remain available as `origin`;
+The project is published as a **private** GitHub repository because this is
+coursework. The upstream GPTCache remote remains available as `origin`;
 the personal submission repository should use a separate remote such as
 `submission` so nobody accidentally pushes to `zilliztech/GPTCache`.
 
@@ -1289,13 +1289,22 @@ origin      https://github.com/zilliztech/GPTCache.git
 submission https://github.com/MatanGoldfarB/gptcache-online-policy.git
 ```
 
-The feature branch and a `main` branch may point at the same final packaging
-commit for an easy landing page, while the full inherited GPTCache history is
-preserved. On a personal GitHub repository, an outside collaborator can receive
+The feature branch and `main` point at the same final packaging commit for an
+easy landing page, the full inherited GPTCache history is preserved, and all
+41 inherited tags are published. On a personal GitHub repository, an outside collaborator can receive
 write/push access but not owner/admin repository-management powers. True admin
 access requires an organization-owned repository. Talya’s invitation therefore
-uses the highest permission actually available on this personal repository and
-remains pending until she accepts it.
+must use the highest permission actually available on this personal repository.
+The email address alone could not be resolved through GitHub's collaborator
+API; the invitation remains pending until her GitHub username is supplied (or
+an authenticated GitHub browser session is used for the email-address flow).
+
+The first hosted Actions run exposed one runner-availability issue before any
+compatibility test executed: GitHub's Python manifest has no 3.8.20 x64 build
+for `ubuntu-22.04`. The project workflow therefore pins the available Python
+3.8.18 build for that floor-version slice. This changes only the hosted
+interpreter patch version; the Python 3.8 compatibility claim and hashed
+dependency lock remain the same.
 
 After publication, verify rather than assume:
 
@@ -1311,21 +1320,21 @@ the requested one.
 
 ## 29. Final handoff checklist
 
-- [ ] `git status` is clean.
-- [ ] Published `HEAD` is the direct packaging child of the exact verified
+- [x] `git status` is clean at handoff.
+- [x] Published `HEAD` is the direct packaging child of the exact verified
   source commit.
-- [ ] Post-packaging analyzer reports `verified_packaging_descendant`.
-- [ ] Gates 1/3/5/6/8 pass, 2/4 fail, and 7 is pending in the current audit.
-- [ ] Curated checksum manifests verify every listed file.
-- [ ] `docs/project/report.pdf` is present, 8--12 pages, and visually checked.
-- [ ] GitHub repository is private and both `main` and feature branch resolve
+- [x] Post-packaging analyzer reports `verified_packaging_descendant`.
+- [x] Gates 1/3/5/6/8 pass, 2/4 fail, and 7 is pending in the current audit.
+- [x] Curated checksum manifests verify every listed file.
+- [x] `docs/project/report.pdf` is present, 8--12 pages, and visually checked.
+- [x] GitHub repository is private and both `main` and feature branch resolve
   to the expected final commit.
 - [ ] Talya has the highest available personal-repository collaborator access,
   or the repository has been moved to an organization if true admin control is
   required.
-- [ ] No API key, credential, raw model weight, oversized raw source archive,
+- [x] No API key, credential, raw model weight, oversized raw source archive,
   or unlicensed data was committed.
-- [ ] Any future modification is treated as a new source/evidence generation.
+- [x] Any future modification is treated as a new source/evidence generation.
 
 If only one lesson is retained from this handoff, it should be this: every
 performance statement in this project is conditional on an exact workload,
