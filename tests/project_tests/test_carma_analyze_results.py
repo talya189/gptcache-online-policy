@@ -1578,6 +1578,7 @@ def test_source_archive_commit_is_bound_to_evidence(tmp_path):
 
 
 def test_source_archive_is_recomputed_from_git(tmp_path, monkeypatch):
+    _bind_analyzer_to_fixture_head(monkeypatch)
     host = _host_verification_fixture(tmp_path / "host")
     monkeypatch.setattr(
         "benchmarks.carma.analyze_results._git_archive_sha256",
