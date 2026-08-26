@@ -105,7 +105,7 @@ counter = TiktokenCounter()
 assert counter.count("offline tokenizer closure") > 0
 """
     result = subprocess.run(
-        [sys.executable, "-I", "-c", program, str(PROJECT_ROOT)],
+        [sys.executable, "-I", "-B", "-c", program, str(PROJECT_ROOT)],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
