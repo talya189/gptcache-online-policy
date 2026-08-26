@@ -26,6 +26,7 @@ def test_docker_context_parent_exceptions_remain_tight():
             for line in dockerignore.read_text(encoding="utf-8").splitlines()
             if line.strip() and not line.lstrip().startswith("#")
         ]
+        assert tuple(active_patterns) == evidence.EXPECTED_DOCKERIGNORE_PATTERNS
         examples_parent = active_patterns.index("!examples/")
         examples_reexclude = active_patterns.index("examples/**")
         examples_benchmark = active_patterns.index("!examples/benchmark/")
@@ -36,6 +37,7 @@ def test_docker_context_parent_exceptions_remain_tight():
         scripts_parent = active_patterns.index("!scripts/")
         scripts_reexclude = active_patterns.index("scripts/**")
         required_scripts = (
+            "!scripts/generate_hashed_locks.py",
             "!scripts/run_ci_benchmark.sh",
             "!scripts/run_qqp_validation.sh",
             "!scripts/verify_project.sh",

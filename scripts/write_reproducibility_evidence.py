@@ -76,6 +76,7 @@ EXPECTED_DOCKERIGNORE_PATTERNS = (
     "!tests/**",
     "!scripts/",
     "scripts/**",
+    "!scripts/generate_hashed_locks.py",
     "!scripts/run_ci_benchmark.sh",
     "!scripts/run_qqp_validation.sh",
     "!scripts/verify_project.sh",
