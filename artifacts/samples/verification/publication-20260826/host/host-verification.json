@@ -1,0 +1,52 @@
+{
+  "baseline_ancestor_verified": true,
+  "benchmark_artifacts": {
+    "manifest.json": {
+      "path": "benchmark/manifest.json",
+      "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+    },
+    "requests.jsonl": {
+      "path": "benchmark/requests.jsonl",
+      "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+    },
+    "runs.csv": {
+      "path": "benchmark/runs.csv",
+      "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+    }
+  },
+  "dependency_lock": {
+    "index_url": "https://pypi.org/simple",
+    "only_binary": true,
+    "path": "requirements-project.lock",
+    "require_hashes": true,
+    "sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721"
+  },
+  "environment_install_log": {
+    "path": "host-install.log",
+    "sha256": "0030c7a4cb26b1e4133c659bf67ace6797bcf70e25dbf749a8b2592696527002"
+  },
+  "installed_packages": {
+    "path": "host-packages.txt",
+    "sha256": "bb6dec9daa40c21aee348de2178906121b06c13d72bbffccc7c2068db5623d54"
+  },
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "python": {
+    "implementation": "CPython",
+    "version": "3.12.13"
+  },
+  "schema_version": "carma-host-verification-v1",
+  "source_archive": {
+    "archive_sha256": "e803c51707af732b8c3f5b8c34b4810a0da90a00ef71718e2e5ddd6e54dcfe76",
+    "format": "git-archive-tar",
+    "path": "source-archive.sha256",
+    "sha256": "d35e021f93c4046859039f450e60e52a1c9dfb361975b3842133fb2ba5573202",
+    "source_commit": "fd09291a0f2deb71199b14478b15ef9947ceab5f",
+    "tracked_file_count": 435
+  },
+  "source_commit": "fd09291a0f2deb71199b14478b15ef9947ceab5f",
+  "status": "pass",
+  "verification_log": {
+    "path": "host-verification.log",
+    "sha256": "c68407ab357f1e6d986659cb69e50f40ed1ba8f107354a73f0a4b3a04bff44e8"
+  }
+}

@@ -174,7 +174,7 @@ keeps the common hit path constant-time.
 For topic $c$, recent miss pressure and quota weight are
 \[
   p_c=\frac{m_c+1}{d_c+2},\qquad
-  w_c=(d_c p_c+\epsilon)^{q},
+  w_c=\max\{\epsilon,d_c p_c\}^{q},
 \]
 where $m_c$ is miss mass, $d_c$ is demand, and $q$ is
 \code{quota\_strength}. Largest-remainder apportionment produces nonnegative
@@ -217,8 +217,9 @@ embeddings and persisted metadata through a backward-compatible hook.
 \toprule
 Invariant & Enforcement and test evidence \\
 \midrule
-Count bound & Integer quotas sum to $C$; randomized property sequences assert
-no resident overflow. \\
+Count/state bounds & Quotas sum to $C$; randomized sequences assert no
+overflow. Topics, cells, ghosts, and custom-ID ordinals stay bounded; full
+registries fail closed. \\
 Scalar/vector agreement & Victims are deleted from FAISS before scalar
 commit; targeted rollback preserves earlier tombstones and fails closed when
 reconciliation cannot succeed. \\
@@ -552,9 +553,9 @@ retroactively alter its status. A separate deviation ledger documents impact
 and future-run remediation.
 
 Final correctness and reproducibility evidence is tied to exact source commit:
-\newline\code{cfc7167e7604247432f980ed8fb54bc896364fe9}. The clean host and both
-containers used the same 393-file Git archive, SHA-256:
-\newline\code{3bed7fcd46a7db8ffb3dec6a0d87183e144ad41cf7efcd03cb681b4ef885b12e}.
+\newline\code{fd09291a0f2deb71199b14478b15ef9947ceab5f}. The clean host and both
+containers used the same 435-file Git archive, SHA-256:
+\newline\code{e803c51707af732b8c3f5b8c34b4810a0da90a00ef71718e2e5ddd6e54dcfe76}.
 This report and its curated evidence are packaged in the single permitted
 direct-child report commit; the analyzer requires that relationship and its
 restricted path set before Gates 1 and 8 remain claimable.
@@ -597,7 +598,7 @@ before looking at its test outcomes.
 Criterion & Status & Evidence \\
 \midrule
 Correctness (40\%) & \passmark & The exact-source host verifier passed 8
-upstream plus 2 SQLite/FAISS tests (1 optional deselected) and 164 project
+upstream plus 2 SQLite/FAISS tests (1 optional deselected) and 179 project
 tests (2 skipped); real integration integrity failures are zero. \\
 Reproducibility (30\%) & \passmark & Exact pins and one source archive produced
 matching host plus two fresh network-isolated container benchmark artifacts;

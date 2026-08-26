@@ -66,8 +66,8 @@ completed, negative result rather than being rewritten.
 | Requirement | Status | Evidence |
 |---|---:|---|
 | README install/benchmark instructions | Complete | Root `README.md` CARMA section |
-| Clean GitHub repository | Pending external publication | Local feature branch only; no remote branch or pull request has been published |
-| Docker/environment reproducibility | Complete | Exact-source host evidence and two byte-matched network-isolated `linux/amd64` container runs under `artifacts/samples/verification/` |
+| Clean GitHub repository | Complete | Private publication target: `https://github.com/MatanGoldfarB/gptcache-online-policy`; `main` and the feature branch point to the packaged submission commit |
+| Docker/environment reproducibility | Complete | Exact-source host evidence and two byte-matched network-isolated `linux/amd64` container runs under `artifacts/samples/verification/publication-20260826/` |
 | Single 8--12 page PDF | Complete | `docs/project/report.tex` and visually verified `docs/project/report.pdf` |
 | Introduction/related work | Complete in source | Report Section 1 |
 | Extension design | Complete in source | Report Sections 2--3 |
@@ -86,20 +86,20 @@ Evidence includes policy unit/property tests, real factory integration,
 failure-path rollback/fail-stop regressions, relevant upstream tests, exact
 capacity invariants, zero stale candidates, and zero unknown/false answer IDs
 in the primary real-system runs. The exact-source host verifier passed the
-8 upstream plus 2 SQLite/FAISS tests (1 optional deselected) and 164 project
+8 upstream plus 2 SQLite/FAISS tests (1 optional deselected) and 179 project
 tests (2 skipped); its hash-bound output is retained under
-`artifacts/samples/verification/host/`.
+`artifacts/samples/verification/publication-20260826/host/`.
 
 ### Reproducibility (30%)
 
 Implemented controls include exact Python/dependency pins, an immutable
 container base and CI actions, a single offline verifier, deterministic CI
 logs, recorded source and model revisions/checksums, source/contract hashes,
-atomic outputs, and analyzer tamper tests. One exact 393-file Git archive fed
+atomic outputs, and analyzer tamper tests. One exact 435-file Git archive fed
 the clean host and two fresh network-isolated `linux/amd64` containers; both
 containers emitted byte-identical benchmark artifacts and normalized logs.
 The attested image ID is
-`sha256:991afc1232927c28a564c4b17426303295157d18a69531cd4f6247e22da8a6ac`.
+`sha256:d6caa03491ac11730f39ed1c9a1a68999f81963f07d53073fe2f235f856c91a4`.
 Historical protocol deviations remain separately recorded and are not
 retroactively repaired in the original result bundle.
 

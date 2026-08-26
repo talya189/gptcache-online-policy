@@ -86,8 +86,10 @@ manager = manager_factory(
   syntax while Python 3.12.13 remains the pinned project runtime.
 
 Exact commands are recorded in `docs/project/completion-audit.md`; final counts
-and logs will be retained under `artifacts/samples/verification/` after the
-clean verification gate.
+and logs are retained under
+`artifacts/samples/verification/publication-20260826/`. The exact-source host
+verifier passed 8 upstream eviction tests, 2 SQLite/FAISS tests (1 optional
+deselected), and 179 project tests (2 skipped).
 
 ## Benchmark summary
 
@@ -140,7 +142,7 @@ aggregation rule.
 - [x] Backward-compatible default behavior.
 - [x] No credentials or live LLM calls in tests/benchmarks.
 - [x] Unit, property, integration, and failure-path coverage.
-- [ ] Pinned host/container verification evidence retained.
+- [x] Pinned host/container verification evidence retained.
 - [x] Deterministic benchmark schemas and artifact hashes.
 - [x] Documented parameters, complexity, restart behavior, and limitations.
 - [ ] Maintainer review of whether benchmark/report assets belong in the
