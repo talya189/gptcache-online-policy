@@ -19,7 +19,8 @@ python3.12 -m venv .venv
   --require-hashes \
   --only-binary=:all: \
   --requirement requirements-project.lock
-.venv/bin/python -m pip install --no-deps --no-build-isolation --editable .
+.venv/bin/python -m pip --isolated --disable-pip-version-check install \
+  --no-input --no-index --no-deps --no-build-isolation --editable .
 PATH="$PWD/.venv/bin:$PATH" bash scripts/verify_project.sh
 ```
 
@@ -72,7 +73,8 @@ be byte-identical.
 The canonical output targets are `artifacts/ci/host-verification.json` and
 `artifacts/container-reproducibility.json`, with the two retained run roots at
 `artifacts/docker-run-1/` and `artifacts/docker-run-2/`. The writer never
-overwrites evidence. Archive an earlier run first, or select a new empty root:
+overwrites evidence. Failed runs retain their partial logs for diagnosis, so a
+rerun also requires archiving that root or selecting a new empty root:
 
 ```bash
 CARMA_EVIDENCE_ROOT="$(mktemp -d "$PWD/../carma-repro-evidence.XXXXXX")" \
@@ -83,6 +85,16 @@ CARMA_PYTHON=/absolute/path/to/python3.12 \
 When a custom root is used, its status files are at
 `$CARMA_EVIDENCE_ROOT/ci/host-verification.json` and
 `$CARMA_EVIDENCE_ROOT/container-reproducibility.json`.
+
+The producer always binds evidence to a clean exact source commit `S`. Analyze
+against `S` directly whenever possible. The only permitted self-packaging step
+is one subsequent non-merge commit `P` whose direct parent is `S` and whose
+entire diff is restricted to `README.md`, `docs/project/**`, and
+`artifacts/samples/**`. This lets the verified report, audit, and curated copy of
+the evidence be packaged without pretending they existed before the gate. The
+analyzer must report `verified_packaging_descendant` and the exact changed paths;
+any dirty worktree, additional commit, or code, test, workflow, Docker, or lock
+change invalidates the binding and requires a new run from a fresh root.
 
 ## Container and CI
 

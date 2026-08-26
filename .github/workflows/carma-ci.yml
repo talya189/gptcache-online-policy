@@ -1,9 +1,9 @@
 name: CARMA project CI
 
 on:
-  push:
-  pull_request:
-  workflow_dispatch:
+  push: {}
+  pull_request: {}
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -40,7 +40,8 @@ jobs:
             --require-hashes \
             --only-binary=:all: \
             --requirement requirements-python38.lock
-          python -m pip install --no-deps --no-build-isolation --editable .
+          python -m pip --isolated --disable-pip-version-check install \
+            --no-input --no-index --no-deps --no-build-isolation --editable .
           python -m pip check
 
       - name: Compile and import the CARMA integration
@@ -109,9 +110,10 @@ jobs:
               --index-url https://pypi.org/simple \
               --require-hashes \
               --only-binary=:all: \
-              --requirement requirements-project.lock
-            python -m pip install --no-deps --no-build-isolation --editable .
-            python -m pip check
+              --requirement requirements-project.lock &&
+            python -m pip --isolated --disable-pip-version-check install \
+              --no-input --no-index --no-deps --no-build-isolation --editable . &&
+            python -m pip check &&
             echo "[install] pip check PASS"
           } 2>&1 | tee artifacts/ci/host-install.log
           python -m pip list --format=freeze > artifacts/ci/host-packages.txt
@@ -157,13 +159,29 @@ jobs:
 
       - name: Install and validate the full-analysis lock
         run: |
-          python -m pip --isolated --disable-pip-version-check install \
+          python -m venv "${RUNNER_TEMP}/carma-benchmark-lock"
+          benchmark_python="${RUNNER_TEMP}/carma-benchmark-lock/bin/python"
+          "${benchmark_python}" -m pip --isolated --disable-pip-version-check install \
             --no-input \
             --index-url https://pypi.org/simple \
             --require-hashes \
             --only-binary=:all: \
             --requirement requirements-benchmark.lock
-          python -m pip check
+          "${benchmark_python}" -m pip check
+          "${benchmark_python}" - <<'PY'
+          import onnxruntime
+          import scipy
+          import tokenizers
+          import transformers
+
+          print(
+              "full-analysis imports:",
+              onnxruntime.__version__,
+              scipy.__version__,
+              tokenizers.__version__,
+              transformers.__version__,
+          )
+          PY
 
   container-verification:
     name: Pinned container verification

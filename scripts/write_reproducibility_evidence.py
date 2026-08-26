@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -219,6 +219,48 @@ def _validate_host_environment(
         )
 
 
+def _verify_live_pip_environment(installed_packages: Path) -> None:
+    try:
+        check_result = subprocess.run(
+            [sys.executable, "-m", "pip", "check"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        list_result = subprocess.run(
+            [sys.executable, "-m", "pip", "list", "--format=freeze"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        raise EvidenceError("could not execute pip check in the host environment") from exc
+    if check_result.returncode != 0:
+        raise EvidenceError(
+            "live host pip check failed: %s"
+            % (
+                (check_result.stdout + check_result.stderr).strip()
+                or "no diagnostic"
+            )
+        )
+    if list_result.returncode != 0:
+        raise EvidenceError("could not inventory the live host environment")
+    recorded = sorted(
+        line
+        for line in _read_text(
+            installed_packages, "host installed packages"
+        ).splitlines()
+        if line.strip()
+    )
+    live = sorted(line for line in list_result.stdout.splitlines() if line.strip())
+    if recorded != live:
+        raise EvidenceError(
+            "recorded host packages do not match the live host environment"
+        )
+
+
 def _verify_checkout_credentials_absent(project_root: Path) -> None:
     try:
         result = subprocess.run(
@@ -421,6 +463,7 @@ def _host_evidence(
     install_log = evidence_root / "host-install.log"
     installed_packages = evidence_root / "host-packages.txt"
     _validate_host_environment(source_lock, install_log, installed_packages)
+    _verify_live_pip_environment(installed_packages)
     log = evidence_root / "host-verification.log"
     if _last_nonempty_line(log, "host verification log") != "[verify] PASS":
         raise EvidenceError("host verification log does not end in [verify] PASS")
@@ -512,7 +555,7 @@ def _container_evidence(
     runs = []
     normalized_outputs = []
     hash_list_outputs = []
-    benchmark_pairs: Dict[str, Sequence[Tuple[Path, bytes]]] = {
+    benchmark_pairs: Dict[str, List[Tuple[Path, bytes]]] = {
         name: [] for name in BENCHMARK_ARTIFACTS
     }
     container_ids = []
@@ -543,9 +586,10 @@ def _container_evidence(
         hash_list_bytes = "".join(hash_lines).encode("ascii")
         hash_list_outputs.append((hash_list, hash_list_bytes))
         runtime_inspect = evidence_root / (label + ".inspect.json")
+        artifact_mount_source = str((evidence_root / label).resolve())
         container_ids.append(
             _validate_container_inspect(
-                runtime_inspect, image_id, evidence_root / label
+                runtime_inspect, image_id, Path(artifact_mount_source)
             )
         )
 
@@ -570,6 +614,7 @@ def _container_evidence(
                     runtime_inspect,
                     "%s runtime inspection" % label,
                 ),
+                "artifact_mount_source": artifact_mount_source,
                 "benchmark_artifacts": benchmark,
             }
         )

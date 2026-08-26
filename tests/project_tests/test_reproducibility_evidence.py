@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import pytest
 
@@ -16,6 +15,9 @@ def _stub_source_checks(monkeypatch):
         lambda project_root, expected: SOURCE_COMMIT,
     )
     monkeypatch.setattr(evidence, "_check_generated_locks", lambda project_root: None)
+    monkeypatch.setattr(
+        evidence, "_verify_live_pip_environment", lambda installed_packages: None
+    )
     monkeypatch.setattr(
         evidence, "_verify_checkout_credentials_absent", lambda project_root: None
     )
@@ -94,6 +96,27 @@ def test_host_writer_emits_analyzer_schema_only_after_pass(monkeypatch, tmp_path
     assert payload["dependency_lock"]["require_hashes"] is True
     assert payload["dependency_lock"]["only_binary"] is True
     assert set(payload["benchmark_artifacts"]) == set(evidence.BENCHMARK_ARTIFACTS)
+
+
+def test_host_inventory_rejects_unpinned_packages(tmp_path):
+    project = _project_root(tmp_path)
+    install_log = tmp_path / "install.log"
+    install_log.write_text("[install] pip check PASS\n", encoding="utf-8")
+    packages = tmp_path / "packages.txt"
+    packages.write_text(
+        "fixture==1\n"
+        "gptcache==0.0.0\n"
+        "pip==26.2.1\n"
+        "setuptools==84.0.0\n"
+        "unexpected==1\n"
+        "wheel==0.48.0\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(evidence.EvidenceError, match=r"extra=\['unexpected'\]"):
+        evidence._validate_host_environment(
+            project / "requirements-project.lock", install_log, packages
+        )
 
 
 def _container_inputs(root, second_phase=b"completed phase in 1s\n"):
@@ -175,6 +198,8 @@ def test_container_writer_derives_normalization_and_compares_bytes(
     assert payload["schema_version"] == "carma-container-reproducibility-v1"
     assert payload["platform"] == "linux/amd64"
     assert payload["fresh_container_count"] == 2
+    assert payload["runs"][0]["artifact_mount_source"].endswith("docker-run-1")
+    assert payload["runs"][1]["artifact_mount_source"].endswith("docker-run-2")
     assert (root / "docker-run-1.nontiming.log").read_bytes() == (
         root / "docker-run-2.nontiming.log"
     ).read_bytes()
