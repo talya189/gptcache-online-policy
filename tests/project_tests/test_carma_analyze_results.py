@@ -1,6 +1,7 @@
 """Network-free artifact integrity and figure tests for CARMA analysis."""
 
 import csv
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -25,6 +26,7 @@ from benchmarks.carma.analyze_results import (
     PNG_DPI,
     PROJECT_ROOT,
     PUBLICATION_FIGURE_WIDTH_IN,
+    QQP_CALIBRATION_FIELDS,
     REPORT_TEXT_WIDTH_IN,
     RUN_FIELDS,
     CONTAINER_REPRODUCIBILITY_SCHEMA,
@@ -33,8 +35,12 @@ from benchmarks.carma.analyze_results import (
     AnalysisError,
     _commit_binding,
     _current_git_head,
+    _git_archive_sha256,
+    _load_qqp,
     _packaging_descendant_changes,
+    _read_csv,
     _require_clean_worktree,
+    _validate_qqp_result,
     _wilson_lower,
     analyze_results,
     main,
@@ -56,6 +62,7 @@ FIXTURE_LOCK_PINS = re.findall(
 FIXTURE_PACKAGES = "".join(
     "%s==%s\n" % (name, version) for name, version in FIXTURE_LOCK_PINS
 )
+FIXTURE_ARCHIVE_SHA256 = "f" * 64
 
 
 def _git_head():
@@ -84,11 +91,42 @@ def _bind_analyzer_to_fixture_head(monkeypatch):
     return head
 
 
+@pytest.mark.skipif(shutil.which("git") is None, reason="Git is unavailable")
+def test_git_archive_digest_matches_exact_commit_bytes():
+    git_state = _current_git_head()
+    if git_state.get("status") != "available":
+        pytest.skip("Git metadata is unavailable")
+    head = git_state["head_commit"]
+    archive = subprocess.check_output(
+        [
+            "git",
+            "-c",
+            "tar.umask=0002",
+            "-C",
+            str(PROJECT_ROOT),
+            "archive",
+            "--format=tar",
+            head,
+        ]
+    )
+    assert _git_archive_sha256(head, "fixture") == hashlib.sha256(
+        archive
+    ).hexdigest()
+
+
 @pytest.fixture(autouse=True)
 def _fixture_clean_worktree(monkeypatch):
     monkeypatch.setattr(
         "benchmarks.carma.analyze_results._require_clean_worktree",
         lambda label: None,
+    )
+
+
+@pytest.fixture(autouse=True)
+def _fixture_source_archive_recompute(monkeypatch):
+    monkeypatch.setattr(
+        "benchmarks.carma.analyze_results._git_archive_sha256",
+        lambda source_commit, label: FIXTURE_ARCHIVE_SHA256,
     )
 
 
@@ -112,6 +150,23 @@ def _artifact_reference(root, path):
     return {
         "path": path.relative_to(root).as_posix(),
         "sha256": sha256_file(path),
+    }
+
+
+def _source_archive_fixture(root, source_commit, archive_sha256=None):
+    if archive_sha256 is None:
+        archive_sha256 = FIXTURE_ARCHIVE_SHA256
+    checksum = root / "source-archive.sha256"
+    checksum.write_text(
+        "%s  source-%s.tar\n" % (archive_sha256, source_commit),
+        encoding="utf-8",
+    )
+    return {
+        **_artifact_reference(root, checksum),
+        "archive_sha256": archive_sha256,
+        "format": "git-archive-tar",
+        "source_commit": source_commit,
+        "tracked_file_count": 123,
     }
 
 
@@ -197,6 +252,7 @@ def _host_verification_fixture(root, source_commit=None, lock_text=FIXTURE_LOCK)
         "status": "pass",
         "source_commit": source_commit,
         "baseline_ancestor_verified": True,
+        "source_archive": _source_archive_fixture(root, source_commit),
         "python": {"implementation": "CPython", "version": "3.12.13"},
         "platform": "fixture-host",
         "dependency_lock": {
@@ -239,10 +295,17 @@ def _container_reproducibility_fixture(
                 "Architecture": "amd64",
                 "Config": {
                     "User": "project",
+                    "WorkingDir": "/workspace",
+                    "Entrypoint": ["bash", "scripts/verify_project.sh"],
+                    "Cmd": None,
                     "Env": [
+                        "PYTHONDONTWRITEBYTECODE=1",
+                        "PYTHONUNBUFFERED=1",
                         "PIP_CONFIG_FILE=/dev/null",
+                        "PIP_DISABLE_PIP_VERSION_CHECK=1",
                         "PIP_INDEX_URL=https://pypi.org/simple",
                         "PIP_NO_INPUT=1",
+                        "PIP_ROOT_USER_ACTION=ignore",
                     ],
                 },
             }
@@ -278,13 +341,37 @@ def _container_reproducibility_fixture(
                 {
                     "Id": str(index + 3) * 64,
                     "Image": image_id,
-                    "State": {"Status": "exited", "ExitCode": 0},
+                    "State": {
+                        "Status": "exited",
+                        "ExitCode": 0,
+                        "OOMKilled": False,
+                        "Error": "",
+                    },
                     "HostConfig": {
                         "NetworkMode": "none",
+                        "Privileged": False,
+                        "CapAdd": None,
                         "CapDrop": ["ALL"],
-                        "SecurityOpt": ["no-new-privileges"],
+                        "SecurityOpt": ["no-new-privileges:true"],
                     },
-                    "Config": {"Env": ["CARMA_ARTIFACT_DIR=/artifacts"]},
+                    "Path": "bash",
+                    "Args": ["scripts/verify_project.sh"],
+                    "Config": {
+                        "User": "project",
+                        "WorkingDir": "/workspace",
+                        "Entrypoint": ["bash", "scripts/verify_project.sh"],
+                        "Cmd": None,
+                        "Env": [
+                            "PYTHONDONTWRITEBYTECODE=1",
+                            "PYTHONUNBUFFERED=1",
+                            "PIP_CONFIG_FILE=/dev/null",
+                            "PIP_DISABLE_PIP_VERSION_CHECK=1",
+                            "PIP_INDEX_URL=https://pypi.org/simple",
+                            "PIP_NO_INPUT=1",
+                            "PIP_ROOT_USER_ACTION=ignore",
+                            "CARMA_ARTIFACT_DIR=/artifacts",
+                        ],
+                    },
                     "Mounts": [
                         {
                             "Type": "bind",
@@ -314,6 +401,7 @@ def _container_reproducibility_fixture(
         "schema_version": CONTAINER_REPRODUCIBILITY_SCHEMA,
         "status": "pass",
         "source_commit": source_commit,
+        "source_archive": _source_archive_fixture(root, source_commit),
         "image_id": image_id,
         "platform": "linux/amd64",
         "fresh_container_count": 2,
@@ -865,6 +953,147 @@ def _qqp_fixture(path):
     return path
 
 
+def _failed_qqp_fixture(root):
+    prepared = root / "prepared"
+    embeddings = root / "embeddings"
+    evaluation = root / "evaluation"
+    counts = {
+        "calibration_negative": 2,
+        "calibration_positive": 3,
+        "test_negative": 4,
+        "test_positive": 5,
+    }
+    _write_json(
+        prepared / "manifest.json",
+        {
+            "schema_version": "carma-qqp-v1",
+            "archive_sha256": (
+                "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58"
+            ),
+            "counts": counts,
+            "unique_questions_kept": 12,
+            "pairs_sha256": "1" * 64,
+            "texts_sha256": "2" * 64,
+        },
+    )
+    _write_json(
+        embeddings / "manifest.json",
+        {
+            "schema_version": "carma-qqp-v1",
+            "tokenizer_repository": "GPTCache/paraphrase-albert-small-v2",
+            "tokenizer_revision": (
+                "5fb246187b5489d59ce0db167e739192759defab"
+            ),
+            "model_repository": "GPTCache/paraphrase-albert-onnx",
+            "model_revision": "5b562a100bc67e898ac89814e7a4668a18d65756",
+            "dimension": 768,
+            "dtype": "float32",
+            "max_length": 512,
+            "normalized": True,
+            "rows": 12,
+            "embeddings_sha256": "3" * 64,
+            "text_ids_sha256": "4" * 64,
+        },
+    )
+    result_path = evaluation / "result.json"
+    calibration_rows = []
+    for step in range(80, 100):
+        tp, fp, tn, fn = 3, 2, 0, 0
+        calibration_rows.append(
+            {
+                "threshold": step / 100.0,
+                "true_positive": tp,
+                "false_positive": fp,
+                "true_negative": tn,
+                "false_negative": fn,
+                "precision": tp / (tp + fp),
+                "recall": tp / (tp + fn),
+                "false_positive_rate": fp / (fp + tn),
+                "wilson_precision_lower_one_sided_95": _wilson_lower(
+                    tp, tp + fp
+                ),
+            }
+        )
+    _write_csv(
+        evaluation / "calibration_thresholds.csv",
+        QQP_CALIBRATION_FIELDS,
+        calibration_rows,
+    )
+    _write_json(
+        result_path,
+        {
+            "schema_version": "carma-qqp-v1",
+            "status": "no_threshold_met_precision_gate",
+            "selected_threshold": None,
+            "calibration_pairs": 5,
+            "test_pairs_not_evaluated": 9,
+        },
+    )
+    return result_path
+
+
+def test_failed_qqp_result_is_strict_and_manifest_reconciled(tmp_path):
+    result_path = _failed_qqp_fixture(tmp_path / "qqp")
+    loaded = _load_qqp(result_path)
+
+    assert loaded["report"]["status"] == "verified"
+    assert loaded["report"]["result_status"] == (
+        "no_threshold_met_precision_gate"
+    )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    (
+        ("extra_result_field", "unexpected fields"),
+        ("selected_threshold", "unexpectedly selects"),
+        ("prepared_count", "counts do not match preparation"),
+        ("embedding_rows", "rows do not match prepared questions"),
+        ("calibration_metric", "calibration metric does not reconcile"),
+    ),
+)
+def test_failed_qqp_result_tamper_is_rejected(tmp_path, mutation, message):
+    root = tmp_path / "qqp"
+    result_path = _failed_qqp_fixture(root)
+    if mutation in ("extra_result_field", "selected_threshold"):
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        if mutation == "extra_result_field":
+            result["test"] = {"precision": 1.0}
+        else:
+            result["selected_threshold"] = 0.99
+        _write_json(result_path, result)
+    elif mutation == "prepared_count":
+        manifest = root / "prepared" / "manifest.json"
+        prepared = json.loads(manifest.read_text(encoding="utf-8"))
+        prepared["counts"]["calibration_positive"] += 1
+        _write_json(manifest, prepared)
+    elif mutation == "embedding_rows":
+        manifest = root / "embeddings" / "manifest.json"
+        embeddings = json.loads(manifest.read_text(encoding="utf-8"))
+        embeddings["rows"] += 1
+        _write_json(manifest, embeddings)
+    else:
+        grid = root / "evaluation" / "calibration_thresholds.csv"
+        rows, fields = _read_csv(grid)
+        rows[0]["precision"] = "1.0"
+        _write_csv(grid, fields, rows)
+
+    with pytest.raises(AnalysisError, match=message):
+        _load_qqp(result_path)
+
+
+def test_failed_qqp_result_requires_positive_pair_counts():
+    result = {
+        "schema_version": "carma-qqp-v1",
+        "status": "no_threshold_met_precision_gate",
+        "selected_threshold": None,
+        "calibration_pairs": 0,
+        "test_pairs_not_evaluated": 9,
+    }
+    with pytest.raises(AnalysisError, match="pair counts must be positive"):
+        _validate_qqp_result(result)
+
+
 def _moss_fixture(root):
     root.mkdir()
     row = {field: 0 for field in MOSS_FIELDS}
@@ -1093,8 +1322,11 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
             return (current + " " + source + "\n").encode("ascii")
         if "diff" in command:
             return (
-                b"A\0docs/project/report.pdf\0"
+                b"M\0docs/project/report.pdf\0"
+                b"M\0artifacts/samples/analysis/gates.json\0"
+                b"A\0artifacts/samples/qqp/result.json\0"
                 b"A\0artifacts/samples/verification/evidence.json\0"
+                b"A\0artifacts/samples/SHA256SUMS\0"
             )
         raise AssertionError("unexpected Git command: %r" % command)
 
@@ -1104,11 +1336,14 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
     assert _packaging_descendant_changes(
         source, current, "fixture evidence"
     ) == [
-        {"status": "A", "path": "docs/project/report.pdf"},
+        {"status": "M", "path": "docs/project/report.pdf"},
+        {"status": "M", "path": "artifacts/samples/analysis/gates.json"},
+        {"status": "A", "path": "artifacts/samples/qqp/result.json"},
         {
             "status": "A",
             "path": "artifacts/samples/verification/evidence.json",
         },
+        {"status": "A", "path": "artifacts/samples/SHA256SUMS"},
     ]
 
 
@@ -1120,6 +1355,11 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
         b"T\0artifacts/samples/verification/evidence.json\0",
         b"M\0benchmarks/carma/analyze_results.py\0",
         b"M\0README.md\0",
+        b"M\0docs/project/experiment-contract.md\0",
+        b"M\0artifacts/samples/full/runs.csv\0",
+        b"M\0artifacts/samples/qqp/result.json\0",
+        b"M\0artifacts/samples/verification/evidence.json\0",
+        b"M\0artifacts/samples/SHA256SUMS\0",
         b"",
     ),
 )
@@ -1252,6 +1492,16 @@ def test_verified_host_and_container_evidence_pass_gates_1_and_8(
     }
     host_report = result["sources"]["host_verification"]
     current_lock_sha256 = sha256_file(PROJECT_ROOT / "requirements-project.lock")
+    assert host_report["source_archive"] == {
+        "path": "source-archive.sha256",
+        "sha256": sha256_file(host.parent / "source-archive.sha256"),
+        "bytes": (host.parent / "source-archive.sha256").stat().st_size,
+        "archive_sha256": FIXTURE_ARCHIVE_SHA256,
+        "format": "git-archive-tar",
+        "source_commit": head,
+        "tracked_file_count": 123,
+        "git_recomputed": True,
+    }
     assert host_report["current_dependency_lock_sha256"] == current_lock_sha256
     assert host_report["environment_install_log"]["path"] == "host-install.log"
     assert host_report["installed_packages"]["path"] == "host-packages.txt"
@@ -1261,6 +1511,10 @@ def test_verified_host_and_container_evidence_pass_gates_1_and_8(
         "installed_project": "gptcache==0.1.44",
     }
     container_report = result["sources"]["container_reproducibility"]
+    assert container_report["source_archive"]["archive_sha256"] == (
+        FIXTURE_ARCHIVE_SHA256
+    )
+    assert container_report["source_archive"]["git_recomputed"] is True
     assert (
         container_report["current_dependency_lock_sha256"]
         == current_lock_sha256
@@ -1280,6 +1534,89 @@ def test_verified_host_and_container_evidence_pass_gates_1_and_8(
     assert result["gates"]["gate_1_correctness"]["claimable"] is True
     assert result["gates"]["gate_8_reproducibility"]["status"] == "pass"
     assert result["gates"]["gate_8_reproducibility"]["claimable"] is True
+
+
+@pytest.mark.parametrize("evidence_kind", ("host", "container"))
+def test_source_archive_attestation_is_required(tmp_path, evidence_kind):
+    if evidence_kind == "host":
+        path = _host_verification_fixture(tmp_path / "host")
+        arguments = {"host_verification": path}
+    else:
+        path = _container_reproducibility_fixture(tmp_path / "container")
+        arguments = {"container_reproducibility": path}
+    evidence = json.loads(path.read_text(encoding="utf-8"))
+    evidence.pop("source_archive")
+    _write_json(path, evidence)
+
+    with pytest.raises(AnalysisError, match="source archive metadata is invalid"):
+        analyze_results(tmp_path / "analysis", **arguments)
+
+
+def test_source_archive_checksum_line_is_bound_to_metadata(tmp_path):
+    host = _host_verification_fixture(tmp_path / "host")
+    evidence = json.loads(host.read_text(encoding="utf-8"))
+    checksum = host.parent / evidence["source_archive"]["path"]
+    checksum.write_text(
+        "%s  source-%s.tar\n" % ("0" * 64, evidence["source_commit"]),
+        encoding="utf-8",
+    )
+    evidence["source_archive"]["sha256"] = sha256_file(checksum)
+    _write_json(host, evidence)
+
+    with pytest.raises(AnalysisError, match="checksum line does not match"):
+        analyze_results(tmp_path / "analysis", host_verification=host)
+
+
+def test_source_archive_commit_is_bound_to_evidence(tmp_path):
+    host = _host_verification_fixture(tmp_path / "host")
+    evidence = json.loads(host.read_text(encoding="utf-8"))
+    evidence["source_archive"]["source_commit"] = "0" * 40
+    _write_json(host, evidence)
+
+    with pytest.raises(AnalysisError, match="source archive commit does not match"):
+        analyze_results(tmp_path / "analysis", host_verification=host)
+
+
+def test_source_archive_is_recomputed_from_git(tmp_path, monkeypatch):
+    host = _host_verification_fixture(tmp_path / "host")
+    monkeypatch.setattr(
+        "benchmarks.carma.analyze_results._git_archive_sha256",
+        lambda source_commit, label: "0" * 64,
+    )
+
+    with pytest.raises(AnalysisError, match="source archive does not match Git commit"):
+        analyze_results(tmp_path / "analysis", host_verification=host)
+
+
+def test_host_and_container_source_archives_must_match(tmp_path, monkeypatch):
+    host = _host_verification_fixture(tmp_path / "host")
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    evidence = json.loads(container.read_text(encoding="utf-8"))
+    alternate = "e" * 64
+    checksum = container.parent / evidence["source_archive"]["path"]
+    checksum.write_text(
+        "%s  source-%s.tar\n" % (alternate, evidence["source_commit"]),
+        encoding="utf-8",
+    )
+    evidence["source_archive"].update(
+        {"archive_sha256": alternate, "sha256": sha256_file(checksum)}
+    )
+    _write_json(container, evidence)
+    monkeypatch.setattr(
+        "benchmarks.carma.analyze_results._current_git_head",
+        lambda: {
+            "status": "unavailable",
+            "head_commit": None,
+            "reason": "fixture has no Git metadata",
+        },
+    )
+
+    with pytest.raises(AnalysisError, match="different source archives"):
+        analyze_results(
+            tmp_path / "analysis",
+            host_verification=host,
+            container_reproducibility=container,
+        )
 
 
 def test_host_evidence_hash_tamper_is_rejected(tmp_path):
@@ -1426,6 +1763,7 @@ def test_no_git_keeps_verified_evidence_nonclaimable(tmp_path, monkeypatch):
     for source in ("host_verification", "container_reproducibility"):
         report = result["sources"][source]
         assert report["status"] == "verified"
+        assert report["source_archive"]["git_recomputed"] is False
         assert report["commit_binding"] == {
             "status": "unavailable",
             "evidence_source_commit": _git_head(),
@@ -1524,6 +1862,33 @@ def test_forged_image_inspect_is_rejected(tmp_path):
         )
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    (
+        ("Entrypoint", ["bash", "scripts/run_ci_benchmark.sh"], "entrypoint"),
+        ("Cmd", ["skip-verification"], "command is not empty"),
+        ("WorkingDir", "/tmp", "working directory"),
+        ("Env", ["PIP_NO_INPUT=1"], "pinned dependency environment"),
+    ),
+)
+def test_forged_image_execution_contract_is_rejected(
+    tmp_path, field, value, message
+):
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    evidence = json.loads(container.read_text(encoding="utf-8"))
+    inspect_path = container.parent / evidence["image_inspect"]["path"]
+    inspection = json.loads(inspect_path.read_text(encoding="utf-8"))
+    inspection[0]["Config"][field] = value
+    _write_json(inspect_path, inspection)
+    evidence["image_inspect"]["sha256"] = sha256_file(inspect_path)
+    _write_json(container, evidence)
+
+    with pytest.raises(AnalysisError, match=message):
+        analyze_results(
+            tmp_path / "analysis", container_reproducibility=container
+        )
+
+
 def test_forged_runtime_inspect_is_rejected(tmp_path):
     container = _container_reproducibility_fixture(tmp_path / "container")
     evidence = json.loads(container.read_text(encoding="utf-8"))
@@ -1536,6 +1901,60 @@ def test_forged_runtime_inspect_is_rejected(tmp_path):
     _write_json(container, evidence)
 
     with pytest.raises(AnalysisError, match="runtime network mode was not none"):
+        analyze_results(
+            tmp_path / "analysis", container_reproducibility=container
+        )
+
+
+@pytest.mark.parametrize(
+    ("location", "field", "value", "message"),
+    (
+        ("root", "Path", "python", "execute the verifier entrypoint"),
+        ("root", "Args", ["-c", "echo PASS"], "execute the verifier entrypoint"),
+        (
+            "config",
+            "Entrypoint",
+            ["bash", "scripts/run_ci_benchmark.sh"],
+            "runtime entrypoint",
+        ),
+        ("config", "Cmd", ["skip-verification"], "runtime command is not empty"),
+        ("config", "User", "root", "runtime user or working directory"),
+        ("config", "WorkingDir", "/tmp", "runtime user or working directory"),
+        ("host", "Privileged", True, "runtime was privileged"),
+        ("host", "CapAdd", ["SYS_ADMIN"], "added capabilities"),
+        (
+            "host",
+            "SecurityOpt",
+            ["no-new-privileges:false"],
+            "enable no-new-privileges",
+        ),
+        (
+            "host",
+            "SecurityOpt",
+            ["no-new-privileges:true", "seccomp=unconfined"],
+            "enable no-new-privileges",
+        ),
+    ),
+)
+def test_forged_runtime_execution_contract_is_rejected(
+    tmp_path, location, field, value, message
+):
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    evidence = json.loads(container.read_text(encoding="utf-8"))
+    runtime_ref = evidence["runs"][0]["container_inspect"]
+    inspect_path = container.parent / runtime_ref["path"]
+    inspection = json.loads(inspect_path.read_text(encoding="utf-8"))
+    target = inspection[0]
+    if location == "config":
+        target = target["Config"]
+    elif location == "host":
+        target = target["HostConfig"]
+    target[field] = value
+    _write_json(inspect_path, inspection)
+    runtime_ref["sha256"] = sha256_file(inspect_path)
+    _write_json(container, evidence)
+
+    with pytest.raises(AnalysisError, match=message):
         analyze_results(
             tmp_path / "analysis", container_reproducibility=container
         )

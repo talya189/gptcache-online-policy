@@ -1,12 +1,13 @@
 # Post-execution protocol deviations
 
-Recorded: 2026-08-26, after completion of the full synthetic and integration
-runs.
+Recorded: 2026-08-26, after completion of the full synthetic, integration, and
+QQP calibration runs.
 
 This note is a deviation ledger, not an amendment to the frozen experiment
 contract and not a claim that the completed run complied retroactively. It
-applies to `artifacts/carma-full-20260826/` and the five
-`artifacts/integration-full-2026090{1,2,3,4,5}/` directories.
+applies to `artifacts/carma-full-20260826/`, the five
+`artifacts/integration-full-2026090{1,2,3,4,5}/` directories, and
+`artifacts/qqp-full/`.
 
 ## Immutable run identity
 
@@ -151,6 +152,33 @@ Prospective remediation: a new, separately identified integration run must
 invoke the pinned ONNX model inside the measured request path, freeze how the
 five seeds are aggregated, and publish that rule before results are observed.
 It must not replace or relabel the existing precomputed-vector manifests.
+
+### 6. QQP held-out similarities were computed before the calibration abort
+
+Contract commitment: select an answer threshold using calibration pairs only,
+then evaluate the component-disjoint held-out split once if the calibration
+precision prerequisite succeeds.
+
+Observed: the frozen QQP implementation computed and grouped cosine
+similarities for both split labels in one pass before scanning the calibration
+threshold grid. No candidate met the calibration Wilson-lower-bound rule, so
+the code returned immediately with
+`status=no_threshold_met_precision_gate`: it did not select a threshold,
+classify or aggregate held-out labels, inspect held-out metrics, or write a
+held-out result. The retained result records all 56,963 test pairs as not
+evaluated. Held-out cosine values nevertheless existed transiently in memory.
+
+Impact: threshold selection read only calibration scores, so the observed
+implementation provides no identified path for held-out outcomes to influence
+the selected threshold (and no threshold was selected). It is still inaccurate
+to describe the held-out split as computationally untouched before the abort.
+Gate 2 fails at its calibration prerequisite; no held-out precision claim is
+made.
+
+Prospective remediation: compute calibration similarities first and return on
+a failed prerequisite before loading or scoring held-out pairs. Only after a
+threshold is frozen should a separate one-shot path compute held-out
+similarities and metrics. The completed QQP artifacts are retained unchanged.
 
 ## Interpretation boundary
 

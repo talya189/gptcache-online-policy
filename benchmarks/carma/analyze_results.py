@@ -43,6 +43,17 @@ QQP_ARCHIVE_SHA256 = (
 )
 QQP_TOKENIZER_REVISION = "5fb246187b5489d59ce0db167e739192759defab"
 QQP_MODEL_REVISION = "5b562a100bc67e898ac89814e7a4668a18d65756"
+QQP_CALIBRATION_FIELDS = (
+    "threshold",
+    "true_positive",
+    "false_positive",
+    "true_negative",
+    "false_negative",
+    "precision",
+    "recall",
+    "false_positive_rate",
+    "wilson_precision_lower_one_sided_95",
+)
 MOSS_REVISION = "42e216d3e3fb331c18d5fa6e7cb4f1c53eef24a4"
 MOSS_ARCHIVE_SHA256 = (
     "4d4f57df0dd5ad1442b6c08ca69ec1a59705837bb9813e7aae3bd3a9e3adb085"
@@ -1071,8 +1082,26 @@ def _load_qqp(path: Optional[Path]) -> Dict[str, Any]:
 def _validate_qqp_result(result: Dict[str, Any]) -> None:
     status = result.get("status")
     if status == "no_threshold_met_precision_gate":
+        expected_fields = {
+            "schema_version",
+            "status",
+            "selected_threshold",
+            "calibration_pairs",
+            "test_pairs_not_evaluated",
+        }
+        if set(result) != expected_fields:
+            raise AnalysisError("failed QQP result has unexpected fields")
         if result.get("selected_threshold") is not None:
             raise AnalysisError("failed QQP result unexpectedly selects a threshold")
+        calibration_pairs = _integer(
+            result.get("calibration_pairs"), "QQP calibration pairs"
+        )
+        test_pairs = _integer(
+            result.get("test_pairs_not_evaluated"),
+            "QQP test pairs not evaluated",
+        )
+        if calibration_pairs <= 0 or test_pairs <= 0:
+            raise AnalysisError("failed QQP result pair counts must be positive")
         return
     if status != "ok":
         raise AnalysisError("QQP result has an unknown status")
@@ -1109,6 +1138,88 @@ def _validate_qqp_result(result: Dict[str, Any]) -> None:
             raise AnalysisError("QQP %s pair count does not reconcile" % split)
 
 
+def _validate_qqp_calibration_grid(
+    path: Path, expected_pairs: int, result: Dict[str, Any]
+) -> Dict[str, Any]:
+    if not path.is_file():
+        raise AnalysisError("QQP calibration threshold grid is missing")
+    rows, fields = _read_csv(path)
+    _require_exact_fields(fields, QQP_CALIBRATION_FIELDS, "QQP calibration grid")
+    if len(rows) != 20:
+        raise AnalysisError("QQP calibration grid must contain 20 thresholds")
+
+    normalized = []
+    for index, row in enumerate(rows):
+        threshold = _number(row["threshold"], "QQP calibration threshold")
+        expected_threshold = (80 + index) / 100.0
+        if not _close(threshold, expected_threshold):
+            raise AnalysisError("QQP calibration threshold grid is not 0.80..0.99")
+        tp = _integer(row["true_positive"], "QQP calibration true positives")
+        fp = _integer(row["false_positive"], "QQP calibration false positives")
+        tn = _integer(row["true_negative"], "QQP calibration true negatives")
+        fn = _integer(row["false_negative"], "QQP calibration false negatives")
+        if min(tp, fp, tn, fn) < 0 or tp + fp + tn + fn != expected_pairs:
+            raise AnalysisError("QQP calibration confusion counts do not reconcile")
+        precision = tp / (tp + fp) if tp + fp else 0.0
+        recall = tp / (tp + fn) if tp + fn else 0.0
+        false_positive_rate = fp / (fp + tn) if fp + tn else 0.0
+        wilson = _wilson_lower(tp, tp + fp)
+        expected_metrics = (
+            ("precision", precision),
+            ("recall", recall),
+            ("false_positive_rate", false_positive_rate),
+            ("wilson_precision_lower_one_sided_95", wilson),
+        )
+        if any(
+            not _close(_number(row[name], "QQP calibration %s" % name), value)
+            for name, value in expected_metrics
+        ):
+            raise AnalysisError("QQP calibration metric does not reconcile")
+        normalized.append(
+            {
+                "threshold": threshold,
+                "true_positive": tp,
+                "false_positive": fp,
+                "true_negative": tn,
+                "false_negative": fn,
+                "precision": precision,
+                "recall": recall,
+                "false_positive_rate": false_positive_rate,
+                "wilson_precision_lower_one_sided_95": wilson,
+            }
+        )
+
+    qualifying = [
+        row
+        for row in normalized
+        if row["wilson_precision_lower_one_sided_95"] >= 0.99
+    ]
+    if result.get("status") == "no_threshold_met_precision_gate":
+        if qualifying:
+            raise AnalysisError(
+                "failed QQP result contradicts its calibration threshold grid"
+            )
+    else:
+        if not qualifying or not _close(
+            result.get("selected_threshold"), qualifying[0]["threshold"]
+        ):
+            raise AnalysisError("QQP selected threshold is not the first qualifier")
+    best = max(
+        normalized,
+        key=lambda row: (
+            row["wilson_precision_lower_one_sided_95"],
+            -row["threshold"],
+        ),
+    )
+    return {
+        "path": str(path.resolve()),
+        "sha256": sha256_file(path),
+        "rows": len(normalized),
+        "qualifying_thresholds": len(qualifying),
+        "best_wilson_row": best,
+    }
+
+
 def _qqp_provenance(result_path: Path) -> Dict[str, Any]:
     root = result_path.parent.parent
     prepared_manifest = root / "prepared" / "manifest.json"
@@ -1121,6 +1232,7 @@ def _qqp_provenance(result_path: Path) -> Dict[str, Any]:
         return report
     prepared = _read_json(prepared_manifest)
     embeddings = _read_json(embeddings_manifest)
+    result = _read_json(result_path)
     if prepared.get("schema_version") != QQP_SCHEMA:
         raise AnalysisError("QQP prepared manifest schema mismatch")
     if prepared.get("archive_sha256") != QQP_ARCHIVE_SHA256:
@@ -1131,6 +1243,62 @@ def _qqp_provenance(result_path: Path) -> Dict[str, Any]:
         raise AnalysisError("QQP tokenizer revision mismatch")
     if embeddings.get("model_revision") != QQP_MODEL_REVISION:
         raise AnalysisError("QQP model revision mismatch")
+    if embeddings.get("tokenizer_repository") != (
+        "GPTCache/paraphrase-albert-small-v2"
+    ):
+        raise AnalysisError("QQP tokenizer repository mismatch")
+    if embeddings.get("model_repository") != "GPTCache/paraphrase-albert-onnx":
+        raise AnalysisError("QQP model repository mismatch")
+    if (
+        embeddings.get("dimension") != 768
+        or embeddings.get("dtype") != "float32"
+        or embeddings.get("max_length") != 512
+        or embeddings.get("normalized") is not True
+    ):
+        raise AnalysisError("QQP embedding configuration mismatch")
+    unique_questions = _integer(
+        prepared.get("unique_questions_kept"), "QQP prepared question count"
+    )
+    if _integer(embeddings.get("rows"), "QQP embedding rows") != unique_questions:
+        raise AnalysisError("QQP embedding rows do not match prepared questions")
+    _hash_value(prepared.get("pairs_sha256"), "QQP prepared pairs")
+    _hash_value(prepared.get("texts_sha256"), "QQP prepared texts")
+    _hash_value(embeddings.get("embeddings_sha256"), "QQP embeddings")
+    _hash_value(embeddings.get("text_ids_sha256"), "QQP text IDs")
+
+    counts = prepared.get("counts")
+    expected_count_fields = {
+        "calibration_negative",
+        "calibration_positive",
+        "test_negative",
+        "test_positive",
+    }
+    if not isinstance(counts, dict) or set(counts) != expected_count_fields:
+        raise AnalysisError("QQP prepared split counts are invalid")
+    calibration_pairs = sum(
+        _integer(counts[name], "QQP prepared %s" % name)
+        for name in ("calibration_negative", "calibration_positive")
+    )
+    test_pairs = sum(
+        _integer(counts[name], "QQP prepared %s" % name)
+        for name in ("test_negative", "test_positive")
+    )
+    if result.get("status") == "no_threshold_met_precision_gate":
+        if (
+            result.get("calibration_pairs") != calibration_pairs
+            or result.get("test_pairs_not_evaluated") != test_pairs
+        ):
+            raise AnalysisError("failed QQP result counts do not match preparation")
+    elif (
+        result.get("calibration_pairs") != calibration_pairs
+        or result.get("test_pairs") != test_pairs
+    ):
+        raise AnalysisError("QQP result counts do not match preparation")
+    calibration_grid = _validate_qqp_calibration_grid(
+        result_path.parent / "calibration_thresholds.csv",
+        calibration_pairs,
+        result,
+    )
     verified_artifacts = {}
     for name, key in (
         ("pairs.jsonl", "pairs_sha256"),
@@ -1162,6 +1330,7 @@ def _qqp_provenance(result_path: Path) -> Dict[str, Any]:
             "archive_sha256": prepared["archive_sha256"],
             "tokenizer_revision": embeddings["tokenizer_revision"],
             "model_revision": embeddings["model_revision"],
+            "calibration_grid": calibration_grid,
         }
     )
     return report
@@ -1401,11 +1570,30 @@ def _current_git_head() -> Dict[str, Any]:
     }
 
 
-def _is_packaging_path(path: str) -> bool:
-    return (
-        path.startswith("docs/project/")
-        or path.startswith("artifacts/samples/")
-    )
+PACKAGING_DOCUMENT_PATHS = {
+    "docs/project/chart-map.md",
+    "docs/project/completion-audit.md",
+    "docs/project/draft-pr.md",
+    "docs/project/report.pdf",
+    "docs/project/report.tex",
+    "docs/project/reproducibility.md",
+}
+
+
+def _is_packaging_change(status: str, path: str) -> bool:
+    if path in PACKAGING_DOCUMENT_PATHS:
+        return status in ("A", "M")
+    if path == "artifacts/samples/README.md" or path.startswith(
+        "artifacts/samples/analysis/"
+    ):
+        return status in ("A", "M")
+    if (
+        path == "artifacts/samples/SHA256SUMS"
+        or path.startswith("artifacts/samples/qqp/")
+        or path.startswith("artifacts/samples/verification/")
+    ):
+        return status == "A"
+    return False
 
 
 def _git_bytes(command: Sequence[str], label: str) -> bytes:
@@ -1427,6 +1615,8 @@ def _require_clean_worktree(label: str) -> None:
     status = _git_bytes(
         [
             "git",
+            "-c",
+            "tar.umask=0002",
             "-C",
             str(PROJECT_ROOT),
             "status",
@@ -1506,7 +1696,7 @@ def _packaging_descendant_changes(
             continue
         path = paths[0]
         changes.append({"status": status_value, "path": path})
-        if not _is_packaging_path(path):
+        if not _is_packaging_change(status_value, path):
             rejected.append("%s:%s" % (status_value, path))
     if rejected:
         raise AnalysisError(
@@ -1708,6 +1898,85 @@ def _current_dependency_lock_sha256(label: str) -> str:
         ) from exc
 
 
+def _git_archive_sha256(source_commit: str, label: str) -> str:
+    archive = _git_bytes(
+        [
+            "git",
+            "-C",
+            str(PROJECT_ROOT),
+            "archive",
+            "--format=tar",
+            source_commit,
+        ],
+        "%s exact source archive" % label,
+    )
+    return hashlib.sha256(archive).hexdigest()
+
+
+def _validate_source_archive(
+    root: Path,
+    value: Any,
+    source_commit: str,
+    git_head: Dict[str, Any],
+    label: str,
+) -> Dict[str, Any]:
+    required = {
+        "path",
+        "sha256",
+        "archive_sha256",
+        "format",
+        "source_commit",
+        "tracked_file_count",
+    }
+    if not isinstance(value, dict) or set(value) != required:
+        raise AnalysisError("%s source archive metadata is invalid" % label)
+    if value.get("format") != "git-archive-tar":
+        raise AnalysisError("%s source archive format is invalid" % label)
+    archive_commit = _commit_value(
+        value.get("source_commit"), "%s source archive" % label
+    )
+    if archive_commit != source_commit:
+        raise AnalysisError("%s source archive commit does not match" % label)
+    archive_sha256 = _hash_value(
+        value.get("archive_sha256"), "%s source archive" % label
+    )
+    tracked_file_count = value.get("tracked_file_count")
+    if type(tracked_file_count) is not int or tracked_file_count <= 0:
+        raise AnalysisError("%s source archive file count is invalid" % label)
+    archive_path, archive_report = _evidence_reference(
+        root, value, "%s source archive checksum" % label
+    )
+    expected_name = "source-%s.tar" % source_commit
+    expected_line = "%s  %s\n" % (archive_sha256, expected_name)
+    try:
+        observed_line = archive_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise AnalysisError(
+            "%s source archive checksum is not valid UTF-8" % label
+        ) from exc
+    if observed_line != expected_line:
+        raise AnalysisError(
+            "%s source archive checksum line does not match its metadata" % label
+        )
+
+    git_recomputed = git_head.get("status") == "available"
+    if git_recomputed:
+        recomputed = _git_archive_sha256(source_commit, label)
+        if recomputed != archive_sha256:
+            raise AnalysisError(
+                "%s source archive does not match Git commit %s"
+                % (label, source_commit)
+            )
+    return {
+        **archive_report,
+        "archive_sha256": archive_sha256,
+        "format": "git-archive-tar",
+        "source_commit": source_commit,
+        "tracked_file_count": tracked_file_count,
+        "git_recomputed": git_recomputed,
+    }
+
+
 def _validate_host_environment(
     lock_path: Path, install_log: Path, installed_packages: Path
 ) -> Dict[str, Any]:
@@ -1796,6 +2065,20 @@ def _single_inspect(path: Path, label: str) -> Dict[str, Any]:
     return payload[0]
 
 
+def _environment_map(value: Any, label: str) -> Dict[str, str]:
+    if not isinstance(value, list):
+        raise AnalysisError("%s environment is missing" % label)
+    environment: Dict[str, str] = {}
+    for item in value:
+        if not isinstance(item, str) or "=" not in item:
+            raise AnalysisError("%s environment entry is invalid" % label)
+        key, item_value = item.split("=", 1)
+        if not key or key in environment:
+            raise AnalysisError("%s environment contains a duplicate key" % label)
+        environment[key] = item_value
+    return environment
+
+
 def _validate_image_inspect(path: Path, expected_image_id: str) -> None:
     item = _single_inspect(path, "paired-container image inspection")
     if str(item.get("Id", "")).lower() != expected_image_id:
@@ -1811,15 +2094,31 @@ def _validate_image_inspect(path: Path, expected_image_id: str) -> None:
         raise AnalysisError(
             "paired-container inspected image does not use the project user"
         )
-    environment = config.get("Env")
-    required = (
-        "PIP_CONFIG_FILE=/dev/null",
-        "PIP_INDEX_URL=https://pypi.org/simple",
-        "PIP_NO_INPUT=1",
+    if config.get("WorkingDir") != "/workspace":
+        raise AnalysisError(
+            "paired-container inspected image working directory is not /workspace"
+        )
+    if config.get("Entrypoint") != ["bash", "scripts/verify_project.sh"]:
+        raise AnalysisError(
+            "paired-container inspected image entrypoint is not the verifier"
+        )
+    if config.get("Cmd") not in (None, []):
+        raise AnalysisError(
+            "paired-container inspected image command is not empty"
+        )
+    environment = _environment_map(
+        config.get("Env"), "paired-container inspected image"
     )
-    if not isinstance(environment, list) or any(
-        value not in environment for value in required
-    ):
+    required = {
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PIP_CONFIG_FILE": "/dev/null",
+        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+        "PIP_INDEX_URL": "https://pypi.org/simple",
+        "PIP_NO_INPUT": "1",
+        "PIP_ROOT_USER_ACTION": "ignore",
+    }
+    if any(environment.get(key) != value for key, value in required.items()):
         raise AnalysisError(
             "paired-container inspected image lacks the pinned dependency environment"
         )
@@ -1836,31 +2135,61 @@ def _validate_container_inspect(
         raise AnalysisError("%s runtime inspection lacks a full container ID" % label)
     if str(item.get("Image", "")).lower() != expected_image_id:
         raise AnalysisError("%s did not run the recorded image ID" % label)
+    if item.get("Path") != "bash" or item.get("Args") != [
+        "scripts/verify_project.sh"
+    ]:
+        raise AnalysisError("%s did not execute the verifier entrypoint" % label)
     state = item.get("State")
+    exit_code = state.get("ExitCode") if isinstance(state, dict) else None
     if (
         not isinstance(state, dict)
         or state.get("Status") != "exited"
-        or state.get("ExitCode") != 0
+        or type(exit_code) is not int
+        or exit_code != 0
+        or state.get("OOMKilled") is not False
+        or state.get("Error") != ""
     ):
         raise AnalysisError("%s did not exit successfully" % label)
     host = item.get("HostConfig")
     if not isinstance(host, dict) or host.get("NetworkMode") != "none":
         raise AnalysisError("%s runtime network mode was not none" % label)
+    if host.get("Privileged") is not False:
+        raise AnalysisError("%s runtime was privileged" % label)
+    if host.get("CapAdd") not in (None, []):
+        raise AnalysisError("%s runtime added capabilities" % label)
     dropped = host.get("CapDrop")
     if not isinstance(dropped, list) or {
         str(value).upper() for value in dropped
     } != {"ALL"}:
         raise AnalysisError("%s did not drop all capabilities" % label)
     security = host.get("SecurityOpt")
-    if not isinstance(security, list) or not any(
-        str(value).lower().startswith("no-new-privileges") for value in security
-    ):
+    if not isinstance(security, list) or {
+        str(value).lower() for value in security
+    } != {"no-new-privileges:true"}:
         raise AnalysisError("%s did not enable no-new-privileges" % label)
     config = item.get("Config")
-    environment = config.get("Env") if isinstance(config, dict) else None
-    if (
-        not isinstance(environment, list)
-        or "CARMA_ARTIFACT_DIR=/artifacts" not in environment
+    if not isinstance(config, dict):
+        raise AnalysisError("%s runtime configuration is missing" % label)
+    if config.get("User") != "project" or config.get("WorkingDir") != "/workspace":
+        raise AnalysisError("%s runtime user or working directory changed" % label)
+    if config.get("Entrypoint") != ["bash", "scripts/verify_project.sh"]:
+        raise AnalysisError("%s runtime entrypoint is not the verifier" % label)
+    if config.get("Cmd") not in (None, []):
+        raise AnalysisError("%s runtime command is not empty" % label)
+    environment = _environment_map(config.get("Env"), "%s runtime" % label)
+    required_environment = {
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PIP_CONFIG_FILE": "/dev/null",
+        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+        "PIP_INDEX_URL": "https://pypi.org/simple",
+        "PIP_NO_INPUT": "1",
+        "PIP_ROOT_USER_ACTION": "ignore",
+        "CARMA_ARTIFACT_DIR": "/artifacts",
+    }
+    if any(
+        environment.get(key) != value
+        for key, value in required_environment.items()
     ):
         raise AnalysisError("%s artifact environment is missing" % label)
     mounts = item.get("Mounts")
@@ -1874,7 +2203,7 @@ def _validate_container_inspect(
         if isinstance(mounts, list)
         else []
     )
-    if len(matching) != 1:
+    if not isinstance(mounts, list) or len(mounts) != 1 or len(matching) != 1:
         raise AnalysisError("%s has no unique /artifacts bind mount" % label)
     mount = matching[0]
     source = mount.get("Source")
@@ -1946,6 +2275,13 @@ def _load_host_verification(
         raise AnalysisError("clean-host verification did not use Python 3.12.13")
 
     root = evidence_path.resolve().parent
+    source_archive_report = _validate_source_archive(
+        root,
+        evidence.get("source_archive"),
+        source_commit,
+        git_head,
+        "clean-host verification",
+    )
     dependency = evidence.get("dependency_lock")
     if not isinstance(dependency, dict):
         raise AnalysisError("clean-host dependency lock metadata is missing")
@@ -2009,6 +2345,7 @@ def _load_host_verification(
         "sha256": sha256_file(evidence_path),
         "source_commit": source_commit,
         "commit_binding": commit_binding,
+        "source_archive": source_archive_report,
         "python": python,
         "platform": evidence.get("platform"),
         "dependency_lock": dependency_report,
@@ -2105,6 +2442,13 @@ def _load_container_reproducibility(
         raise AnalysisError("paired-container comparisons did not all pass")
 
     root = evidence_path.resolve().parent
+    source_archive_report = _validate_source_archive(
+        root,
+        evidence.get("source_archive"),
+        source_commit,
+        git_head,
+        "paired-container evidence",
+    )
     _, dependency_report = _evidence_reference(
         root, evidence.get("dependency_lock"), "container dependency lock"
     )
@@ -2230,6 +2574,7 @@ def _load_container_reproducibility(
         "sha256": sha256_file(evidence_path),
         "source_commit": source_commit,
         "commit_binding": commit_binding,
+        "source_archive": source_archive_report,
         "image_id": image_id,
         "platform": evidence["platform"],
         "fresh_container_count": 2,
@@ -2270,6 +2615,13 @@ def _build_gate_audit(
             raise AnalysisError(
                 "host and paired-container evidence use different dependency locks"
             )
+        if (
+            host["report"]["source_archive"]["archive_sha256"]
+            != container["report"]["source_archive"]["archive_sha256"]
+        ):
+            raise AnalysisError(
+                "host and paired-container evidence use different source archives"
+            )
 
     integrity_failures = []
     for row in integration["rows"]:
@@ -2301,7 +2653,7 @@ def _build_gate_audit(
         ),
     }
 
-    qqp_check = _qqp_gate_check(qqp.get("result"))
+    qqp_check = _qqp_gate_check(qqp.get("result"), qqp.get("report"))
     fhr_checks = _full_fhr_checks(full)
     if qqp_check["status"] == "fail":
         gate_2_status = "fail"
@@ -2317,7 +2669,7 @@ def _build_gate_audit(
         "qqp": qqp_check,
         "synthetic_fhr_by_workload": fhr_checks,
         "reason": (
-            "the held-out QQP criterion failed"
+            "the QQP calibration precision prerequisite failed before held-out evaluation"
             if gate_2_status == "fail"
             else (
                 "formal FHR adjudication is pending because the frozen "
@@ -2441,14 +2793,24 @@ def _build_gate_audit(
     return gates, supplemental
 
 
-def _qqp_gate_check(result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+def _qqp_gate_check(
+    result: Optional[Dict[str, Any]], report: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     if result is None:
         return {"status": "pending", "reason": "QQP result unavailable"}
     if result["status"] != "ok":
-        return {
+        failed = {
             "status": "fail",
             "reason": "no calibration threshold met the prerequisite precision rule",
+            "calibration_pairs": result["calibration_pairs"],
+            "test_pairs_not_evaluated": result["test_pairs_not_evaluated"],
         }
+        provenance = (report or {}).get("provenance")
+        if isinstance(provenance, dict):
+            grid = provenance.get("calibration_grid")
+            if isinstance(grid, dict):
+                failed["calibration_grid"] = grid
+        return failed
     metrics = result["test"]
     precision = _number(metrics["precision"], "QQP test precision")
     wilson = _number(

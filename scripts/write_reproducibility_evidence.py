@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import os
 import platform
 import re
 import subprocess
 import sys
+import tarfile
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -22,6 +24,63 @@ BENCHMARK_ARTIFACTS = ("manifest.json", "requests.jsonl", "runs.csv")
 COMMIT = re.compile(r"[0-9a-f]{40}")
 IMAGE_ID = re.compile(r"sha256:[0-9a-f]{64}")
 CONTAINER_ID = re.compile(r"[0-9a-f]{64}")
+PYTHON_IMAGE_DIGEST = (
+    "sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2"
+)
+EXPECTED_ENTRYPOINT = ["bash", "scripts/verify_project.sh"]
+EXPECTED_DOCKERFILE_STATEMENTS = (
+    "FROM python:3.12.13-slim-bookworm@%s" % PYTHON_IMAGE_DIGEST,
+    "ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 "
+    "PIP_CONFIG_FILE=/dev/null PIP_DISABLE_PIP_VERSION_CHECK=1 "
+    "PIP_INDEX_URL=https://pypi.org/simple PIP_NO_INPUT=1 "
+    "PIP_ROOT_USER_ACTION=ignore",
+    "WORKDIR /workspace",
+    "COPY requirements-project.lock ./",
+    "RUN python -m pip --isolated --disable-pip-version-check install "
+    "--no-cache-dir --no-input --index-url https://pypi.org/simple "
+    "--require-hashes --only-binary=:all: "
+    "--requirement requirements-project.lock",
+    "COPY setup.py README.md requirements.txt ./",
+    "COPY gptcache ./gptcache",
+    "COPY gptcache_server ./gptcache_server",
+    "COPY benchmarks ./benchmarks",
+    "COPY examples/benchmark ./examples/benchmark",
+    "COPY tests ./tests",
+    "COPY scripts ./scripts",
+    "RUN python -m pip --isolated --disable-pip-version-check install "
+    "--no-cache-dir --no-input --no-index --no-deps --no-build-isolation "
+    "--editable . && addgroup --system project && adduser --system "
+    "--ingroup project --home /home/project project && "
+    "chown -R project:project /workspace /home/project",
+    "USER project",
+    'ENTRYPOINT ["bash", "scripts/verify_project.sh"]',
+)
+EXPECTED_DOCKERIGNORE_PATTERNS = (
+    "*",
+    "!Dockerfile.project",
+    "!requirements-project.lock",
+    "!setup.py",
+    "!README.md",
+    "!requirements.txt",
+    "!gptcache/",
+    "!gptcache/**",
+    "!gptcache_server/",
+    "!gptcache_server/**",
+    "!benchmarks/",
+    "!benchmarks/**",
+    "!examples/",
+    "examples/**",
+    "!examples/benchmark/",
+    "!examples/benchmark/**",
+    "!tests/",
+    "!tests/**",
+    "!scripts/",
+    "scripts/**",
+    "!scripts/run_ci_benchmark.sh",
+    "!scripts/run_qqp_validation.sh",
+    "!scripts/verify_project.sh",
+    "!scripts/write_reproducibility_evidence.py",
+)
 PYTEST_SUMMARY = re.compile(
     rb"(?m)^(?P<result>[0-9]+ passed"
     rb"(?:, [0-9]+ (?:deselected|skipped|xfailed|xpassed|warnings?))*)"
@@ -88,6 +147,146 @@ def _check_generated_locks(project_root: Path) -> None:
         raise EvidenceError("generated lock validation failed: %s" % detail.strip())
 
 
+def _git_archive_bytes(project_root: Path, source_commit: str) -> bytes:
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-c",
+                "tar.umask=0002",
+                "-C",
+                str(project_root),
+                "archive",
+                "--format=tar",
+                source_commit,
+            ],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        detail = getattr(exc, "stderr", b"")
+        if isinstance(detail, bytes):
+            detail = detail.decode("utf-8", errors="replace")
+        raise EvidenceError("could not reproduce the exact source archive: %s" % detail)
+    if not result.stdout:
+        raise EvidenceError("exact source archive is empty")
+    return result.stdout
+
+
+def _validate_execution_tree(
+    project_root: Path, execution_root: Path, archive_bytes: bytes
+) -> int:
+    project_root = project_root.resolve()
+    execution_root = execution_root.resolve()
+    if not execution_root.is_dir():
+        raise EvidenceError("archived execution root is not a directory")
+    try:
+        if os.path.commonpath((str(project_root), str(execution_root))) == str(
+            project_root
+        ):
+            raise EvidenceError("host/container execution must not use the live checkout")
+    except ValueError:
+        pass
+
+    expected: Dict[str, Tuple[str, bool]] = {}
+    try:
+        with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:") as archive:
+            for member in archive.getmembers():
+                name = member.name.rstrip("/")
+                parts = name.split("/") if name else []
+                if not name or name.startswith("/") or any(
+                    part in ("", ".", "..") for part in parts
+                ):
+                    raise EvidenceError("exact source archive contains an unsafe path")
+                if member.isdir():
+                    continue
+                if not member.isfile():
+                    raise EvidenceError(
+                        "exact source archive contains a non-regular entry: %s" % name
+                    )
+                extracted = archive.extractfile(member)
+                if extracted is None:
+                    raise EvidenceError("could not read archived source file %s" % name)
+                expected[name] = (
+                    _sha256_bytes(extracted.read()),
+                    bool(member.mode & 0o111),
+                )
+    except (tarfile.TarError, OSError) as exc:
+        raise EvidenceError("exact source archive is not a valid tar stream") from exc
+    if not expected:
+        raise EvidenceError("exact source archive contains no files")
+
+    for relative, (expected_hash, expected_executable) in expected.items():
+        candidate = execution_root.joinpath(*relative.split("/"))
+        component = execution_root
+        for part in relative.split("/"):
+            component = component / part
+            if component.is_symlink():
+                raise EvidenceError(
+                    "archived execution path contains a symlink: %s" % relative
+                )
+        if not candidate.is_file():
+            raise EvidenceError("archived execution file is missing: %s" % relative)
+        if _sha256(candidate, "archived execution file %s" % relative) != expected_hash:
+            raise EvidenceError("archived execution file changed: %s" % relative)
+        if bool(candidate.stat().st_mode & 0o111) != expected_executable:
+            raise EvidenceError("archived execution mode changed: %s" % relative)
+
+    allowed_generated_prefixes = (".pytest_cache/", "gptcache.egg-info/")
+    for directory, directory_names, file_names in os.walk(
+        str(execution_root), followlinks=False
+    ):
+        directory_path = Path(directory)
+        for name in list(directory_names):
+            candidate = directory_path / name
+            if candidate.is_symlink():
+                raise EvidenceError(
+                    "archived execution tree contains a generated symlink: %s"
+                    % candidate.relative_to(execution_root).as_posix()
+                )
+        for name in file_names:
+            candidate = directory_path / name
+            relative = candidate.relative_to(execution_root).as_posix()
+            if candidate.is_symlink():
+                raise EvidenceError(
+                    "archived execution tree contains a generated symlink: %s"
+                    % relative
+                )
+            if relative in expected:
+                continue
+            if any(relative.startswith(prefix) for prefix in allowed_generated_prefixes):
+                continue
+            raise EvidenceError(
+                "archived execution tree contains an unexpected file: %s" % relative
+            )
+    return len(expected)
+
+
+def _source_archive_attestation(
+    project_root: Path,
+    evidence_root: Path,
+    execution_root: Path,
+    source_commit: str,
+) -> Dict[str, Any]:
+    archive_bytes = _git_archive_bytes(project_root, source_commit)
+    archive_sha256 = _sha256_bytes(archive_bytes)
+    record = evidence_root / "source-archive.sha256"
+    expected_record = "%s  source-%s.tar\n" % (archive_sha256, source_commit)
+    if _read_text(record, "source archive digest") != expected_record:
+        raise EvidenceError("source archive digest does not match exact Git HEAD")
+    tracked_files = _validate_execution_tree(
+        project_root, execution_root, archive_bytes
+    )
+    return dict(
+        _ref(evidence_root, record, "source archive digest"),
+        archive_sha256=archive_sha256,
+        format="git-archive-tar",
+        source_commit=source_commit,
+        tracked_file_count=tracked_files,
+    )
+
+
 def _read_bytes(path: Path, label: str, allow_empty: bool = False) -> bytes:
     if path.is_symlink() or not path.is_file():
         raise EvidenceError("%s is not a retained regular file: %s" % (label, path))
@@ -123,6 +322,15 @@ def _normalize_pytest_elapsed(raw: bytes) -> bytes:
     """Normalize elapsed text only on successful pytest summary lines."""
 
     return PYTEST_SUMMARY.sub(rb"\g<result> in <elapsed>", raw)
+
+
+def _require_pytest_summaries(raw: bytes, label: str, minimum: int = 3) -> None:
+    count = sum(1 for _match in PYTEST_SUMMARY.finditer(raw))
+    if count < minimum:
+        raise EvidenceError(
+            "%s contains %d recognized successful pytest summaries; expected at least %d"
+            % (label, count, minimum)
+        )
 
 
 def _atomic_write(path: Path, data: bytes) -> None:
@@ -315,34 +523,11 @@ def _dockerfile_statements(path: Path) -> Sequence[str]:
 
 
 def _validate_docker_dependency_contract(project_root: Path) -> None:
-    statements = _dockerfile_statements(project_root / "Dockerfile.project")
-    from_lines = [line for line in statements if line.startswith("FROM ")]
-    if len(from_lines) != 1 or not re.fullmatch(
-        r"FROM python:3\.12\.13-slim-bookworm@sha256:[0-9a-f]{64}",
-        from_lines[0],
-    ):
-        raise EvidenceError("Dockerfile base is not an exact Python 3.12.13 digest")
-    if "COPY requirements-project.lock ./" not in statements:
-        raise EvidenceError("Dockerfile does not copy the generated primary lock")
-    installs = [
-        line
-        for line in statements
-        if line.startswith("RUN python -m pip ")
-        and "--requirement requirements-project.lock" in line
-    ]
-    if len(installs) != 1:
-        raise EvidenceError("Dockerfile does not contain one primary lock install")
-    install = installs[0]
-    for required in (
-        "--isolated",
-        "--no-input",
-        "--index-url https://pypi.org/simple",
-        "--require-hashes",
-        "--only-binary=:all:",
-        "--requirement requirements-project.lock",
-    ):
-        if required not in install:
-            raise EvidenceError("Dockerfile lock install lacks %s" % required)
+    statements = tuple(_dockerfile_statements(project_root / "Dockerfile.project"))
+    if statements != EXPECTED_DOCKERFILE_STATEMENTS:
+        raise EvidenceError(
+            "Dockerfile does not match the exact pinned build/runtime contract"
+        )
 
     dockerignore = [
         line.strip()
@@ -351,10 +536,10 @@ def _validate_docker_dependency_contract(project_root: Path) -> None:
         ).splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     ]
-    if not dockerignore or dockerignore[0] != "*":
-        raise EvidenceError(".dockerignore is not a deny-by-default allowlist")
-    if any(line in ("!.git", "!.git/", "!.git/**") for line in dockerignore):
-        raise EvidenceError(".dockerignore allows Git metadata into the image")
+    if tuple(dockerignore) != EXPECTED_DOCKERIGNORE_PATTERNS:
+        raise EvidenceError(
+            ".dockerignore does not match the exact deny-by-default context contract"
+        )
 
 
 def _single_inspect(path: Path, label: str) -> Dict[str, Any]:
@@ -368,6 +553,20 @@ def _single_inspect(path: Path, label: str) -> Dict[str, Any]:
     return payload[0]
 
 
+def _environment_map(value: Any, label: str) -> Dict[str, str]:
+    if not isinstance(value, list):
+        raise EvidenceError("%s environment is missing" % label)
+    environment: Dict[str, str] = {}
+    for item in value:
+        if not isinstance(item, str) or "=" not in item:
+            raise EvidenceError("%s environment entry is invalid" % label)
+        key, item_value = item.split("=", 1)
+        if not key or key in environment:
+            raise EvidenceError("%s environment contains a duplicate key" % label)
+        environment[key] = item_value
+    return environment
+
+
 def _validate_image_inspect(path: Path, expected_image_id: str) -> None:
     item = _single_inspect(path, "container image inspection")
     if str(item.get("Id", "")).lower() != expected_image_id:
@@ -375,17 +574,27 @@ def _validate_image_inspect(path: Path, expected_image_id: str) -> None:
     if item.get("Os") != "linux" or item.get("Architecture") != "amd64":
         raise EvidenceError("inspected image platform is not linux/amd64")
     config = item.get("Config")
-    if not isinstance(config, dict) or config.get("User") != "project":
+    if not isinstance(config, dict):
+        raise EvidenceError("inspected image configuration is missing")
+    if config.get("User") != "project":
         raise EvidenceError("inspected image does not use the unprivileged project user")
-    environment = config.get("Env")
-    if not isinstance(environment, list):
-        raise EvidenceError("inspected image environment is missing")
+    if config.get("WorkingDir") != "/workspace":
+        raise EvidenceError("inspected image working directory is not /workspace")
+    if config.get("Entrypoint") != EXPECTED_ENTRYPOINT:
+        raise EvidenceError("inspected image entrypoint does not run the verifier")
+    if config.get("Cmd") not in (None, []):
+        raise EvidenceError("inspected image command adds unexpected verifier arguments")
+    environment = _environment_map(config.get("Env"), "inspected image")
     required = {
-        "PIP_CONFIG_FILE=/dev/null",
-        "PIP_INDEX_URL=https://pypi.org/simple",
-        "PIP_NO_INPUT=1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PIP_CONFIG_FILE": "/dev/null",
+        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+        "PIP_INDEX_URL": "https://pypi.org/simple",
+        "PIP_NO_INPUT": "1",
+        "PIP_ROOT_USER_ACTION": "ignore",
     }
-    if not required.issubset(set(environment)):
+    if any(environment.get(key) != value for key, value in required.items()):
         raise EvidenceError("inspected image lacks the pinned dependency environment")
 
 
@@ -399,28 +608,49 @@ def _validate_container_inspect(
     if str(item.get("Image", "")).lower() != expected_image_id:
         raise EvidenceError("container did not run the recorded image ID")
     state = item.get("State")
+    exit_code = state.get("ExitCode") if isinstance(state, dict) else None
     if (
         not isinstance(state, dict)
         or state.get("Status") != "exited"
-        or state.get("ExitCode") != 0
+        or type(exit_code) is not int
+        or exit_code != 0
+        or state.get("OOMKilled") is not False
+        or state.get("Error") != ""
     ):
         raise EvidenceError("container did not exit successfully before inspection")
     host = item.get("HostConfig")
     if not isinstance(host, dict) or host.get("NetworkMode") != "none":
         raise EvidenceError("container runtime network mode was not none")
+    if host.get("Privileged") is not False:
+        raise EvidenceError("container runtime was privileged")
+    if host.get("CapAdd") not in (None, []):
+        raise EvidenceError("container runtime added capabilities")
     dropped = host.get("CapDrop")
     if not isinstance(dropped, list) or {str(value).upper() for value in dropped} != {
         "ALL"
     }:
         raise EvidenceError("container did not drop all capabilities")
     security = host.get("SecurityOpt")
-    if not isinstance(security, list) or not any(
-        str(value).lower().startswith("no-new-privileges") for value in security
-    ):
-        raise EvidenceError("container did not enable no-new-privileges")
+    if not isinstance(security, list) or {
+        str(value).lower() for value in security
+    } != {"no-new-privileges:true"}:
+        raise EvidenceError("container did not enable exact no-new-privileges=true")
     config = item.get("Config")
-    environment = config.get("Env") if isinstance(config, dict) else None
-    if not isinstance(environment, list) or "CARMA_ARTIFACT_DIR=/artifacts" not in environment:
+    if not isinstance(config, dict):
+        raise EvidenceError("container runtime configuration is missing")
+    if config.get("User") != "project" or config.get("WorkingDir") != "/workspace":
+        raise EvidenceError("container runtime user/working directory changed")
+    if config.get("Entrypoint") != EXPECTED_ENTRYPOINT or config.get("Cmd") not in (
+        None,
+        [],
+    ):
+        raise EvidenceError("container runtime command configuration changed")
+    if item.get("Path") != "bash" or item.get("Args") != [
+        "scripts/verify_project.sh"
+    ]:
+        raise EvidenceError("container runtime did not execute the exact verifier")
+    environment = _environment_map(config.get("Env"), "container runtime")
+    if environment.get("CARMA_ARTIFACT_DIR") != "/artifacts":
         raise EvidenceError("container artifact environment is missing")
     mounts = item.get("Mounts")
     matching = [
@@ -428,7 +658,7 @@ def _validate_container_inspect(
         for mount in mounts
         if isinstance(mount, dict) and mount.get("Destination") == "/artifacts"
     ] if isinstance(mounts, list) else []
-    if len(matching) != 1:
+    if not isinstance(mounts, list) or len(mounts) != 1 or len(matching) != 1:
         raise EvidenceError("container has no unique /artifacts bind mount")
     mount = matching[0]
     source = mount.get("Source")
@@ -452,7 +682,10 @@ def _refuse_existing(paths: Sequence[Path]) -> None:
 
 
 def _host_evidence(
-    project_root: Path, evidence_root: Path, expected_commit: Optional[str]
+    project_root: Path,
+    evidence_root: Path,
+    execution_root: Path,
+    expected_commit: Optional[str],
 ) -> Path:
     output = evidence_root / "host-verification.json"
     lock_copy = evidence_root / "requirements-project.lock"
@@ -477,6 +710,9 @@ def _host_evidence(
     log = evidence_root / "host-verification.log"
     if _last_nonempty_line(log, "host verification log") != "[verify] PASS":
         raise EvidenceError("host verification log does not end in [verify] PASS")
+    _require_pytest_summaries(
+        _read_bytes(log, "host verification log"), "host verification log"
+    )
     benchmark_root = evidence_root / "benchmark"
     benchmark = {
         name: _ref(
@@ -486,11 +722,15 @@ def _host_evidence(
         )
         for name in BENCHMARK_ARTIFACTS
     }
+    source_archive = _source_archive_attestation(
+        project_root, evidence_root, execution_root, source_commit
+    )
 
     evidence = {
         "schema_version": "carma-host-verification-v1",
         "status": "pass",
         "source_commit": source_commit,
+        "source_archive": source_archive,
         "baseline_ancestor_verified": True,
         "python": {
             "implementation": platform.python_implementation(),
@@ -524,7 +764,10 @@ def _host_evidence(
 
 
 def _container_evidence(
-    project_root: Path, evidence_root: Path, expected_commit: Optional[str]
+    project_root: Path,
+    evidence_root: Path,
+    execution_root: Path,
+    expected_commit: Optional[str],
 ) -> Path:
     output = evidence_root / "container-reproducibility.json"
     lock_copy = evidence_root / "requirements-project.lock"
@@ -552,6 +795,9 @@ def _container_evidence(
             "container source commit %r does not match exact HEAD %s"
             % (recorded_commit, source_commit)
         )
+    source_archive = _source_archive_attestation(
+        project_root, evidence_root, execution_root, source_commit
+    )
     image_id = _read_text(
         evidence_root / "container-image-id.txt", "container image ID"
     ).strip().lower()
@@ -574,8 +820,10 @@ def _container_evidence(
         raw_log = evidence_root / (label + ".log")
         if _last_nonempty_line(raw_log, "%s raw log" % label) != "[verify] PASS":
             raise EvidenceError("%s raw log does not end in [verify] PASS" % label)
+        raw_log_bytes = _read_bytes(raw_log, "%s raw log" % label)
+        _require_pytest_summaries(raw_log_bytes, "%s raw log" % label)
         normalized = evidence_root / (label + ".nontiming.log")
-        normalized_bytes = _normalize_pytest_elapsed(_read_bytes(raw_log, label))
+        normalized_bytes = _normalize_pytest_elapsed(raw_log_bytes)
         normalized_outputs.append((normalized, normalized_bytes))
 
         benchmark_root = evidence_root / label / "benchmark"
@@ -649,6 +897,7 @@ def _container_evidence(
         "schema_version": "carma-container-reproducibility-v1",
         "status": "pass",
         "source_commit": source_commit,
+        "source_archive": source_archive,
         "image_id": image_id,
         "platform": "linux/amd64",
         "fresh_container_count": 2,
@@ -704,20 +953,33 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         subparser = subparsers.add_parser(command)
         subparser.add_argument("--evidence-root", type=Path, default=default_root)
         subparser.add_argument(
+            "--execution-root",
+            type=Path,
+            required=True,
+            help="materialized exact Git archive used for installation or image build",
+        )
+        subparser.add_argument(
             "--expected-source-commit",
             help="optional full commit ID that must equal the clean checkout HEAD",
         )
     args = parser.parse_args(argv)
     project_root = args.project_root.resolve()
     evidence_root = _resolve(project_root, args.evidence_root)
+    execution_root = _resolve(project_root, args.execution_root)
     try:
         if args.command == "host":
             output = _host_evidence(
-                project_root, evidence_root, args.expected_source_commit
+                project_root,
+                evidence_root,
+                execution_root,
+                args.expected_source_commit,
             )
         else:
             output = _container_evidence(
-                project_root, evidence_root, args.expected_source_commit
+                project_root,
+                evidence_root,
+                execution_root,
+                args.expected_source_commit,
             )
     except EvidenceError as exc:
         parser.error(str(exc))

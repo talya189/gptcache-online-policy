@@ -51,28 +51,55 @@ export PYTHONHASHSEED=0
 
 echo "[verify] upstream SQLite/FAISS regression slice"
 python -m pytest -q -o addopts='' \
+  -p no:cacheprovider \
   tests/unit_tests/eviction/test_memory_cache.py \
   tests/unit_tests/manager/test_eviction.py
 python -m pytest -q -o addopts='' \
+  -p no:cacheprovider \
   tests/unit_tests/manager/test_sql_scalar.py -k 'not duckdb'
 
-project_tests=()
-while IFS= read -r test_file; do
-  project_tests+=("${test_file}")
-done < <(
+expected_project_tests=(
+  tests/project_tests/test_carma_analyze_results.py
+  tests/project_tests/test_carma_failure_paths.py
+  tests/project_tests/test_carma_integration.py
+  tests/project_tests/test_carma_integration_protocol.py
+  tests/project_tests/test_carma_phase_metrics.py
+  tests/project_tests/test_carma_protocol_remediation.py
+  tests/project_tests/test_moss_benchmark.py
+  tests/project_tests/test_qqp_wrapper.py
+  tests/project_tests/test_reproducibility_evidence.py
+  tests/unit_tests/eviction/test_carma.py
+)
+if ! project_test_listing="$(
   find tests -type f \
     \( -path 'tests/project_tests/test_*.py' \
        -o -name 'test_*carma*.py' \
        -o -name 'test_*online_cluster*.py' \) \
     -print | LC_ALL=C sort
-)
-
-if (( ${#project_tests[@]} > 0 )); then
-  echo "[verify] CARMA project tests"
-  python -m pytest -q -o addopts='' "${project_tests[@]}"
-else
-  echo "[verify] CARMA project tests not present yet; discovery skipped"
+)"; then
+  echo "[verify] CARMA project-test discovery failed" >&2
+  exit 2
 fi
+if [[ -z "${project_test_listing}" ]]; then
+  echo "[verify] CARMA project-test discovery returned no files" >&2
+  exit 2
+fi
+project_tests=()
+while IFS= read -r test_file; do
+  project_tests+=("${test_file}")
+done <<< "${project_test_listing}"
+if (( ${#project_tests[@]} != ${#expected_project_tests[@]} )); then
+  echo "[verify] CARMA project-test manifest count changed" >&2
+  exit 2
+fi
+for ((index = 0; index < ${#expected_project_tests[@]}; index++)); do
+  if [[ "${project_tests[index]}" != "${expected_project_tests[index]}" ]]; then
+    echo "[verify] CARMA project-test manifest changed at index ${index}" >&2
+    exit 2
+  fi
+done
+echo "[verify] CARMA project tests (${#project_tests[@]} files)"
+python -m pytest -q -o addopts='' -p no:cacheprovider "${project_tests[@]}"
 
 # The benchmark owns its CLI behind this stable wrapper. Once present it must
 # write deterministic CI results below the selected artifact directory.
@@ -80,7 +107,8 @@ if [[ -x scripts/run_ci_benchmark.sh ]]; then
   echo "[verify] deterministic CI benchmark"
   scripts/run_ci_benchmark.sh "${ARTIFACT_DIR}/benchmark"
 else
-  echo "[verify] scripts/run_ci_benchmark.sh not present yet; benchmark skipped"
+  echo "[verify] required scripts/run_ci_benchmark.sh is absent or not executable" >&2
+  exit 2
 fi
 
 echo "[verify] PASS"

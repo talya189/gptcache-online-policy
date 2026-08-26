@@ -4,6 +4,10 @@ set -Eeuo pipefail
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 readonly BASELINE_COMMIT="c59fb3a6152a4458b2a070ca183b61c4b614095f"
 
+unset BASH_ENV CDPATH ENV PYTHONHOME PYTHONPATH
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONNOUSERSITE=1
+
 if [[ -x "${PROJECT_ROOT}/.venv/bin/python" ]]; then
   PYTHON_CANDIDATE="${CARMA_PYTHON:-${PROJECT_ROOT}/.venv/bin/python}"
 else
@@ -13,7 +17,7 @@ if ! command -v "${PYTHON_CANDIDATE}" >/dev/null 2>&1; then
   echo "CARMA_PYTHON is not executable: ${PYTHON_CANDIDATE}" >&2
   exit 2
 fi
-PYTHON_BIN="$("${PYTHON_CANDIDATE}" -c 'import sys; print(sys.executable)')"
+PYTHON_BIN="$("${PYTHON_CANDIDATE}" -I -c 'import sys; print(sys.executable)')"
 readonly PYTHON_BIN
 
 cd "${PROJECT_ROOT}"
@@ -50,12 +54,14 @@ readonly EVIDENCE_ROOT
 readonly HOST_ROOT="${EVIDENCE_ROOT}/ci"
 
 planned_outputs=(
+  "${HOST_ROOT}"
   "${HOST_ROOT}/benchmark"
   "${HOST_ROOT}/host-verification.log"
   "${HOST_ROOT}/host-verification.json"
   "${HOST_ROOT}/host-install.log"
   "${HOST_ROOT}/host-packages.txt"
   "${HOST_ROOT}/requirements-project.lock"
+  "${HOST_ROOT}/source-archive.sha256"
   "${EVIDENCE_ROOT}/container-reproducibility.json"
   "${EVIDENCE_ROOT}/container-source-commit.txt"
   "${EVIDENCE_ROOT}/container-image-id.txt"
@@ -63,6 +69,7 @@ planned_outputs=(
   "${EVIDENCE_ROOT}/docker-build.log"
   "${EVIDENCE_ROOT}/requirements-project.lock"
   "${EVIDENCE_ROOT}/requirements-project.lock.sha256"
+  "${EVIDENCE_ROOT}/source-archive.sha256"
 )
 for label in 1 2; do
   planned_outputs+=(
@@ -82,6 +89,7 @@ done
 
 BUILD_CONTEXT=""
 HOST_ENV=""
+SOURCE_ARCHIVE=""
 CONTAINER_IDS=()
 cleanup() {
   local container_id
@@ -96,6 +104,10 @@ cleanup() {
         && "$(basename "${HOST_ENV}")" == carma-gate-host.* ]]; then
     rm -rf -- "${HOST_ENV}"
   fi
+  if [[ -n "${SOURCE_ARCHIVE}" && -f "${SOURCE_ARCHIVE}" \
+        && "$(basename "${SOURCE_ARCHIVE}")" == carma-gate-source.*.tar ]]; then
+    rm -f -- "${SOURCE_ARCHIVE}"
+  fi
 }
 trap cleanup EXIT
 
@@ -106,7 +118,7 @@ export PIP_INDEX_URL=https://pypi.org/simple
 export PIP_NO_INPUT=1
 
 echo "[repro] exact interpreter and dependency graph"
-"${PYTHON_BIN}" - <<'PY'
+"${PYTHON_BIN}" -I - <<'PY'
 import platform
 import sys
 
@@ -116,40 +128,66 @@ if platform.python_implementation() != "CPython" or sys.version_info[:3] != (3, 
         % (platform.python_implementation(), platform.python_version())
     )
 PY
-"${PYTHON_BIN}" scripts/generate_hashed_locks.py --check
+"${PYTHON_BIN}" -I scripts/generate_hashed_locks.py --check
+
+echo "[repro] exact-HEAD source archive"
+mkdir -p "${HOST_ROOT}"
+if [[ -L "${HOST_ROOT}" \
+      || "$(cd "${HOST_ROOT}" && pwd -P)" != "${EVIDENCE_ROOT}/ci" ]]; then
+  echo "Host evidence root is not a canonical real child: ${HOST_ROOT}" >&2
+  exit 2
+fi
+BUILD_CONTEXT="$(mktemp -d "${TMPDIR:-/tmp}/carma-gate-context.XXXXXX")"
+SOURCE_ARCHIVE="$(mktemp "${TMPDIR:-/tmp}/carma-gate-source.XXXXXX.tar")"
+git -c tar.umask=0002 archive --format=tar \
+  --output="${SOURCE_ARCHIVE}" "${SOURCE_COMMIT}"
+SOURCE_ARCHIVE_SHA256="$("${PYTHON_BIN}" -I -c \
+  'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+  "${SOURCE_ARCHIVE}")"
+readonly SOURCE_ARCHIVE_SHA256
+printf '%s  source-%s.tar\n' "${SOURCE_ARCHIVE_SHA256}" "${SOURCE_COMMIT}" \
+  > "${HOST_ROOT}/source-archive.sha256"
+cp "${HOST_ROOT}/source-archive.sha256" \
+  "${EVIDENCE_ROOT}/source-archive.sha256"
+tar -xf "${SOURCE_ARCHIVE}" -C "${BUILD_CONTEXT}"
+"${PYTHON_BIN}" -I "${BUILD_CONTEXT}/scripts/generate_hashed_locks.py" \
+  --project-root "${BUILD_CONTEXT}" --check
 
 echo "[repro] clean hashed host environment"
-mkdir -p "${HOST_ROOT}"
 HOST_ENV="$(mktemp -d "${TMPDIR:-/tmp}/carma-gate-host.XXXXXX")"
-"${PYTHON_BIN}" -m venv "${HOST_ENV}"
+"${PYTHON_BIN}" -I -m venv "${HOST_ENV}"
 HOST_PYTHON="${HOST_ENV}/bin/python"
 readonly HOST_PYTHON
-{
-  "${HOST_PYTHON}" -m pip --isolated --disable-pip-version-check install \
+(
+  cd "${BUILD_CONTEXT}"
+  "${HOST_PYTHON}" -I -m pip --isolated --disable-pip-version-check install \
     --no-input \
     --index-url https://pypi.org/simple \
     --require-hashes \
     --only-binary=:all: \
     --requirement requirements-project.lock &&
-  "${HOST_PYTHON}" -m pip --isolated --disable-pip-version-check install \
+  "${HOST_PYTHON}" -I -m pip --isolated --disable-pip-version-check install \
     --no-input --no-index --no-deps --no-build-isolation --editable . &&
-  "${HOST_PYTHON}" -m pip check &&
+  "${HOST_PYTHON}" -I -m pip check &&
   echo "[install] pip check PASS"
-} 2>&1 | tee "${HOST_ROOT}/host-install.log"
-"${HOST_PYTHON}" -m pip list --format=freeze \
+) 2>&1 | tee "${HOST_ROOT}/host-install.log"
+"${HOST_PYTHON}" -I -m pip list --format=freeze \
   > "${HOST_ROOT}/host-packages.txt"
 
 echo "[repro] clean host verification"
 export PATH="${HOST_ENV}/bin:${PATH}"
-CARMA_ARTIFACT_DIR="${HOST_ROOT}" PYTHON_BIN="${HOST_PYTHON}" \
-  bash scripts/verify_project.sh 2>&1 | tee "${HOST_ROOT}/host-verification.log"
-"${HOST_PYTHON}" scripts/write_reproducibility_evidence.py host \
+(
+  cd "${BUILD_CONTEXT}"
+  CARMA_ARTIFACT_DIR="${HOST_ROOT}" PYTHON_BIN="${HOST_PYTHON}" \
+    bash scripts/verify_project.sh
+) 2>&1 | tee "${HOST_ROOT}/host-verification.log"
+"${HOST_PYTHON}" -I "${PROJECT_ROOT}/scripts/write_reproducibility_evidence.py" \
+  --project-root "${PROJECT_ROOT}" host \
   --evidence-root "${HOST_ROOT}" \
+  --execution-root "${BUILD_CONTEXT}" \
   --expected-source-commit "${SOURCE_COMMIT}"
 
 echo "[repro] exact-HEAD linux/amd64 image build"
-BUILD_CONTEXT="$(mktemp -d "${TMPDIR:-/tmp}/carma-gate-context.XXXXXX")"
-git archive --format=tar "${SOURCE_COMMIT}" | tar -xf - -C "${BUILD_CONTEXT}"
 readonly IMAGE_TAG="carma-project:repro-${SOURCE_COMMIT:0:12}-$$"
 printf '%s\n' "${SOURCE_COMMIT}" > "${EVIDENCE_ROOT}/container-source-commit.txt"
 docker build \
@@ -173,7 +211,7 @@ for label in 1 2; do
   container_id="$(docker create \
     --network none \
     --cap-drop ALL \
-    --security-opt=no-new-privileges \
+    --security-opt=no-new-privileges=true \
     --platform linux/amd64 \
     --mount "type=bind,src=${run_root},dst=/artifacts" \
     --env CARMA_ARTIFACT_DIR=/artifacts \
@@ -182,20 +220,27 @@ for label in 1 2; do
   set +e
   docker start --attach "${container_id}" \
     2>&1 | tee "${EVIDENCE_ROOT}/docker-run-${label}.log"
-  run_status="${PIPESTATUS[0]}"
+  run_pipeline_status=("${PIPESTATUS[@]}")
   set -e
+  run_status="${run_pipeline_status[0]:-1}"
+  tee_status="${run_pipeline_status[1]:-1}"
   docker inspect "${container_id}" \
     > "${EVIDENCE_ROOT}/docker-run-${label}.inspect.json"
   docker rm "${container_id}" >/dev/null
-  if [[ "${run_status}" -ne 0 ]]; then
-    echo "Container ${label} exited with status ${run_status}" >&2
-    exit "${run_status}"
+  if [[ "${run_status}" -ne 0 || "${tee_status}" -ne 0 ]]; then
+    echo "Container ${label} pipeline failed: docker=${run_status} tee=${tee_status}" >&2
+    if [[ "${run_status}" -ne 0 ]]; then
+      exit "${run_status}"
+    fi
+    exit "${tee_status}"
   fi
 done
 
 echo "[repro] derive, compare, and record paired-container evidence"
-"${HOST_PYTHON}" scripts/write_reproducibility_evidence.py container \
+"${HOST_PYTHON}" -I "${PROJECT_ROOT}/scripts/write_reproducibility_evidence.py" \
+  --project-root "${PROJECT_ROOT}" container \
   --evidence-root "${EVIDENCE_ROOT}" \
+  --execution-root "${BUILD_CONTEXT}" \
   --expected-source-commit "${SOURCE_COMMIT}"
 
 printf '[repro] PASS\nhost evidence: %s\ncontainer evidence: %s\n' \

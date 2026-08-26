@@ -1,8 +1,11 @@
+import io
 import json
+import tarfile
 from pathlib import Path
 
 import pytest
 
+from scripts import generate_hashed_locks
 from scripts import write_reproducibility_evidence as evidence
 
 
@@ -56,6 +59,18 @@ def _stub_source_checks(monkeypatch):
     monkeypatch.setattr(
         evidence, "_verify_checkout_credentials_absent", lambda project_root: None
     )
+    monkeypatch.setattr(
+        evidence,
+        "_source_archive_attestation",
+        lambda project_root, evidence_root, execution_root, source_commit: {
+            "path": "source-archive.sha256",
+            "sha256": "1" * 64,
+            "archive_sha256": "2" * 64,
+            "format": "git-archive-tar",
+            "source_commit": source_commit,
+            "tracked_file_count": 1,
+        },
+    )
 
 
 def _project_root(tmp_path):
@@ -77,19 +92,13 @@ def _project_root(tmp_path):
         encoding="utf-8",
     )
     (root / "Dockerfile.project").write_text(
-        "\n".join(
-            (
-                "FROM python:3.12.13-slim-bookworm@sha256:%s" % ("3" * 64),
-                "COPY requirements-project.lock ./",
-                "RUN python -m pip --isolated --no-input "
-                "--index-url https://pypi.org/simple --require-hashes "
-                "--only-binary=:all: --requirement requirements-project.lock",
-            )
-        )
-        + "\n",
+        "\n".join(evidence.EXPECTED_DOCKERFILE_STATEMENTS) + "\n",
         encoding="utf-8",
     )
-    (root / ".dockerignore").write_text("*\n!Dockerfile.project\n", encoding="utf-8")
+    (root / ".dockerignore").write_text(
+        "\n".join(evidence.EXPECTED_DOCKERIGNORE_PATTERNS) + "\n",
+        encoding="utf-8",
+    )
     return root
 
 
@@ -119,15 +128,23 @@ def test_host_writer_emits_analyzer_schema_only_after_pass(monkeypatch, tmp_path
         encoding="utf-8",
     )
     (root / "host-verification.log").write_text(
-        "fixture\n[verify] PASS\n", encoding="utf-8"
+        "fixture\n"
+        "1 passed in 0.1s\n"
+        "2 passed in 0.2s\n"
+        "3 passed in 0.3s\n"
+        "[verify] PASS\n",
+        encoding="utf-8",
     )
     _benchmark(root / "benchmark")
 
-    output = evidence._host_evidence(project, root, SOURCE_COMMIT)
+    output = evidence._host_evidence(
+        project, root, tmp_path / "execution", SOURCE_COMMIT
+    )
     payload = json.loads(output.read_text(encoding="utf-8"))
 
     assert payload["schema_version"] == "carma-host-verification-v1"
     assert payload["source_commit"] == SOURCE_COMMIT
+    assert payload["source_archive"]["source_commit"] == SOURCE_COMMIT
     assert payload["dependency_lock"]["require_hashes"] is True
     assert payload["dependency_lock"]["only_binary"] is True
     assert set(payload["benchmark_artifacts"]) == set(evidence.BENCHMARK_ARTIFACTS)
@@ -171,10 +188,17 @@ def _container_inputs(root, second_phase=b"completed phase in 1s\n"):
                     "Architecture": "amd64",
                     "Config": {
                         "User": "project",
+                        "WorkingDir": "/workspace",
+                        "Entrypoint": evidence.EXPECTED_ENTRYPOINT,
+                        "Cmd": None,
                         "Env": [
+                            "PYTHONDONTWRITEBYTECODE=1",
+                            "PYTHONUNBUFFERED=1",
                             "PIP_CONFIG_FILE=/dev/null",
+                            "PIP_DISABLE_PIP_VERSION_CHECK=1",
                             "PIP_INDEX_URL=https://pypi.org/simple",
                             "PIP_NO_INPUT=1",
+                            "PIP_ROOT_USER_ACTION=ignore",
                         ],
                     },
                 }
@@ -184,8 +208,12 @@ def _container_inputs(root, second_phase=b"completed phase in 1s\n"):
     )
     (root / "docker-build.log").write_text("fixture build\n", encoding="utf-8")
     logs = (
-        b"completed phase in 1s\n1 passed in 1.25s\n[verify] PASS\n",
-        second_phase + b"1 passed in 9s\n[verify] PASS\n",
+        b"completed phase in 1s\n"
+        b"1 passed in 1.25s\n2 passed in 2s\n3 passed in 3.5s\n"
+        b"[verify] PASS\n",
+        second_phase
+        + b"1 passed in 9s\n2 passed in 8.0s\n3 passed in 7s\n"
+        + b"[verify] PASS\n",
     )
     for index, raw in enumerate(logs, 1):
         (root / ("docker-run-%d.log" % index)).write_bytes(raw)
@@ -197,13 +225,37 @@ def _container_inputs(root, second_phase=b"completed phase in 1s\n"):
                     {
                         "Id": str(index + 3) * 64,
                         "Image": "sha256:" + "2" * 64,
-                        "State": {"Status": "exited", "ExitCode": 0},
+                        "Path": "bash",
+                        "Args": ["scripts/verify_project.sh"],
+                        "State": {
+                            "Status": "exited",
+                            "ExitCode": 0,
+                            "OOMKilled": False,
+                            "Error": "",
+                        },
                         "HostConfig": {
                             "NetworkMode": "none",
+                            "Privileged": False,
+                            "CapAdd": None,
                             "CapDrop": ["ALL"],
-                            "SecurityOpt": ["no-new-privileges"],
+                            "SecurityOpt": ["no-new-privileges:true"],
                         },
-                        "Config": {"Env": ["CARMA_ARTIFACT_DIR=/artifacts"]},
+                        "Config": {
+                            "User": "project",
+                            "WorkingDir": "/workspace",
+                            "Entrypoint": evidence.EXPECTED_ENTRYPOINT,
+                            "Cmd": None,
+                            "Env": [
+                                "PYTHONDONTWRITEBYTECODE=1",
+                                "PYTHONUNBUFFERED=1",
+                                "PIP_CONFIG_FILE=/dev/null",
+                                "PIP_DISABLE_PIP_VERSION_CHECK=1",
+                                "PIP_INDEX_URL=https://pypi.org/simple",
+                                "PIP_NO_INPUT=1",
+                                "PIP_ROOT_USER_ACTION=ignore",
+                                "CARMA_ARTIFACT_DIR=/artifacts",
+                            ],
+                        },
                         "Mounts": [
                             {
                                 "Type": "bind",
@@ -227,7 +279,9 @@ def test_container_writer_derives_normalization_and_compares_bytes(
     root = tmp_path / "container"
     _container_inputs(root)
 
-    output = evidence._container_evidence(project, root, SOURCE_COMMIT)
+    output = evidence._container_evidence(
+        project, root, tmp_path / "execution", SOURCE_COMMIT
+    )
     payload = json.loads(output.read_text(encoding="utf-8"))
 
     assert payload["schema_version"] == "carma-container-reproducibility-v1"
@@ -257,7 +311,9 @@ def test_container_writer_does_not_emit_pass_for_non_timing_difference(
     _container_inputs(root, second_phase=b"completed phase in 9s\n")
 
     with pytest.raises(evidence.EvidenceError, match="non-timing container logs differ"):
-        evidence._container_evidence(project, root, SOURCE_COMMIT)
+        evidence._container_evidence(
+            project, root, tmp_path / "execution", SOURCE_COMMIT
+        )
 
     assert not (root / "container-reproducibility.json").exists()
     assert not (root / "requirements-project.lock").exists()
@@ -277,6 +333,162 @@ def test_container_writer_rejects_unattested_runtime_control(monkeypatch, tmp_pa
     inspect_path.write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(evidence.EvidenceError, match="network mode was not none"):
-        evidence._container_evidence(project, root, SOURCE_COMMIT)
+        evidence._container_evidence(
+            project, root, tmp_path / "execution", SOURCE_COMMIT
+        )
 
     assert not (root / "container-reproducibility.json").exists()
+
+
+def test_docker_contract_rejects_wrong_base_digest(tmp_path):
+    project = _project_root(tmp_path)
+    dockerfile = project / "Dockerfile.project"
+    dockerfile.write_text(
+        dockerfile.read_text(encoding="utf-8").replace(
+            evidence.PYTHON_IMAGE_DIGEST, "sha256:" + "f" * 64
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(evidence.EvidenceError, match="exact pinned build/runtime"):
+        evidence._validate_docker_dependency_contract(project)
+
+
+def test_image_contract_rejects_changed_entrypoint(tmp_path):
+    root = tmp_path / "container"
+    _container_inputs(root)
+    inspect_path = root / "container-image-inspect.json"
+    payload = json.loads(inspect_path.read_text(encoding="utf-8"))
+    payload[0]["Config"]["Entrypoint"] = ["bash", "scripts/run_ci_benchmark.sh"]
+    inspect_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(evidence.EvidenceError, match="entrypoint does not run"):
+        evidence._validate_image_inspect(inspect_path, "sha256:" + "2" * 64)
+
+
+def test_runtime_contract_rejects_changed_args(tmp_path):
+    root = tmp_path / "container"
+    _container_inputs(root)
+    inspect_path = root / "docker-run-1.inspect.json"
+    payload = json.loads(inspect_path.read_text(encoding="utf-8"))
+    payload[0]["Args"] = ["scripts/run_ci_benchmark.sh"]
+    inspect_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(evidence.EvidenceError, match="exact verifier"):
+        evidence._validate_container_inspect(
+            inspect_path,
+            "sha256:" + "2" * 64,
+            root / "docker-run-1",
+        )
+
+
+def test_runtime_contract_rejects_false_no_new_privileges(tmp_path):
+    root = tmp_path / "container"
+    _container_inputs(root)
+    inspect_path = root / "docker-run-1.inspect.json"
+    payload = json.loads(inspect_path.read_text(encoding="utf-8"))
+    payload[0]["HostConfig"]["SecurityOpt"] = ["no-new-privileges:false"]
+    inspect_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(evidence.EvidenceError, match="exact no-new-privileges"):
+        evidence._validate_container_inspect(
+            inspect_path,
+            "sha256:" + "2" * 64,
+            root / "docker-run-1",
+        )
+
+
+def test_runtime_contract_rejects_boolean_exit_code(tmp_path):
+    root = tmp_path / "container"
+    _container_inputs(root)
+    inspect_path = root / "docker-run-1.inspect.json"
+    payload = json.loads(inspect_path.read_text(encoding="utf-8"))
+    payload[0]["State"]["ExitCode"] = False
+    inspect_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(evidence.EvidenceError, match="exit successfully"):
+        evidence._validate_container_inspect(
+            inspect_path,
+            "sha256:" + "2" * 64,
+            root / "docker-run-1",
+        )
+
+
+def _single_file_archive(name, payload):
+    stream = io.BytesIO()
+    with tarfile.open(fileobj=stream, mode="w") as archive:
+        member = tarfile.TarInfo(name)
+        member.mode = 0o644
+        member.mtime = 1
+        member.size = len(payload)
+        archive.addfile(member, io.BytesIO(payload))
+    return stream.getvalue()
+
+
+def test_execution_tree_excludes_ignored_live_shadow_and_rejects_copied_shadow(
+    tmp_path,
+):
+    project = tmp_path / "live-project"
+    execution = tmp_path / "archived-execution"
+    project.mkdir()
+    execution.mkdir()
+    tracked = b"VALUE = 'tracked'\n"
+    archive_bytes = _single_file_archive("tracked.py", tracked)
+    (project / "tracked.py").write_bytes(tracked)
+    live_cache = project / "__pycache__"
+    live_cache.mkdir()
+    (live_cache / "tracked.cpython-312.pyc").write_bytes(b"ignored poison")
+    (execution / "tracked.py").write_bytes(tracked)
+
+    assert evidence._validate_execution_tree(project, execution, archive_bytes) == 1
+
+    execution_cache = execution / "__pycache__"
+    execution_cache.mkdir()
+    (execution_cache / "tracked.cpython-312.pyc").write_bytes(b"copied poison")
+    with pytest.raises(evidence.EvidenceError, match="unexpected file"):
+        evidence._validate_execution_tree(project, execution, archive_bytes)
+
+
+def test_source_archive_record_must_match_reproduced_git_archive(
+    monkeypatch, tmp_path
+):
+    project = tmp_path / "live-project"
+    execution = tmp_path / "archived-execution"
+    root = tmp_path / "evidence"
+    project.mkdir()
+    execution.mkdir()
+    root.mkdir()
+    archive_bytes = _single_file_archive("tracked.py", b"tracked\n")
+    (execution / "tracked.py").write_bytes(b"tracked\n")
+    monkeypatch.setattr(
+        evidence, "_git_archive_bytes", lambda project_root, source_commit: archive_bytes
+    )
+    (root / "source-archive.sha256").write_text(
+        "%s  source-%s.tar\n" % ("0" * 64, SOURCE_COMMIT),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(evidence.EvidenceError, match="does not match exact Git HEAD"):
+        evidence._source_archive_attestation(
+            project, root, execution, SOURCE_COMMIT
+        )
+
+
+def test_verification_log_requires_project_pytest_summary():
+    with pytest.raises(evidence.EvidenceError, match="expected at least 3"):
+        evidence._require_pytest_summaries(
+            b"1 passed in 1s\n2 passed in 2s\n[verify] PASS\n",
+            "fixture verification log",
+        )
+
+
+def test_lock_requirements_include_cannot_escape_project_root(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    outside = tmp_path / "mutable-outside.txt"
+    outside.write_text("fixture==1\n", encoding="utf-8")
+    source = project / "requirements-project.txt"
+    source.write_text("-r ../mutable-outside.txt\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="escapes project root"):
+        generate_hashed_locks._pins(source, {}, project)

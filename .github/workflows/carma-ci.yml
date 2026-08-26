@@ -13,6 +13,9 @@ env:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
   PIP_INDEX_URL: https://pypi.org/simple
   PIP_NO_INPUT: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONNOUSERSITE: "1"
+  PYTHONPATH: ""
 
 jobs:
   python38-compatibility:
@@ -100,36 +103,64 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-project.lock
 
+      - name: Materialize the exact source archive
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse --verify HEAD)" = "${GITHUB_SHA}"
+          source_root="${RUNNER_TEMP}/carma-source-tree"
+          source_archive="${RUNNER_TEMP}/carma-source-${GITHUB_SHA}.tar"
+          test ! -e "${source_root}"
+          mkdir -p "${source_root}" artifacts/ci
+          git -c tar.umask=0002 archive --format=tar \
+            --output="${source_archive}" "${GITHUB_SHA}"
+          archive_sha256="$(python -I -c \
+            'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+            "${source_archive}")"
+          printf '%s  source-%s.tar\n' "${archive_sha256}" "${GITHUB_SHA}" \
+            > artifacts/ci/source-archive.sha256
+          tar -xf "${source_archive}" -C "${source_root}"
+          python -I "${source_root}/scripts/generate_hashed_locks.py" \
+            --project-root "${source_root}" --check
+
       - name: Install the locked project environment
         run: |
-          set -o pipefail
-          mkdir -p artifacts/ci
-          {
-            python -m pip --isolated --disable-pip-version-check install \
+          set -Eeuo pipefail
+          python -I -m venv "${RUNNER_TEMP}/carma-host"
+          host_python="${RUNNER_TEMP}/carma-host/bin/python"
+          (
+            cd "${RUNNER_TEMP}/carma-source-tree"
+            "${host_python}" -I -m pip --isolated --disable-pip-version-check install \
               --no-input \
               --index-url https://pypi.org/simple \
               --require-hashes \
               --only-binary=:all: \
               --requirement requirements-project.lock &&
-            python -m pip --isolated --disable-pip-version-check install \
+            "${host_python}" -I -m pip --isolated --disable-pip-version-check install \
               --no-input --no-index --no-deps --no-build-isolation --editable . &&
-            python -m pip check &&
+            "${host_python}" -I -m pip check &&
             echo "[install] pip check PASS"
-          } 2>&1 | tee artifacts/ci/host-install.log
-          python -m pip list --format=freeze > artifacts/ci/host-packages.txt
+          ) 2>&1 | tee "${GITHUB_WORKSPACE}/artifacts/ci/host-install.log"
+          "${host_python}" -I -m pip list --format=freeze \
+            > artifacts/ci/host-packages.txt
 
       - name: Run project verification
         env:
           CARMA_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/ci
         run: |
-          set -o pipefail
-          mkdir -p artifacts/ci
-          bash scripts/verify_project.sh 2>&1 | tee artifacts/ci/host-verification.log
+          set -Eeuo pipefail
+          cd "${RUNNER_TEMP}/carma-source-tree"
+          PATH="${RUNNER_TEMP}/carma-host/bin:${PATH}" \
+            PYTHON_BIN="${RUNNER_TEMP}/carma-host/bin/python" \
+            bash scripts/verify_project.sh 2>&1 \
+            | tee "${GITHUB_WORKSPACE}/artifacts/ci/host-verification.log"
 
       - name: Validate and record machine-readable host evidence
         run: |
-          python scripts/write_reproducibility_evidence.py host \
+          "${RUNNER_TEMP}/carma-host/bin/python" -I \
+            scripts/write_reproducibility_evidence.py \
+            --project-root "${GITHUB_WORKSPACE}" host \
             --evidence-root artifacts/ci \
+            --execution-root "${RUNNER_TEMP}/carma-source-tree" \
             --expected-source-commit "${GITHUB_SHA}"
 
       - name: Upload deterministic CI artifacts
@@ -195,26 +226,42 @@ jobs:
           persist-credentials: false
 
       - name: Validate generated dependency locks
-        run: python3 scripts/generate_hashed_locks.py --check
+        run: python3 -I scripts/generate_hashed_locks.py --check
 
-      - name: Prepare private reproducibility evidence paths
+      - name: Materialize the exact source archive and evidence paths
         run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse --verify HEAD)" = "${GITHUB_SHA}"
+          source_root="${RUNNER_TEMP}/carma-source-tree"
+          source_archive="${RUNNER_TEMP}/carma-source-${GITHUB_SHA}.tar"
+          test ! -e "${source_root}"
           mkdir -p artifacts/docker-run-1 artifacts/docker-run-2
+          mkdir -p "${source_root}"
           # The hosted runner workspace is private and ephemeral. Only these two
           # bind-mount leaves are writable by the image's unprivileged UID.
           chmod 0777 artifacts/docker-run-1 artifacts/docker-run-2
-          git rev-parse HEAD > artifacts/container-source-commit.txt
+          git -c tar.umask=0002 archive --format=tar \
+            --output="${source_archive}" "${GITHUB_SHA}"
+          archive_sha256="$(python3 -I -c \
+            'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+            "${source_archive}")"
+          printf '%s  source-%s.tar\n' "${archive_sha256}" "${GITHUB_SHA}" \
+            > artifacts/source-archive.sha256
+          tar -xf "${source_archive}" -C "${source_root}"
+          python3 -I "${source_root}/scripts/generate_hashed_locks.py" \
+            --project-root "${source_root}" --check
+          printf '%s\n' "${GITHUB_SHA}" > artifacts/container-source-commit.txt
 
       - name: Build the pinned project image
         run: |
-          set -o pipefail
+          set -Eeuo pipefail
           docker build \
             --no-cache \
             --pull \
             --progress=plain \
             --platform linux/amd64 \
-            --file Dockerfile.project \
-            --tag carma-project:ci . \
+            --file "${RUNNER_TEMP}/carma-source-tree/Dockerfile.project" \
+            --tag carma-project:ci "${RUNNER_TEMP}/carma-source-tree" \
             2>&1 | tee artifacts/docker-build.log
           docker image inspect --format '{{.Id}}' carma-project:ci \
             > artifacts/container-image-id.txt
@@ -223,12 +270,12 @@ jobs:
 
       - name: Run two clean network-isolated containers
         run: |
-          set -o pipefail
+          set -Eeuo pipefail
           for label in 1 2; do
             container_id="$(docker create \
               --network none \
               --cap-drop ALL \
-              --security-opt=no-new-privileges \
+              --security-opt=no-new-privileges=true \
               --platform linux/amd64 \
               --mount "type=bind,src=${GITHUB_WORKSPACE}/artifacts/docker-run-${label},dst=/artifacts" \
               --env CARMA_ARTIFACT_DIR=/artifacts \
@@ -236,21 +283,28 @@ jobs:
             set +e
             docker start --attach "${container_id}" \
               2>&1 | tee "artifacts/docker-run-${label}.log"
-            run_status="${PIPESTATUS[0]}"
+            run_pipeline_status=("${PIPESTATUS[@]}")
             set -e
+            run_status="${run_pipeline_status[0]:-1}"
+            tee_status="${run_pipeline_status[1]:-1}"
             docker inspect "${container_id}" \
               > "artifacts/docker-run-${label}.inspect.json"
             docker rm "${container_id}" >/dev/null
-            if [[ "${run_status}" -ne 0 ]]; then
-              echo "Container ${label} exited with status ${run_status}" >&2
-              exit "${run_status}"
+            if [[ "${run_status}" -ne 0 || "${tee_status}" -ne 0 ]]; then
+              echo "Container ${label} pipeline failed: docker=${run_status} tee=${tee_status}" >&2
+              if [[ "${run_status}" -ne 0 ]]; then
+                exit "${run_status}"
+              fi
+              exit "${tee_status}"
             fi
           done
 
       - name: Derive, compare, and record paired-container evidence
         run: |
-          python3 scripts/write_reproducibility_evidence.py container \
+          python3 -I scripts/write_reproducibility_evidence.py \
+            --project-root "${GITHUB_WORKSPACE}" container \
             --evidence-root artifacts \
+            --execution-root "${RUNNER_TEMP}/carma-source-tree" \
             --expected-source-commit "${GITHUB_SHA}"
 
       - name: Upload paired container evidence

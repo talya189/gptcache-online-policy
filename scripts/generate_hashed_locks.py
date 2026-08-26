@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from functools import lru_cache
 import json
+import os
 import re
 import tempfile
 import urllib.parse
@@ -29,9 +30,25 @@ LOCK_HASH = re.compile(r"^--hash=sha256:([0-9a-f]{64})(?: \\)?$")
 def _pins(
     path: Path,
     collected: MutableMapping[str, Tuple[str, str]],
+    project_root: Path,
     active: Tuple[Path, ...] = (),
 ) -> None:
-    path = path.resolve()
+    project_root = project_root.resolve()
+    lexical_path = Path(os.path.abspath(str(path)))
+    try:
+        relative = lexical_path.relative_to(project_root)
+    except ValueError as exc:
+        raise ValueError("requirements input escapes project root: %s" % path) from exc
+    component = project_root
+    for part in relative.parts:
+        component = component / part
+        if component.is_symlink():
+            raise ValueError("requirements input contains a symlink: %s" % path)
+    path = lexical_path.resolve()
+    try:
+        path.relative_to(project_root)
+    except ValueError as exc:
+        raise ValueError("requirements input resolves outside project root: %s" % path) from exc
     if path in active:
         raise ValueError("recursive requirements include: %s" % path)
     for line_number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -40,7 +57,12 @@ def _pins(
             continue
         if line.startswith("-r ") or line.startswith("--requirement "):
             include = line.split(maxsplit=1)[1]
-            _pins(path.parent / include, collected, active + (path,))
+            _pins(
+                path.parent / include,
+                collected,
+                project_root,
+                active + (path,),
+            )
             continue
         match = PIN.fullmatch(line)
         if match is None:
@@ -133,17 +155,17 @@ def _locked_pins(path: Path) -> "OrderedDict[str, Tuple[str, str]]":
     return locked
 
 
-def check(source: Path, destination: Path) -> None:
+def check(source: Path, destination: Path, project_root: Path) -> None:
     expected: "OrderedDict[str, Tuple[str, str]]" = OrderedDict()
-    _pins(source, expected)
+    _pins(source, expected, project_root)
     observed = _locked_pins(destination)
     if list(observed.items()) != list(expected.items()):
         raise ValueError("%s does not match exact pins from %s" % (destination, source))
 
 
-def generate(source: Path, destination: Path) -> None:
+def generate(source: Path, destination: Path, project_root: Path) -> None:
     collected: "OrderedDict[str, Tuple[str, str]]" = OrderedDict()
-    _pins(source, collected)
+    _pins(source, collected, project_root)
     rendered = _render(source, collected.values())
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
@@ -176,9 +198,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     root = args.project_root.resolve()
     for source, destination in DEFAULT_LOCKS:
         if args.check:
-            check(root / source, root / destination)
+            check(root / source, root / destination, root)
         else:
-            generate(root / source, root / destination)
+            generate(root / source, root / destination, root)
         print(destination.as_posix())
     return 0
 
