@@ -93,9 +93,11 @@ SOURCE_ARCHIVE=""
 CONTAINER_IDS=()
 cleanup() {
   local container_id
-  for container_id in "${CONTAINER_IDS[@]}"; do
-    docker rm --force "${container_id}" >/dev/null 2>&1 || true
-  done
+  if (( ${#CONTAINER_IDS[@]} > 0 )); then
+    for container_id in "${CONTAINER_IDS[@]}"; do
+      docker rm --force "${container_id}" >/dev/null 2>&1 || true
+    done
+  fi
   if [[ -n "${BUILD_CONTEXT}" && -d "${BUILD_CONTEXT}" \
         && "$(basename "${BUILD_CONTEXT}")" == carma-gate-context.* ]]; then
     rm -rf -- "${BUILD_CONTEXT}"
@@ -178,8 +180,7 @@ echo "[repro] clean host verification"
 export PATH="${HOST_ENV}/bin:${PATH}"
 (
   cd "${BUILD_CONTEXT}"
-  CARMA_ARTIFACT_DIR="${HOST_ROOT}" PYTHON_BIN="${HOST_PYTHON}" \
-    bash scripts/verify_project.sh
+  CARMA_ARTIFACT_DIR="${HOST_ROOT}" bash scripts/verify_project.sh
 ) 2>&1 | tee "${HOST_ROOT}/host-verification.log"
 "${HOST_PYTHON}" -I "${PROJECT_ROOT}/scripts/write_reproducibility_evidence.py" \
   --project-root "${PROJECT_ROOT}" host \

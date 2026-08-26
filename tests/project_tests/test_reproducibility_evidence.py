@@ -1,5 +1,6 @@
 import io
 import json
+import subprocess
 import tarfile
 from pathlib import Path
 
@@ -492,3 +493,35 @@ def test_lock_requirements_include_cannot_escape_project_root(tmp_path):
 
     with pytest.raises(ValueError, match="escapes project root"):
         generate_hashed_locks._pins(source, {}, project)
+
+
+def test_local_gate_is_bash32_safe_before_any_container():
+    gate = (PROJECT_ROOT / "scripts" / "run_reproducibility_gate.sh").read_text(
+        encoding="utf-8"
+    )
+    cleanup_start = gate.index("cleanup() {")
+    cleanup_end = gate.index("\n}\ntrap cleanup EXIT", cleanup_start) + 3
+    cleanup_function = gate[cleanup_start:cleanup_end]
+    program = (
+        "set -Eeuo pipefail\n"
+        "BUILD_CONTEXT=''\nHOST_ENV=''\nSOURCE_ARCHIVE=''\n"
+        "CONTAINER_IDS=()\n"
+        + cleanup_function
+        + "\ncleanup\n"
+    )
+    result = subprocess.run(
+        ["/bin/bash", "-c", program],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+
+    host_start = gate.index('echo "[repro] clean host verification"')
+    host_end = gate.index(
+        'echo "[repro] exact-HEAD linux/amd64 image build"', host_start
+    )
+    host_block = gate[host_start:host_end]
+    assert 'export PATH="${HOST_ENV}/bin:${PATH}"' in host_block
+    assert 'PYTHON_BIN="${HOST_PYTHON}"' not in host_block
