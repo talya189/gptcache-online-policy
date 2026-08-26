@@ -1,6 +1,6 @@
 \documentclass[10pt,letterpaper]{article}
 
-\usepackage[margin=0.72in,headheight=14pt]{geometry}
+\usepackage[left=0.85in,right=0.85in,top=0.62in,bottom=0.62in,headheight=14pt]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{enumitem}
@@ -30,6 +30,11 @@
 \lhead{CARMA for GPTCache}
 \rhead{Final Project Report}
 \cfoot{\thepage}
+\fancypagestyle{plain}{%
+  \fancyhf{}
+  \lhead{CARMA for GPTCache}
+  \rhead{Final Project Report}
+  \cfoot{\thepage}}
 
 \newcommand{\passmark}{\textcolor{pass}{\textbf{PASS}}}
 \newcommand{\failmark}{\textcolor{fail}{\textbf{FAIL}}}
@@ -75,11 +80,12 @@
   post-embedding cache-path p95 latency, 0.997$\times$ LRU for throughput, and
   1.043$\times$ LRU for sampled peak RSS.
 
-  The preregistered scan-return gate \textbf{failed}: CARMA returned
-  30,000/30,000 valid hits, but LFU already returned 29,998/30,000, leaving
-  only +0.0067 percentage points rather than the required +5.0. This report
-  retains that negative result and distinguishes measured evidence from
-  protocol deviations.
+  Two preregistered gates \textbf{failed}. CARMA returned 30,000/30,000 valid
+  scan-return hits, but LFU already returned 29,998/30,000, leaving only
+  +0.0067 percentage points rather than the required +5.0. Separately, no QQP
+  calibration threshold met the semantic-precision prerequisite, so the
+  held-out split was not evaluated. The system-overhead gate remains pending
+  because its across-seed rule was not frozen.
   \end{minipage}
 
   \vfill
@@ -90,6 +96,12 @@
     Primary policy config & topic .70, cell .97, half-life 500, quota strength 1.0 \\
   \end{tabular}
 \end{titlepage}
+
+% Keep report navigation visible on figure-led float pages; the title page
+% remains unheaded because this override is installed only after it closes.
+\makeatletter
+\let\ps@empty\ps@fancy
+\makeatother
 
 \section{Introduction and related work}
 
@@ -126,13 +138,11 @@ FAISS vector cannot shadow a valid neighbor at \code{top\_k=1}.
 
 The contribution is CARMA, a deterministic online policy plus backward-
 compatible GPTCache integration, failure-safe cleanup, restart reconstruction,
-tests, and a reproducible evaluation pipeline. The results support an adaptive
-phase-shift benefit; every individual system diagnostic remains within its
-numerical limit, while formal Gate 7 is pending. They do \emph{not}
-support the preregistered claim of a five-point return-phase advantage over the
-stronger scan baseline.
+tests, and a reproducible evaluation pipeline. The machine audit records Gates
+1, 3, 5, 6, and 8 as pass; Gates 2 and 4 as fail; and Gate 7 as pending. Its
+overall status is therefore \textbf{FAIL} under the frozen precedence
+fail $>$ pending $>$ pass, despite the supported phase-shift benefit.
 
-\clearpage
 \section{Extension design}
 
 \subsection{State and online clustering}
@@ -193,7 +203,6 @@ exchange for semantic coverage. It should help under phase change and
 pollution, but need not dominate when a simple baseline already retains the
 working set.
 
-\clearpage
 \section{Correctness and GPTCache integration}
 
 CARMA is opt-in; existing callers and the default LRU path are unchanged. The
@@ -302,7 +311,6 @@ cells in one topic, 0.72 across topic-local concepts, and at most 0.12 across
 topics. It makes the 10,000-request CPU grid tractable while remaining a
 controlled model, not a natural-language claim.
 
-\clearpage
 \section{Synthetic results}
 
 \begin{table}[ht]
@@ -461,10 +469,14 @@ prepare manifest.
 
 \subsection{Held-out QQP safety}
 
-\textbf{Final report build note:} this paragraph and the gate table are filled
-from the checksum-linked QQP \code{result.json} after the pinned ONNX embedding,
-calibration-only threshold selection, and one-shot component-disjoint test.
-No synthetic result may select or alter the QQP threshold.
+The component-disjoint calibration set contained 7,729 pairs: 5,652 positives
+and 2,077 negatives. None of the 20 frozen thresholds from 0.80 through 0.99
+met the prerequisite precision rule. The row with the strongest Wilson lower
+bound was threshold 0.96: TP=684, FP=17, TN=2,060, FN=4,968, precision
+0.97575, recall 0.12102, and one-sided 95\% Wilson lower bound 0.96421. It
+therefore missed both the 0.99 point-precision and 0.98 lower-bound criteria.
+No threshold was selected, and all 56,963 held-out pairs remain recorded as
+not evaluated; no held-out precision or false-hit claim is made.
 
 \begin{table}[ht]
 \centering
@@ -472,20 +484,22 @@ No synthetic result may select or alter the QQP threshold.
 \toprule
 Gate & Status & Current adjudication \\
 \midrule
-1 & \pendingmark & Clean final verifier artifact not yet linked. \\
-2 & \pendingmark & QQP embedding/evaluation in progress; frozen FHR scope is
-ambiguous. \\
+1 & \passmark & Exact-source host verifier passed; integration integrity
+failures are zero. \\
+2 & \failmark & No QQP calibration threshold met the precision prerequisite;
+held-out evaluation was not run. \\
 3 & \passmark & Shift VHR +4.885 pp; CI [4.677, 5.088]; Holm $p=.0234$. \\
 4 & \failmark & Return VHR +0.0067 pp versus required +5.0 pp. \\
 5 & \passmark & Stationary VHR delta CI lower bound +6.572 pp. \\
 6 & \passmark & Safe-token delta CI lower bound meets every workload limit. \\
 7 & \pendingmark & Every precomputed-vector seed meets the diagnostics, but no
 frozen aggregation rule and no ONNX-path run. \\
-8 & \pendingmark & Paired clean-container evidence not yet linked. \\
+8 & \passmark & Two fresh network-isolated \code{linux/amd64} runs produced
+byte-identical benchmark artifacts and normalized logs. \\
 \bottomrule
 \end{tabularx}
-\caption{Success-gate status reconciled to the machine-readable audit. Pending
-evidence is not counted as a pass, and the failed preregistered gate is retained.}
+\caption{Success-gate status reconciled to the machine-readable audit. Failed
+and pending gates are retained rather than averaged into a global pass.}
 \end{table}
 
 \section{Discussion, protocol audit, and limitations}
@@ -510,7 +524,7 @@ coverage policies without changing the gate after observation.
 
 The full bundle's hashes, seed pairing, selected configuration, 480 aggregate
 rows, bootstraps, Wilcoxon tests, and Holm adjustment were independently
-recomputed exactly. The audit also found five deviations that this report does
+recomputed exactly. The audit also found six deviations that this report does
 not hide:
 
 \begin{enumerate}
@@ -525,7 +539,11 @@ not hide:
   were not run. Capacity sweeps and the four component ablations were run; and
   \item the integration runs used precomputed 2,982-dimensional synthetic
   vectors rather than the frozen ONNX embedding, so their timing covers only
-  the post-embedding cache path and Gate 7 remains diagnostic.
+  the post-embedding cache path and Gate 7 remains diagnostic; and
+  \item the QQP implementation computed held-out cosine similarities
+  transiently before the calibration abort, although it never selected a
+  threshold, classified or aggregated held-out labels, exposed held-out
+  metrics, or wrote those similarities.
 \end{enumerate}
 
 The exact historical result remains tied to clean commit
@@ -533,10 +551,20 @@ The exact historical result remains tied to clean commit
 retroactively alter its status. A separate deviation ledger documents impact
 and future-run remediation.
 
+Final correctness and reproducibility evidence is tied to exact source commit:
+\newline\code{cfc7167e7604247432f980ed8fb54bc896364fe9}. The clean host and both
+containers used the same 393-file Git archive, SHA-256:
+\newline\code{3bed7fcd46a7db8ffb3dec6a0d87183e144ad41cf7efcd03cb681b4ef885b12e}.
+This report and its curated evidence are packaged in the single permitted
+direct-child report commit; the analyzer requires that relationship and its
+restricted path set before Gates 1 and 8 remain claimable.
+
 \subsection{External validity}
 
 Synthetic vectors isolate eviction behavior but are not natural language.
-QQP tests pairwise semantic matching, not conversational distribution shift.
+QQP calibration probes pairwise semantic matching; the component-disjoint
+held-out split was not evaluated, and neither represents conversational
+distribution shift.
 MOSS is an exact-key recorded-response negative control rather than a CARMA
 semantic-policy comparison. System timing comes from one Apple-arm64 machine,
 five seeds, one synthetic embedding geometry, capacity 100, and SQLite/FAISS;
@@ -550,9 +578,10 @@ cluster-aware policy, robust cross-store deletion, focused and upstream tests,
 frozen paired experiments, real backend measurements, pinned natural-data
 checks, deterministic analysis, container/CI definitions, and an auditable
 report. The central hypothesis is only partly supported: CARMA is compelling
-under category shift and passes the synthetic stationary VHR non-regression
-gate, while its preregistered scan advantage over the strongest baseline
-fails.
+under category shift and passes stationary VHR non-regression, but semantic
+safety fails at QQP calibration and its preregistered scan advantage over the
+strongest baseline fails. System overhead remains diagnostic rather than a
+claimable pass.
 
 The most valuable next steps are to persist versioned adaptive state, replace
 linear victim scans with per-topic heaps, test more embedding models and cache
@@ -567,14 +596,14 @@ before looking at its test outcomes.
 \toprule
 Criterion & Status & Evidence \\
 \midrule
-Correctness (40\%) & \pendingmark & Unit/property/failure/integration and
-upstream slices are implemented; clean final verifier evidence is pending and
-will be retained under \code{artifacts/samples/verification/}. \\
-Reproducibility (30\%) & \pendingmark & Exact pins, Dockerfile, immutable CI
-actions, and deterministic CI/MOSS/analyzer outputs are implemented; paired
-clean-container evidence is pending. \\
-Performance (15\%) & Mixed & Gates 3, 5, 6 pass; each system seed meets the
-diagnostic checks but Gate 7 is pending; Gate 4 fails. \\
+Correctness (40\%) & \passmark & The exact-source host verifier passed 8
+upstream plus 2 SQLite/FAISS tests (1 optional deselected) and 164 project
+tests (2 skipped); real integration integrity failures are zero. \\
+Reproducibility (30\%) & \passmark & Exact pins and one source archive produced
+matching host plus two fresh network-isolated container benchmark artifacts;
+all retained evidence is checksum-linked. \\
+Performance (15\%) & Mixed & Gates 3, 5, 6 pass; Gates 2 and 4 fail; each
+system seed meets its diagnostic checks but Gate 7 is pending. \\
 Clarity (15\%) & Complete & One-page baseline rationale, policy/protocol docs,
 README commands, labeled figures, limitations, and this report. \\
 \bottomrule
@@ -604,10 +633,11 @@ statistics, and analysis; benchmark, analyzer, and verifier wrappers. \\
 hashed dependency locks, and lock generator. \\
 \path{README.md}; \path{.github/workflows/carma-ci.yml} & Installation,
 benchmark how-to, and immutable host/container CI. \\
-\path{artifacts/samples/} & \path{full/}, \path{integration/}, \path{moss/}, and
-\path{qqp/} hold curated raw evidence; \path{analysis/}, \path{verification/},
-\path{README.md}, and \path{SHA256SUMS} hold the audit, figures, checks, inventory,
-and hashes. Full source archives, model files, and embeddings are excluded. \\
+\path{artifacts/samples/} & \path{full/}, \path{integration/}, and \path{moss/}
+hold curated raw evidence; \path{qqp/} holds stage manifests plus calibration
+and terminal results. \path{analysis/}, \path{verification/}, \path{README.md},
+and \path{SHA256SUMS} hold audit outputs and hashes. Source archives, raw QQP
+pairs/texts, model files, and embeddings are excluded. \\
 \path{docs/project/completion-audit.md}; \path{docs/project/draft-pr.md};
 \path{docs/project/report.pdf} & Rubric map, unpublished upstream PR draft, and this final
 single-PDF handoff. \\

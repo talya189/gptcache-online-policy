@@ -1,0 +1,231 @@
+[
+    {
+        "Id": "30097b34bdb7116ca8837d3bc83ef55f23c54d308277420435b24ef186c0cf87",
+        "Created": "2026-08-26T01:46:52.996671257Z",
+        "Path": "bash",
+        "Args": [
+            "scripts/verify_project.sh"
+        ],
+        "State": {
+            "Status": "exited",
+            "Running": false,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 0,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-08-26T01:46:53.108822923Z",
+            "FinishedAt": "2026-08-26T01:47:11.804629293Z"
+        },
+        "Image": "sha256:991afc1232927c28a564c4b17426303295157d18a69531cd4f6247e22da8a6ac",
+        "ResolvConfPath": "/var/lib/docker/containers/30097b34bdb7116ca8837d3bc83ef55f23c54d308277420435b24ef186c0cf87/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/30097b34bdb7116ca8837d3bc83ef55f23c54d308277420435b24ef186c0cf87/hostname",
+        "HostsPath": "/var/lib/docker/containers/30097b34bdb7116ca8837d3bc83ef55f23c54d308277420435b24ef186c0cf87/hosts",
+        "LogPath": "/var/lib/docker/containers/30097b34bdb7116ca8837d3bc83ef55f23c54d308277420435b24ef186c0cf87/30097b34bdb7116ca8837d3bc83ef55f23c54d308277420435b24ef186c0cf87-json.log",
+        "Name": "/epic_wilbur",
+        "RestartCount": 0,
+        "Driver": "overlay2",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "none",
+            "PortBindings": {},
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": [
+                "ALL"
+            ],
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": [
+                "no-new-privileges=true"
+            ],
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": [],
+            "BlkioDeviceReadBps": [],
+            "BlkioDeviceWriteBps": [],
+            "BlkioDeviceReadIOps": [],
+            "BlkioDeviceWriteIOps": [],
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": [],
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "Mounts": [
+                {
+                    "Type": "bind",
+                    "Source": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/docker-run-2",
+                    "Target": "/artifacts"
+                }
+            ],
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware",
+                "/sys/devices/virtual/powercap"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/4ae4550f0ac746693b966ad0470b8a2b3e54f5f3da6dd67023257231ffe98eb8-init/diff:/var/lib/docker/overlay2/jo1uamx1y1y5uz79uxpfl41zd/diff:/var/lib/docker/overlay2/vl8zk4dvfptaewwlv1oway7dh/diff:/var/lib/docker/overlay2/q8kkqrksnktghxb04c0p180nj/diff:/var/lib/docker/overlay2/fv9keccfkdnmowzvfechtoofh/diff:/var/lib/docker/overlay2/kcerbe09ql9divzshmibdqugw/diff:/var/lib/docker/overlay2/ltvhd3ci3rf9jzwux9cios6v3/diff:/var/lib/docker/overlay2/j12bdi6uo3eyb1kcebgqzvwqd/diff:/var/lib/docker/overlay2/0jc90fq2ihg7sez74a93y4pk0/diff:/var/lib/docker/overlay2/xhj1uvq82p2p53yplnd4hrx6g/diff:/var/lib/docker/overlay2/ck7pf9bwymmg2ub8mj2k76sws/diff:/var/lib/docker/overlay2/uk72bfdhmokgks61jgqyardf3/diff:/var/lib/docker/overlay2/6htpmug1ua3jfh1lx82335qd7/diff:/var/lib/docker/overlay2/mavgv92djfziagds87wbo6nk4/diff:/var/lib/docker/overlay2/875b2ec06326f078949325237c8c5f9d045102504b422fbff03c90cead400b91/diff:/var/lib/docker/overlay2/2d446409fa0a2c91725813751a75e28b6ff2a2cf57d4cb17795fcecbbbc7b293/diff:/var/lib/docker/overlay2/3b232c9e24d8eec52cf40136e12358b9e160d3407e815b92b0b1a4d203bd76d7/diff:/var/lib/docker/overlay2/88c33045aafe74d1039d0191a6e25455479648fbf6ebb0c6dcd82852143296fc/diff",
+                "MergedDir": "/var/lib/docker/overlay2/4ae4550f0ac746693b966ad0470b8a2b3e54f5f3da6dd67023257231ffe98eb8/merged",
+                "UpperDir": "/var/lib/docker/overlay2/4ae4550f0ac746693b966ad0470b8a2b3e54f5f3da6dd67023257231ffe98eb8/diff",
+                "WorkDir": "/var/lib/docker/overlay2/4ae4550f0ac746693b966ad0470b8a2b3e54f5f3da6dd67023257231ffe98eb8/work"
+            },
+            "Name": "overlay2"
+        },
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/docker-run-2",
+                "Destination": "/artifacts",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "30097b34bdb7",
+            "Domainname": "",
+            "User": "project",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "CARMA_ARTIFACT_DIR=/artifacts",
+                "PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+                "PYTHON_VERSION=3.12.13",
+                "PYTHON_SHA256=c08bc65a81971c1dd5783182826503369466c7e67374d1646519adf05207b684",
+                "PYTHONDONTWRITEBYTECODE=1",
+                "PYTHONUNBUFFERED=1",
+                "PIP_CONFIG_FILE=/dev/null",
+                "PIP_DISABLE_PIP_VERSION_CHECK=1",
+                "PIP_INDEX_URL=https://pypi.org/simple",
+                "PIP_NO_INPUT=1",
+                "PIP_ROOT_USER_ACTION=ignore",
+                "TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache"
+            ],
+            "Cmd": null,
+            "Image": "carma-project:repro-cfc7167e7604-10407",
+            "Volumes": null,
+            "WorkingDir": "/workspace",
+            "Entrypoint": [
+                "bash",
+                "scripts/verify_project.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {}
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "9c8f1f8d87d9c5ff73fb6277d7e1ecaf9b4810285659b5c3570c94d6e01b363b",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {},
+            "SandboxKey": "/var/run/docker/netns/9c8f1f8d87d9",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "none": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "MacAddress": "",
+                    "NetworkID": "4a37c15e76810676120416d8ab002cb0b28ac89475b83ea03787cfbbb9236940",
+                    "EndpointID": "",
+                    "Gateway": "",
+                    "IPAddress": "",
+                    "IPPrefixLen": 0,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DriverOpts": null
+                }
+            }
+        }
+    }
+]

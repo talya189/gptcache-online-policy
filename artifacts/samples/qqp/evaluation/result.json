@@ -1,0 +1,7 @@
+{
+  "calibration_pairs": 7729,
+  "schema_version": "carma-qqp-v1",
+  "selected_threshold": null,
+  "status": "no_threshold_met_precision_gate",
+  "test_pairs_not_evaluated": 56963
+}

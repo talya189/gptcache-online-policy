@@ -11,8 +11,8 @@ completed, negative result rather than being rewritten.
 |---|---:|---|
 | Build on an open-source LLM caching library | Complete | GPTCache baseline commit `c59fb3a6152a4458b2a070ca183b61c4b614095f`; feature branch `feature/online-cluster-aware-cache` |
 | Design and implement an enhanced policy | Complete | `gptcache/manager/eviction/carma.py`; `docs/project/policy-design.md` |
-| Evaluate a measurable performance claim | Experimental result complete; final reconciliation pending | `artifacts/samples/full/`; Gates 3/5/6 pass and Gate 4 fails |
-| Explain a defensible claim to fame | Complete in source; final PDF pending | `docs/project/report.tex`; adaptive category-shift gain and real-system overhead boundary, with failed scan claim retained |
+| Evaluate a measurable performance claim | Complete, mixed result | `artifacts/samples/full/`; Gates 3/5/6 pass, Gates 2/4 fail, Gate 7 remains pending |
+| Explain a defensible claim to fame | Complete | `docs/project/report.tex`; adaptive category-shift gain and real-system overhead boundary, with failed scan and QQP claims retained |
 
 ## 2. Baseline framework and paper
 
@@ -30,13 +30,13 @@ completed, negative result rather than being rewritten.
 | Repetitive/steady workload | Complete | Stationary Zipf traces in `benchmarks/carma/synthetic.py` |
 | Novel long prompts | Complete as a correctness/token negative control | Pinned, token-bucket-stratified MOSS replay in `benchmarks/carma/moss.py`; real cache-path overhead is measured separately by the SQLite/FAISS integration run |
 | Phase shift and pollution stress | Complete | Five frozen phases and 30/40/30 scan; structural preflight tests |
-| Human-labeled semantic safety | Pending frozen QQP result | Component-disjoint QQP preparation/calibration/test in `benchmarks/carma/qqp.py`; the endpoint result does not resolve the frozen FHR-scope ambiguity in formal Gate 2 |
+| Human-labeled semantic safety | Complete, negative result | Component-disjoint QQP calibration in `benchmarks/carma/qqp.py`; no threshold met the precision prerequisite, so 56,963 held-out pairs were not evaluated and Gate 2 fails |
 | Mean/p50/p95/p99 latency | Complete at run-summary granularity | Real integration `runs.csv`; deterministic CI timing is disabled by design |
 | Hit rate and correctness | Complete | Raw/valid/false hits, precision, VHR, opportunity recall |
 | Memory/CPU/I/O | Complete for real system | Five fresh SQLite/FAISS `resources.jsonl` traces; macOS process I/O explicitly unavailable rather than treated as zero |
 | Throughput | Complete | Integration requests/second and CI timing schema |
-| Automated scripts and CI | Implemented; final CI/container evidence pending | `scripts/run_*benchmark.sh`; `.github/workflows/carma-ci.yml` |
-| README how-to plus sample logs | Partial until final QQP/verification evidence | Root `README.md`; `artifacts/samples/` |
+| Automated scripts and CI | Complete locally; hosted CI prospective | `scripts/run_*benchmark.sh`; `.github/workflows/carma-ci.yml`; exact-source host and paired-container evidence |
+| README how-to plus sample logs | Complete | Root `README.md`; checksum-verified `artifacts/samples/` bundle |
 
 ## 4. Extension implementation
 
@@ -57,7 +57,7 @@ completed, negative result rather than being rewritten.
 | Parameter sweep | Complete for primary grid/capacity | 96 validation configs; capacities 20/50/100/200 |
 | Ablation study | Complete with identifiability caveat | No cluster, no decay, no admission, no quota; no-cluster/no-quota observationally identical |
 | Repeated seeds and confidence intervals | Complete | Ten paired primary seeds; 10,000-resample CIs; exact Wilcoxon/Holm |
-| Latency and hit-rate plots | Partial / granularity caveat | Deterministic analyzer figures under `artifacts/samples/analysis/`; system plot shows five-seed p95 summaries because per-request integration latencies were not retained |
+| Latency and hit-rate plots | Complete with granularity caveat | Deterministic analyzer figures under `artifacts/samples/analysis/`; system plot shows five-seed p95 summaries because per-request integration latencies were not retained |
 | Relative improvements | Complete | Summary/gate audit plus report tables |
 | Honest significance discussion | Complete | Gate 4 failure, recovery censoring, and protocol deviations are explicit |
 
@@ -67,15 +67,15 @@ completed, negative result rather than being rewritten.
 |---|---:|---|
 | README install/benchmark instructions | Complete | Root `README.md` CARMA section |
 | Clean GitHub repository | Pending external publication | Local feature branch only; no remote branch or pull request has been published |
-| Docker/environment reproducibility | Pending final evidence link | `Dockerfile.project`, exact requirements, host/container CI |
-| Single 8--12 page PDF | Pending final render check | `docs/project/report.tex` and `docs/project/report.pdf` |
+| Docker/environment reproducibility | Complete | Exact-source host evidence and two byte-matched network-isolated `linux/amd64` container runs under `artifacts/samples/verification/` |
+| Single 8--12 page PDF | Complete | `docs/project/report.tex` and visually verified `docs/project/report.pdf` |
 | Introduction/related work | Complete in source | Report Section 1 |
 | Extension design | Complete in source | Report Sections 2--3 |
 | Experimental setup | Complete in source | Report Section 4 |
-| Results and figures | Pending QQP plus Gates 1/8 evidence | Report Sections 5--7 |
+| Results and figures | Complete | Report Sections 5--7 and machine-readable `artifacts/samples/analysis/gate-audit.json` |
 | Discussion/trade-offs | Complete in source | Report Section 8 |
 | Grounded conclusion/future work | Complete in source | Report Section 9 |
-| Appendix artifact map | Complete in source; final paths pending | Report artifact map and this audit |
+| Appendix artifact map | Complete | Report artifact map, sample README, checksum manifest, and this audit |
 | Draft upstream PR text | Complete, unpublished | `docs/project/draft-pr.md` |
 
 ## 7. Weighted success criteria
@@ -85,27 +85,33 @@ completed, negative result rather than being rewritten.
 Evidence includes policy unit/property tests, real factory integration,
 failure-path rollback/fail-stop regressions, relevant upstream tests, exact
 capacity invariants, zero stale candidates, and zero unknown/false answer IDs
-in the primary real-system runs. Final verifier output will be retained under
-`artifacts/samples/verification/` after the clean gate passes.
+in the primary real-system runs. The exact-source host verifier passed the
+8 upstream plus 2 SQLite/FAISS tests (1 optional deselected) and 164 project
+tests (2 skipped); its hash-bound output is retained under
+`artifacts/samples/verification/host/`.
 
 ### Reproducibility (30%)
 
 Implemented controls include exact Python/dependency pins, an immutable
 container base and CI actions, a single offline verifier, deterministic CI
 logs, recorded source and model revisions/checksums, source/contract hashes,
-atomic outputs, and analyzer tamper tests. Two clean container runs remain to
-be executed and retained. Historical protocol deviations are separately
-recorded in `docs/project/protocol-deviations.md` and are not retroactively
-repaired in the original result bundle.
+atomic outputs, and analyzer tamper tests. One exact 393-file Git archive fed
+the clean host and two fresh network-isolated `linux/amd64` containers; both
+containers emitted byte-identical benchmark artifacts and normalized logs.
+The attested image ID is
+`sha256:991afc1232927c28a564c4b17426303295157d18a69531cd4f6247e22da8a6ac`.
+Historical protocol deviations remain separately recorded and are not
+retroactively repaired in the original result bundle.
 
 ### Performance gain (15%)
 
 This criterion is mixed rather than globally passed. Category shift improves
 by 4.885 percentage points with a positive paired CI and corrected
 significance. Stationary and token-saving safety gates pass, and every real
-system seed satisfies the numerical overhead limits. The preregistered
-pollution return-phase improvement gate fails because the stronger LFU baseline
-is already 99.993%.
+system seed satisfies the numerical overhead limits, although formal Gate 7
+remains pending because no across-seed rule was frozen. The preregistered
+pollution return-phase gate fails because LFU is already 99.993%, and semantic
+safety Gate 2 fails at calibration before held-out evaluation.
 
 ### Clarity (15%)
 

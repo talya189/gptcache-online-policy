@@ -1,0 +1,22 @@
+{
+  "archive": "examples/benchmark/similiar_qqp_full.json.gz",
+  "archive_sha256": "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58",
+  "contradictory_negative_pairs_dropped": 9,
+  "counts": {
+    "calibration_negative": 2077,
+    "calibration_positive": 5652,
+    "test_negative": 32474,
+    "test_positive": 24489
+  },
+  "cross_split_pairs_dropped": 16153,
+  "kept_pairs": 64692,
+  "normalization": "Unicode NFKC, strip, collapse whitespace",
+  "pairs_sha256": "c84d9897bd4838e8c12f45d59e04401031bbd5fa533570490db016cf40235126",
+  "positive_components": 110885,
+  "raw_pairs": 80854,
+  "schema_version": "carma-qqp-v1",
+  "split_rule": "component SHA-256 bucket; 20 calibration / 80 test",
+  "texts_sha256": "645ece94cebf36d1d37a66410d925d7d2252b6d39dd42b473e866289d1576dc3",
+  "unique_questions_kept": 108732,
+  "unique_questions_raw": 137543
+}

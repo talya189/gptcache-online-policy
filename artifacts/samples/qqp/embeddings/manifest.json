@@ -1,0 +1,15 @@
+{
+  "dimension": 768,
+  "dtype": "float32",
+  "embeddings_sha256": "ff4c9f086e62ac15a9384e74c00c79b16416637f6e04413f2863fb99895931bf",
+  "max_length": 512,
+  "model_repository": "GPTCache/paraphrase-albert-onnx",
+  "model_revision": "5b562a100bc67e898ac89814e7a4668a18d65756",
+  "normalized": true,
+  "onnx_workers": 8,
+  "rows": 108732,
+  "schema_version": "carma-qqp-v1",
+  "text_ids_sha256": "443713fe096b4b79bce877869fbc72fb5fc0718d97d2ab65ceaa8d7a8c544c4d",
+  "tokenizer_repository": "GPTCache/paraphrase-albert-small-v2",
+  "tokenizer_revision": "5fb246187b5489d59ce0db167e739192759defab"
+}

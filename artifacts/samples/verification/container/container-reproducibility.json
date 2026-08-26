@@ -1,0 +1,115 @@
+{
+  "build_log": {
+    "path": "docker-build.log",
+    "sha256": "a641ee9a8b58a7a308bd08fd66a0a647fc9f50cc2c5660704adee28fe1eac9fd"
+  },
+  "comparisons": {
+    "hash_lists_identical": true,
+    "manifest_json_identical": true,
+    "non_timing_logs_identical": true,
+    "requests_jsonl_identical": true,
+    "runs_csv_identical": true
+  },
+  "controls": {
+    "binary_only_dependencies": true,
+    "capabilities_dropped": "ALL",
+    "checkout_credentials_persisted": false,
+    "dependency_hashes_required": true,
+    "dependency_index_url": "https://pypi.org/simple",
+    "generated_lock_check_passed": true,
+    "no_new_privileges": true,
+    "runtime_network": "none"
+  },
+  "dependency_lock": {
+    "path": "requirements-project.lock",
+    "sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721"
+  },
+  "fresh_container_count": 2,
+  "image_id": "sha256:991afc1232927c28a564c4b17426303295157d18a69531cd4f6247e22da8a6ac",
+  "image_inspect": {
+    "path": "container-image-inspect.json",
+    "sha256": "0fd6e08676e505bc82d057cd696f07d07fa57ca1d2035a6545e888bf9140bf07"
+  },
+  "platform": "linux/amd64",
+  "runs": [
+    {
+      "artifact_mount_source": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/docker-run-1",
+      "benchmark_artifacts": {
+        "manifest.json": {
+          "path": "docker-run-1/benchmark/manifest.json",
+          "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+        },
+        "requests.jsonl": {
+          "path": "docker-run-1/benchmark/requests.jsonl",
+          "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+        },
+        "runs.csv": {
+          "path": "docker-run-1/benchmark/runs.csv",
+          "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+        }
+      },
+      "container_inspect": {
+        "path": "docker-run-1.inspect.json",
+        "sha256": "1931bf2dfc931fa9df3eb127b1b8ef65d171c771b939939670240eb1550f912e"
+      },
+      "hash_list": {
+        "path": "docker-run-1.sha256",
+        "sha256": "0140f569f89fbc583711b9c723e47aabd0b0b797492917585961a788cfdde5b6"
+      },
+      "label": "docker-run-1",
+      "non_timing_log": {
+        "path": "docker-run-1.nontiming.log",
+        "sha256": "40f79ab69fb9d09546c2d3b037de73a8d492507a4e379b553b11d859e555f5be"
+      },
+      "raw_log": {
+        "path": "docker-run-1.log",
+        "sha256": "96fff30a3dc546e0404239a89941eb7cffeac89cf77ce70a7e7aa91ca1aa78c4"
+      }
+    },
+    {
+      "artifact_mount_source": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/docker-run-2",
+      "benchmark_artifacts": {
+        "manifest.json": {
+          "path": "docker-run-2/benchmark/manifest.json",
+          "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+        },
+        "requests.jsonl": {
+          "path": "docker-run-2/benchmark/requests.jsonl",
+          "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+        },
+        "runs.csv": {
+          "path": "docker-run-2/benchmark/runs.csv",
+          "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+        }
+      },
+      "container_inspect": {
+        "path": "docker-run-2.inspect.json",
+        "sha256": "94537404032a96d2bb8fa449ce7d2e97608d2391a5d9247a8cdfb3f03820c0f8"
+      },
+      "hash_list": {
+        "path": "docker-run-2.sha256",
+        "sha256": "0140f569f89fbc583711b9c723e47aabd0b0b797492917585961a788cfdde5b6"
+      },
+      "label": "docker-run-2",
+      "non_timing_log": {
+        "path": "docker-run-2.nontiming.log",
+        "sha256": "40f79ab69fb9d09546c2d3b037de73a8d492507a4e379b553b11d859e555f5be"
+      },
+      "raw_log": {
+        "path": "docker-run-2.log",
+        "sha256": "f5ee1b6f4a47e341376e6df8085421299db753175f0885731492170deee8b260"
+      }
+    }
+  ],
+  "schema_version": "carma-container-reproducibility-v1",
+  "source_archive": {
+    "archive_sha256": "3bed7fcd46a7db8ffb3dec6a0d87183e144ad41cf7efcd03cb681b4ef885b12e",
+    "format": "git-archive-tar",
+    "path": "source-archive.sha256",
+    "sha256": "99e503d976081e56d7a98c1e36b582b9ef4499f7180c5af1a81eb061f92545a8",
+    "source_commit": "cfc7167e7604247432f980ed8fb54bc896364fe9",
+    "tracked_file_count": 393
+  },
+  "source_commit": "cfc7167e7604247432f980ed8fb54bc896364fe9",
+  "status": "pass"
+}

@@ -174,7 +174,7 @@ Each status additionally records the reproducible source-archive digest, source
 commit, format, and tracked-file count; the analyzer checks that both status
 files bind to the same exact archive.
 
-## Validation record: 2026-08-25
+## Historical validation record: 2026-08-25
 
 The bullets below are retained as the pre-hardening historical record. They do
 not validate the generated hash locks or paired-container controls added later.
@@ -190,3 +190,29 @@ not validate the generated hash locks or paired-container controls added later.
 - Local container execution was not verified because the Docker daemon was not
   running. The image definition was inspected, and the CI container job remains
   the required execution check before final submission.
+
+## Final exact-source validation record: 2026-08-26
+
+The later final gate supersedes the execution limitations in the historical
+record above. It ran from clean source commit
+`cfc7167e7604247432f980ed8fb54bc896364fe9` and one 393-file Git archive with
+SHA-256 `3bed7fcd46a7db8ffb3dec6a0d87183e144ad41cf7efcd03cb681b4ef885b12e`.
+The complete gate finished in 87.27 seconds and produced:
+
+- a macOS arm64 host verification under exact CPython 3.12.13, including 8
+  upstream eviction tests, 2 SQLite/FAISS tests (1 deselected), 164 passing
+  project tests (2 skipped), `pip check`, and the deterministic CI benchmark;
+- two distinct fresh `linux/amd64` containers from image
+  `sha256:991afc1232927c28a564c4b17426303295157d18a69531cd4f6247e22da8a6ac`,
+  each unprivileged, network-isolated, with all capabilities dropped and
+  `no-new-privileges=true`; and
+- byte-identical container benchmark manifests, 15,600-row request logs,
+  16-row run tables, normalized verifier logs, and artifact hash lists.
+
+The authoritative host status SHA-256 is
+`93c8372879f8a59e735211d93b290eeb80f14b0f3f22413a3cc45563b0225d03`;
+the paired-container status SHA-256 is
+`adf047d0fdd6cbbec24abd3c2c533b4a46cf03e4af66ce29a9c7a5a143476101`.
+Their complete referenced topology is retained under
+`artifacts/samples/verification/`, and every curated file is covered by
+`artifacts/samples/SHA256SUMS`.
