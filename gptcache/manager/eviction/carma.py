@@ -321,6 +321,12 @@ class ClusterAdaptiveEviction(EvictionBase):
                         self._failure_reason = repr(exc)
                         self._counters["callback_failures"] += 1
                     raise
+            with self._lock:
+                # Custom-ID ordinals exist only to make ties deterministic
+                # while an ID is resident (or while the current batch is being
+                # settled).  Retaining ordinals for every historical rejected
+                # or evicted ID would make policy memory grow with trace length.
+                self._prune_id_ordinals()
             return outcomes
 
     def restore(
@@ -479,6 +485,7 @@ class ClusterAdaptiveEviction(EvictionBase):
                     "ghost_cells": sum(
                         1 for cell in self._cells.values() if not cell.residents
                     ),
+                    "id_ordinals": len(self._id_ordinals),
                     "healthy": self._healthy,
                     "failure_reason": self._failure_reason,
                 }
@@ -822,6 +829,11 @@ class ClusterAdaptiveEviction(EvictionBase):
                 topic.cell_ids.add(cell_id)
                 self._counters["cells_created"] += 1
                 return cell
+            # The candidate did not satisfy the cell threshold and no empty
+            # ghost could be reclaimed.  Falling through to ``best_cell`` here
+            # would silently merge a below-threshold vector into an unrelated
+            # resident cell and could bypass first-occurrence admission.
+            return None
 
         if best_cell is None:
             return None
@@ -1053,9 +1065,33 @@ class ClusterAdaptiveEviction(EvictionBase):
         return result
 
     def _register_id(self, value: Any) -> None:
+        if self._has_intrinsic_stable_key(value):
+            return
         if value not in self._id_ordinals:
             self._id_ordinals[value] = self._next_id_ordinal
             self._next_id_ordinal += 1
+
+    def _prune_id_ordinals(self) -> None:
+        """Retain and compact encounter order only for resident custom IDs."""
+
+        retained = [
+            (value, ordinal)
+            for value, ordinal in self._id_ordinals.items()
+            if value in self._entries
+        ]
+        retained.sort(key=lambda item: item[1])
+        self._id_ordinals = {
+            value: ordinal for ordinal, (value, _) in enumerate(retained)
+        }
+        self._next_id_ordinal = len(self._id_ordinals)
+
+    @staticmethod
+    def _has_intrinsic_stable_key(value: Any) -> bool:
+        return (
+            isinstance(value, (bool, int, str, bytes))
+            or isinstance(value, float)
+            and math.isfinite(value)
+        )
 
     def _stable_key(self, value: Any) -> Tuple[Any, ...]:
         """Order built-in IDs by value and custom IDs by internal ordinal."""

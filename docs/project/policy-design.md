@@ -54,7 +54,7 @@ For topic `c`, define recent miss pressure and quota weight as
 
 ```text
 p_c = (miss_mass_c + 1) / (demand_c + 2)
-w_c = (demand_c * p_c + epsilon) ** quota_strength
+w_c = max(epsilon, demand_c * p_c) ** quota_strength
 ```
 
 `quota_strength=0` makes active topics equal; the default `0.5` applies
@@ -76,14 +76,17 @@ same semantic cell.
 
 Below capacity, an insertion is admitted. At capacity:
 
-1. A candidate whose decayed cell support is below 1.5 is rejected; its empty
+1. A below-threshold candidate is rejected if the bounded cell registry is full
+   and no empty ghost cell can be reclaimed; it is never merged into an
+   unrelated resident cell merely because the registry is full.
+2. A candidate whose decayed cell support is below 1.5 is rejected; its empty
    cell remains as ghost history. A first observation has support 1, while two
    observations no more than one half-life apart reach at least 1.5.
-2. A candidate whose topic quota is zero is rejected.
-3. If the candidate topic is under quota, the donor is the most over-quota
+3. A candidate whose topic quota is zero is rejected.
+4. If the candidate topic is under quota, the donor is the most over-quota
    topic. Otherwise, the candidate competes inside its own topic.
-4. The weakest eligible resident is selected by retention value.
-5. The candidate is admitted only when its post-replacement value is at least
+5. The weakest eligible resident is selected by retention value.
+6. The candidate is admitted only when its post-replacement value is at least
    `admission_margin` times the victim value (default `1.05`).
 
 The newly inserted row participates in the decision, so rejection evicts that
@@ -120,9 +123,12 @@ schema across GPTCache backends.
 - Hit: `O(1)` excluding an occasional quota refresh.
 - Miss assignment: `O((topics + cells) * embedding_dimension)` with bounded
   topic/cell counts.
-- Victim selection: `O(maxsize)` worst case.
-- Memory: `O((maxsize + cells) * embedding_dimension)`, bounded independently
-  of trace length.
+- Transactional insertion snapshot and victim selection: `O(maxsize + cells)`
+  state-copy work plus `O(maxsize)` victim selection. Centroid arrays are
+  immutable-by-replacement and are shared by the rollback snapshot.
+- Memory: `O((maxsize + cells) * embedding_dimension + maxsize + cells)`,
+  bounded independently of trace length. Custom-ID tie ordinals are compacted
+  to current residents after every insertion batch.
 
 ## Distinction from related systems
 

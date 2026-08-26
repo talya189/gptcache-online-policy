@@ -203,6 +203,48 @@ def test_cell_history_is_bounded_even_under_unique_scan():
     assert len(snapshot["entries"]) <= 1
 
 
+def test_custom_id_order_registry_is_bounded_by_residents():
+    evicted = []
+    policy = _policy(
+        evicted,
+        maxsize=1,
+        max_topics=1,
+        max_cells=1,
+        one_topic=True,
+        quota_enabled=False,
+        admission_enabled=False,
+    )
+
+    for index in range(1000):
+        policy.put_with_metadata([("opaque", index)], [_vector(1, 0)])
+        stats = policy.stats()
+        assert stats["id_ordinals"] <= stats["size"] <= policy.maxsize
+
+    assert policy.stats()["id_ordinals"] == 1
+    assert _entry_ids(policy) == {("opaque", 999)}
+
+
+def test_below_threshold_candidate_is_rejected_when_cell_bound_is_full():
+    evicted = []
+    policy = _policy(
+        evicted,
+        maxsize=1,
+        max_topics=1,
+        max_cells=1,
+        one_topic=True,
+        cell_threshold=0.95,
+        quota_enabled=False,
+        admission_margin=1.0,
+    )
+    policy.put_with_metadata([1], [_vector(1, 0)])
+
+    policy.put_with_metadata([2], [_vector(0, 1)])
+
+    assert _entry_ids(policy) == {1}
+    assert evicted == [[2]]
+    assert policy.snapshot()["last_event"]["action"] == "reject_cell_capacity"
+
+
 def test_batch_alignment_error_is_atomic():
     evicted = []
     policy = _policy(evicted, maxsize=3)
@@ -213,6 +255,28 @@ def test_batch_alignment_error_is_atomic():
     assert _entry_ids(policy) == set()
     assert evicted == []
     assert policy.stats()["misses"] == 0
+
+
+@pytest.mark.parametrize(
+    "overrides, message",
+    [
+        ({"maxsize": 0}, "maxsize"),
+        ({"clean_size": 0}, "clean_size"),
+        ({"topic_threshold": 1.1}, "topic_threshold"),
+        ({"cell_threshold": 0.60}, "cell_threshold"),
+        ({"demand_half_life": 0}, "demand_half_life"),
+        ({"quota_strength": -1}, "quota_strength"),
+        ({"admission_margin": math.inf}, "admission_margin"),
+        ({"ghost_support_threshold": 1}, "ghost_support_threshold"),
+        ({"centroid_alpha": 0}, "centroid_alpha"),
+        ({"entry_hit_weight": -1}, "entry_hit_weight"),
+        ({"max_topics": 0}, "max_topics"),
+        ({"max_cells": 3}, "max_cells"),
+    ],
+)
+def test_invalid_configuration_is_rejected(overrides, message):
+    with pytest.raises(ValueError, match=message):
+        _policy([], **overrides)
 
 
 def test_batch_preserves_id_to_embedding_alignment():
@@ -363,6 +427,43 @@ def test_equal_value_victim_tie_uses_oldest_entry_deterministically():
         results.append((evicted, sorted(_entry_ids(policy))))
 
     assert results == [([[20]], [10, 30])] * 5
+
+
+def test_seeded_reference_model_matches_victim_decisions():
+    rng = np.random.default_rng(20260826)
+    evicted = []
+    policy = _policy(
+        evicted,
+        maxsize=4,
+        max_topics=1,
+        max_cells=4,
+        one_topic=True,
+        quota_enabled=False,
+        admission_enabled=False,
+    )
+    policy.put_with_metadata([0, 1, 2, 3], [_vector(1, 0)] * 4)
+
+    for candidate in range(4, 24):
+        resident_ids = sorted(_entry_ids(policy))
+        for _ in range(int(rng.integers(0, 6))):
+            policy.get(resident_ids[int(rng.integers(0, len(resident_ids)))])
+
+        snapshot = policy.snapshot()
+        entries = snapshot["entries"]
+        only_cell = next(iter(snapshot["cells"].values()))
+        support_share = only_cell["support"] / len(only_cell["residents"])
+        expected = min(
+            entries.values(),
+            key=lambda entry: (
+                support_share + policy.entry_hit_weight * entry["hit_mass"],
+                entry["last_hit_tick"],
+                entry["insert_tick"],
+                entry["id"],
+            ),
+        )["id"]
+
+        policy.put_with_metadata([candidate], [_vector(1, 0)])
+        assert evicted[-1] == [expected]
 
 
 def test_duplicate_put_and_unknown_get_do_not_advance_live_tick():
