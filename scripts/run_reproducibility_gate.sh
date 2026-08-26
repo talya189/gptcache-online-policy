@@ -130,10 +130,10 @@ readonly HOST_PYTHON
     --index-url https://pypi.org/simple \
     --require-hashes \
     --only-binary=:all: \
-    --requirement requirements-project.lock
+    --requirement requirements-project.lock &&
   "${HOST_PYTHON}" -m pip --isolated --disable-pip-version-check install \
-    --no-input --no-index --no-deps --no-build-isolation --editable .
-  "${HOST_PYTHON}" -m pip check
+    --no-input --no-index --no-deps --no-build-isolation --editable . &&
+  "${HOST_PYTHON}" -m pip check &&
   echo "[install] pip check PASS"
 } 2>&1 | tee "${HOST_ROOT}/host-install.log"
 "${HOST_PYTHON}" -m pip list --format=freeze \
@@ -141,7 +141,7 @@ readonly HOST_PYTHON
 
 echo "[repro] clean host verification"
 export PATH="${HOST_ENV}/bin:${PATH}"
-CARMA_ARTIFACT_DIR="${HOST_ROOT}" \
+CARMA_ARTIFACT_DIR="${HOST_ROOT}" PYTHON_BIN="${HOST_PYTHON}" \
   bash scripts/verify_project.sh 2>&1 | tee "${HOST_ROOT}/host-verification.log"
 "${HOST_PYTHON}" scripts/write_reproducibility_evidence.py host \
   --evidence-root "${HOST_ROOT}" \

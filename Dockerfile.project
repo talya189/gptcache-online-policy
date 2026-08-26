@@ -31,7 +31,8 @@ COPY benchmarks ./benchmarks
 COPY examples/benchmark ./examples/benchmark
 COPY tests ./tests
 COPY scripts ./scripts
-RUN python -m pip install --no-cache-dir --no-deps --no-build-isolation --editable . \
+RUN python -m pip --isolated --disable-pip-version-check install \
+    --no-cache-dir --no-input --no-index --no-deps --no-build-isolation --editable . \
     && addgroup --system project \
     && adduser --system --ingroup project --home /home/project project \
     && chown -R project:project /workspace /home/project

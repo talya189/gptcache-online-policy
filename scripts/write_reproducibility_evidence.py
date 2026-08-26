@@ -146,10 +146,20 @@ def _atomic_json(path: Path, payload: object) -> None:
 
 
 def _ref(root: Path, path: Path, label: str) -> Dict[str, str]:
+    root = root.resolve()
     try:
-        relative = path.resolve().relative_to(root.resolve())
+        unresolved_relative = path.relative_to(root)
     except ValueError as exc:
         raise EvidenceError("%s is outside its evidence root: %s" % (label, path)) from exc
+    component = root
+    for part in unresolved_relative.parts:
+        component = component / part
+        if component.is_symlink():
+            raise EvidenceError("%s path contains a symlink: %s" % (label, path))
+    try:
+        relative = path.resolve().relative_to(root)
+    except ValueError as exc:
+        raise EvidenceError("%s resolves outside its evidence root: %s" % (label, path)) from exc
     return {"path": relative.as_posix(), "sha256": _sha256(path, label)}
 
 
