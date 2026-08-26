@@ -136,6 +136,17 @@ made before any MOSS workload result was produced; archive revision, checksum,
 selection, token buckets, requests, capacity, and every success gate remain
 unchanged.
 
+Pre-result QQP wrapper amendment: before calibration or any held-out QQP
+outcome was observed, a command audit found that `run_qqp_validation.sh`
+invoked the ambient `python` (which resolved outside the project virtual
+environment) and parsed `--help` as an output path. The wrapper now prefers the
+project `.venv`, supports an explicit `PYTHON_BIN` override, exports the same
+deterministic Python environment as the other benchmark wrappers, and validates
+its single optional output argument. This is an execution-only correction: the
+full embedding command already used the explicit project interpreter, and the
+archive/model revisions, prepared data, embedding settings, threshold grid,
+selection rule, and success gates did not change.
+
 ## Frozen tuning procedure
 
 Answer matching and CARMA clustering are calibrated independently.
