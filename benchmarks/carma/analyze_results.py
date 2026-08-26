@@ -13,6 +13,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -45,6 +46,11 @@ QQP_MODEL_REVISION = "5b562a100bc67e898ac89814e7a4668a18d65756"
 MOSS_REVISION = "42e216d3e3fb331c18d5fa6e7cb4f1c53eef24a4"
 MOSS_ARCHIVE_SHA256 = (
     "4d4f57df0dd5ad1442b6c08ca69ec1a59705837bb9813e7aae3bd3a9e3adb085"
+)
+PYTEST_SUMMARY = re.compile(
+    rb"(?m)^(?P<result>[0-9]+ passed"
+    rb"(?:, [0-9]+ (?:deselected|skipped|xfailed|xpassed|warnings?))*)"
+    rb" in [0-9]+(?:[.][0-9]+)?s$"
 )
 PRIMARY_WORKLOADS = ("stationary", "phase_shift", "pollution_scan")
 LOWER_IS_BETTER = {
@@ -1299,8 +1305,19 @@ def _evidence_reference(
     relative = Path(relative_value)
     if relative.is_absolute():
         raise AnalysisError("%s path must be relative" % label)
+    if (
+        relative.as_posix() != relative_value
+        or any(part in (".", "..") for part in relative_value.split("/"))
+    ):
+        raise AnalysisError("%s path is not canonical" % label)
     root = Path(root).resolve()
-    candidate = (root / relative).resolve()
+    unresolved = root / relative
+    component = root
+    for part in relative.parts:
+        component = component / part
+        if component.is_symlink():
+            raise AnalysisError("%s path contains a symlink" % label)
+    candidate = unresolved.resolve()
     try:
         inside_root = os.path.commonpath((str(root), str(candidate))) == str(root)
     except ValueError:
@@ -1384,6 +1401,131 @@ def _current_git_head() -> Dict[str, Any]:
     }
 
 
+def _is_packaging_path(path: str) -> bool:
+    return (
+        path == "README.md"
+        or path.startswith("docs/project/")
+        or path.startswith("artifacts/samples/")
+    )
+
+
+def _git_bytes(command: Sequence[str], label: str) -> bytes:
+    try:
+        completed = subprocess.run(
+            list(command),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise AnalysisError("%s could not be verified" % label) from exc
+    if completed.returncode != 0 or not isinstance(completed.stdout, bytes):
+        raise AnalysisError("%s could not be verified" % label)
+    return completed.stdout
+
+
+def _require_clean_worktree(label: str) -> None:
+    status = _git_bytes(
+        [
+            "git",
+            "-C",
+            str(PROJECT_ROOT),
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+        ],
+        "%s current worktree state" % label,
+    )
+    if status:
+        raise AnalysisError("%s binding requires a clean worktree" % label)
+
+
+def _packaging_descendant_changes(
+    source_commit: str, current_commit: str, label: str
+) -> List[Dict[str, str]]:
+    prefix = ["git", "-C", str(PROJECT_ROOT)]
+
+    parents_raw = _git_bytes(
+        prefix + ["rev-list", "--parents", "-n", "1", current_commit],
+        "%s current commit parentage" % label,
+    )
+    try:
+        parent_tokens = parents_raw.decode("ascii").split()
+    except UnicodeDecodeError as exc:
+        raise AnalysisError(
+            "%s current commit parentage is invalid" % label
+        ) from exc
+    if parent_tokens != [current_commit, source_commit]:
+        raise AnalysisError(
+            "%s source commit does not match current Git HEAD as its direct sole parent"
+            % label
+        )
+
+    raw_changes = _git_bytes(
+        prefix
+        + [
+            "diff",
+            "--name-status",
+            "-z",
+            "--no-renames",
+            "%s..%s" % (source_commit, current_commit),
+            "--",
+        ],
+        "%s packaging-descendant diff" % label,
+    )
+    if raw_changes and not raw_changes.endswith(b"\0"):
+        raise AnalysisError(
+            "%s packaging-descendant diff produced invalid path data" % label
+        )
+    try:
+        tokens = [
+            value.decode("utf-8")
+            for value in raw_changes.split(b"\0")
+            if value
+        ]
+    except UnicodeDecodeError as exc:
+        raise AnalysisError(
+            "%s packaging-descendant paths are not valid UTF-8" % label
+        ) from exc
+
+    changes = []
+    rejected = []
+    index = 0
+    while index < len(tokens):
+        status_value = tokens[index]
+        index += 1
+        path_count = 2 if status_value.startswith(("R", "C")) else 1
+        if index + path_count > len(tokens):
+            raise AnalysisError(
+                "%s packaging-descendant diff produced invalid path data" % label
+            )
+        paths = tokens[index : index + path_count]
+        index += path_count
+        if status_value not in ("A", "M") or path_count != 1:
+            rejected.append("%s:%s" % (status_value, " -> ".join(paths)))
+            continue
+        path = paths[0]
+        changes.append({"status": status_value, "path": path})
+        if not _is_packaging_path(path):
+            rejected.append("%s:%s" % (status_value, path))
+    if rejected:
+        raise AnalysisError(
+            "%s source commit does not match current Git HEAD; "
+            "non-packaging or unsupported descendant changes: %s"
+            % (label, ", ".join(rejected))
+        )
+    if len(changes) != len({item["path"] for item in changes}):
+        raise AnalysisError(
+            "%s packaging-descendant diff contains duplicate paths" % label
+        )
+    if not changes:
+        raise AnalysisError(
+            "%s packaging descendant contains no packaging changes" % label
+        )
+    return changes
+
+
 def _commit_binding(
     source_commit: str, label: str, git_head: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -1397,15 +1539,22 @@ def _commit_binding(
                 "reason", "current Git HEAD could not be determined"
             ),
         }
-    if source_commit != current:
-        raise AnalysisError(
-            "%s source commit does not match current Git HEAD" % label
-        )
+    _require_clean_worktree(label)
+    if source_commit == current:
+        return {
+            "status": "verified",
+            "evidence_source_commit": source_commit,
+            "current_git_head": current,
+            "exact_match": True,
+        }
+    changes = _packaging_descendant_changes(source_commit, current, label)
     return {
-        "status": "verified",
+        "status": "verified_packaging_descendant",
         "evidence_source_commit": source_commit,
         "current_git_head": current,
-        "exact_match": True,
+        "exact_match": False,
+        "changed_paths": [item["path"] for item in changes],
+        "changed_path_status": changes,
     }
 
 
@@ -1432,7 +1581,8 @@ def _pending_commit_binding(
 def _evidence_is_claimable(report: Dict[str, Any]) -> bool:
     return (
         report.get("status") == "verified"
-        and report.get("commit_binding", {}).get("status") == "verified"
+        and report.get("commit_binding", {}).get("status")
+        in ("verified", "verified_packaging_descendant")
     )
 
 
@@ -1541,6 +1691,211 @@ def _sha256_list(path: Path, label: str) -> Dict[str, str]:
     return entries
 
 
+def _normalized_package_name(name: str) -> str:
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _current_dependency_lock_sha256(label: str) -> str:
+    lock_path = PROJECT_ROOT / "requirements-project.lock"
+    if lock_path.is_symlink() or not lock_path.is_file():
+        raise AnalysisError(
+            "%s cannot be bound to the current requirements-project.lock" % label
+        )
+    try:
+        return sha256_file(lock_path)
+    except OSError as exc:
+        raise AnalysisError(
+            "%s cannot be bound to the current requirements-project.lock" % label
+        ) from exc
+
+
+def _validate_host_environment(
+    lock_path: Path, install_log: Path, installed_packages: Path
+) -> Dict[str, Any]:
+    if _last_nonempty_line(install_log, "clean-host install log") != (
+        "[install] pip check PASS"
+    ):
+        raise AnalysisError(
+            "clean-host install log does not end in [install] pip check PASS"
+        )
+
+    try:
+        lock_lines = lock_path.read_text(encoding="utf-8").splitlines()
+        installed_lines = installed_packages.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError) as exc:
+        raise AnalysisError("clean-host environment records are not valid UTF-8") from exc
+
+    locked: Dict[str, str] = {}
+    pin = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s;]+) \\$")
+    for line in lock_lines:
+        match = pin.fullmatch(line.strip())
+        if match is None:
+            continue
+        name = _normalized_package_name(match.group(1))
+        if name in locked:
+            raise AnalysisError(
+                "clean-host dependency lock duplicates exact pin %s" % name
+            )
+        locked[name] = match.group(2)
+    if not locked:
+        raise AnalysisError("clean-host dependency lock contains no exact pins")
+
+    installed: Dict[str, str] = {}
+    frozen = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s]+)$")
+    for line in installed_lines:
+        if not line.strip():
+            continue
+        match = frozen.fullmatch(line.strip())
+        if match is None:
+            raise AnalysisError(
+                "clean-host installed package line is not exact: %s" % line
+            )
+        name = _normalized_package_name(match.group(1))
+        if name in installed:
+            raise AnalysisError(
+                "clean-host installed package list duplicates %s" % name
+            )
+        installed[name] = match.group(2)
+
+    project_version = installed.pop("gptcache", None)
+    if project_version is None:
+        raise AnalysisError(
+            "editable GPTCache checkout is absent from clean-host package list"
+        )
+    if installed != locked:
+        missing = sorted(set(locked) - set(installed))
+        extra = sorted(set(installed) - set(locked))
+        mismatched = sorted(
+            name
+            for name in set(installed) & set(locked)
+            if installed[name] != locked[name]
+        )
+        raise AnalysisError(
+            "clean-host environment does not exactly match its dependency lock "
+            "(missing=%s extra=%s mismatched=%s)"
+            % (missing, extra, mismatched)
+        )
+    return {
+        "install_sentinel": "[install] pip check PASS",
+        "locked_package_count": len(locked),
+        "installed_project": "gptcache==%s" % project_version,
+    }
+
+
+def _single_inspect(path: Path, label: str) -> Dict[str, Any]:
+    try:
+        with path.open("r", encoding="utf-8") as source:
+            payload = json.load(source)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise AnalysisError("%s is not valid JSON" % label) from exc
+    if (
+        not isinstance(payload, list)
+        or len(payload) != 1
+        or not isinstance(payload[0], dict)
+    ):
+        raise AnalysisError("%s must contain one Docker inspect object" % label)
+    return payload[0]
+
+
+def _validate_image_inspect(path: Path, expected_image_id: str) -> None:
+    item = _single_inspect(path, "paired-container image inspection")
+    if str(item.get("Id", "")).lower() != expected_image_id:
+        raise AnalysisError(
+            "paired-container inspected image ID does not match the recorded image ID"
+        )
+    if item.get("Os") != "linux" or item.get("Architecture") != "amd64":
+        raise AnalysisError(
+            "paired-container inspected image platform is not linux/amd64"
+        )
+    config = item.get("Config")
+    if not isinstance(config, dict) or config.get("User") != "project":
+        raise AnalysisError(
+            "paired-container inspected image does not use the project user"
+        )
+    environment = config.get("Env")
+    required = (
+        "PIP_CONFIG_FILE=/dev/null",
+        "PIP_INDEX_URL=https://pypi.org/simple",
+        "PIP_NO_INPUT=1",
+    )
+    if not isinstance(environment, list) or any(
+        value not in environment for value in required
+    ):
+        raise AnalysisError(
+            "paired-container inspected image lacks the pinned dependency environment"
+        )
+
+
+def _validate_container_inspect(
+    path: Path, expected_image_id: str, expected_mount_source: str, label: str
+) -> str:
+    item = _single_inspect(path, "%s runtime inspection" % label)
+    container_id = str(item.get("Id", "")).lower()
+    if len(container_id) != 64 or any(
+        character not in "0123456789abcdef" for character in container_id
+    ):
+        raise AnalysisError("%s runtime inspection lacks a full container ID" % label)
+    if str(item.get("Image", "")).lower() != expected_image_id:
+        raise AnalysisError("%s did not run the recorded image ID" % label)
+    state = item.get("State")
+    if (
+        not isinstance(state, dict)
+        or state.get("Status") != "exited"
+        or state.get("ExitCode") != 0
+    ):
+        raise AnalysisError("%s did not exit successfully" % label)
+    host = item.get("HostConfig")
+    if not isinstance(host, dict) or host.get("NetworkMode") != "none":
+        raise AnalysisError("%s runtime network mode was not none" % label)
+    dropped = host.get("CapDrop")
+    if not isinstance(dropped, list) or {
+        str(value).upper() for value in dropped
+    } != {"ALL"}:
+        raise AnalysisError("%s did not drop all capabilities" % label)
+    security = host.get("SecurityOpt")
+    if not isinstance(security, list) or not any(
+        str(value).lower().startswith("no-new-privileges") for value in security
+    ):
+        raise AnalysisError("%s did not enable no-new-privileges" % label)
+    config = item.get("Config")
+    environment = config.get("Env") if isinstance(config, dict) else None
+    if (
+        not isinstance(environment, list)
+        or "CARMA_ARTIFACT_DIR=/artifacts" not in environment
+    ):
+        raise AnalysisError("%s artifact environment is missing" % label)
+    mounts = item.get("Mounts")
+    matching = (
+        [
+            mount
+            for mount in mounts
+            if isinstance(mount, dict)
+            and mount.get("Destination") == "/artifacts"
+        ]
+        if isinstance(mounts, list)
+        else []
+    )
+    if len(matching) != 1:
+        raise AnalysisError("%s has no unique /artifacts bind mount" % label)
+    mount = matching[0]
+    source = mount.get("Source")
+    if (
+        mount.get("Type") != "bind"
+        or mount.get("RW") is not True
+        or source != expected_mount_source
+    ):
+        raise AnalysisError(
+            "%s /artifacts mount does not match its recorded artifact source" % label
+        )
+    return container_id
+
+
+def _normalize_pytest_elapsed(raw: bytes) -> bytes:
+    """Normalize elapsed text only on successful pytest summary lines."""
+
+    return PYTEST_SUMMARY.sub(rb"\g<result> in <elapsed>", raw)
+
+
 def _load_host_verification(
     path: Optional[Path], git_head: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -1602,8 +1957,29 @@ def _load_host_verification(
     ):
         if dependency.get(key) != expected:
             raise AnalysisError("clean-host dependency control %s is invalid" % key)
-    _, dependency_report = _evidence_reference(
+    dependency_path, dependency_report = _evidence_reference(
         root, dependency, "clean-host dependency lock"
+    )
+    current_lock_sha256 = _current_dependency_lock_sha256(
+        "clean-host dependency lock"
+    )
+    if dependency_report["sha256"] != current_lock_sha256:
+        raise AnalysisError(
+            "clean-host dependency lock does not match current "
+            "requirements-project.lock"
+        )
+    install_log_path, install_log_report = _evidence_reference(
+        root,
+        evidence.get("environment_install_log"),
+        "clean-host environment install log",
+    )
+    installed_packages_path, installed_packages_report = _evidence_reference(
+        root,
+        evidence.get("installed_packages"),
+        "clean-host installed packages",
+    )
+    environment_validation = _validate_host_environment(
+        dependency_path, install_log_path, installed_packages_path
     )
     log_path, log_report = _evidence_reference(
         root, evidence.get("verification_log"), "clean-host verification log"
@@ -1637,6 +2013,10 @@ def _load_host_verification(
         "python": python,
         "platform": evidence.get("platform"),
         "dependency_lock": dependency_report,
+        "current_dependency_lock_sha256": current_lock_sha256,
+        "environment_install_log": install_log_report,
+        "installed_packages": installed_packages_report,
+        "environment_validation": environment_validation,
         "verification_log": log_report,
         "benchmark_artifacts": benchmark_report,
         "benchmark_validation": benchmark_validation,
@@ -1729,9 +2109,21 @@ def _load_container_reproducibility(
     _, dependency_report = _evidence_reference(
         root, evidence.get("dependency_lock"), "container dependency lock"
     )
+    current_lock_sha256 = _current_dependency_lock_sha256(
+        "container dependency lock"
+    )
+    if dependency_report["sha256"] != current_lock_sha256:
+        raise AnalysisError(
+            "container dependency lock does not match current "
+            "requirements-project.lock"
+        )
     _, build_log_report = _evidence_reference(
         root, evidence.get("build_log"), "container build log"
     )
+    image_inspect_path, image_inspect_report = _evidence_reference(
+        root, evidence.get("image_inspect"), "paired-container image inspection"
+    )
+    _validate_image_inspect(image_inspect_path, image_id)
     runs = evidence.get("runs")
     if not isinstance(runs, list) or len(runs) != 2:
         raise AnalysisError("paired-container run evidence is incomplete")
@@ -1739,6 +2131,7 @@ def _load_container_reproducibility(
     observed_labels = []
     comparison_files = {name: [] for name in required_comparisons[:2]}
     benchmark_pairs = {name: [] for name in ("manifest.json", "requests.jsonl", "runs.csv")}
+    container_ids = []
     for run in runs:
         if not isinstance(run, dict):
             raise AnalysisError("paired-container run entry is invalid")
@@ -1754,9 +2147,34 @@ def _load_container_reproducibility(
         non_timing_path, non_timing_report = _evidence_reference(
             root, run.get("non_timing_log"), "%s non-timing log" % label
         )
+        if non_timing_path.read_bytes() != _normalize_pytest_elapsed(
+            raw_path.read_bytes()
+        ):
+            raise AnalysisError(
+                "%s non-timing log is not the normalized raw log" % label
+            )
         hash_list_path, hash_list_report = _evidence_reference(
             root, run.get("hash_list"), "%s hash list" % label
         )
+        container_inspect_path, container_inspect_report = _evidence_reference(
+            root,
+            run.get("container_inspect"),
+            "%s runtime inspection" % label,
+        )
+        artifact_mount_source = run.get("artifact_mount_source")
+        if (
+            not isinstance(artifact_mount_source, str)
+            or not Path(artifact_mount_source).is_absolute()
+            or Path(artifact_mount_source).name != label
+        ):
+            raise AnalysisError(
+                "%s artifact mount source does not structurally match its run label"
+                % label
+            )
+        container_id = _validate_container_inspect(
+            container_inspect_path, image_id, artifact_mount_source, label
+        )
+        container_ids.append(container_id)
         hash_list = _sha256_list(hash_list_path, "%s hash list" % label)
         comparison_files["non_timing_logs_identical"].append(non_timing_path)
         comparison_files["hash_lists_identical"].append(hash_list_path)
@@ -1788,12 +2206,17 @@ def _load_container_reproducibility(
                 "raw_log": raw_report,
                 "non_timing_log": non_timing_report,
                 "hash_list": hash_list_report,
+                "container_inspect": container_inspect_report,
+                "container_id": container_id,
+                "artifact_mount_source": artifact_mount_source,
                 "benchmark_artifacts": benchmark_report,
                 "benchmark_validation": benchmark_validation,
             }
         )
     if sorted(observed_labels) != ["docker-run-1", "docker-run-2"]:
         raise AnalysisError("paired-container run labels are not unique")
+    if len(set(container_ids)) != 2:
+        raise AnalysisError("paired-container evidence reused a container ID")
     for label, paths in comparison_files.items():
         if paths[0].read_bytes() != paths[1].read_bytes():
             raise AnalysisError("paired-container %s files differ" % label)
@@ -1814,7 +2237,9 @@ def _load_container_reproducibility(
         "controls": required_controls,
         "comparisons": {name: True for name in required_comparisons},
         "dependency_lock": dependency_report,
+        "current_dependency_lock_sha256": current_lock_sha256,
         "build_log": build_log_report,
+        "image_inspect": image_inspect_report,
         "runs": run_reports,
     }
     return {"result": evidence, "report": report}
