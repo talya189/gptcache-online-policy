@@ -9,6 +9,13 @@ Optional GPTCache backends are intentionally excluded because their upstream
 lazy imports can run a bare `pip` against an interpreter other than the active
 environment.
 
+Tiktoken 0.14.0 otherwise fetches the `cl100k_base` merge table lazily from the
+[official public encoding URL](https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken).
+The exact 1,681,126-byte object is therefore retained at
+`assets/tiktoken-cache/9b5ad71b2ce5302211f9c61530b329a4922fc6a4` with SHA-256
+`223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7`.
+This is offline execution closure only; it does not change or add a MOSS result.
+
 Create a clean environment from the repository root with:
 
 ```bash
@@ -45,12 +52,14 @@ the manual environment above is useful for development but is not itself Gate
 1. requires exactly Python 3.12.13 and a consistent installed dependency graph;
 2. verifies that the feature branch descends from GPTCache commit
    `c59fb3a6152a4458b2a070ca183b61c4b614095f` when Git metadata is available;
-3. disables package-index access before tests, making any runtime lazy-install
+3. selects only the source-bound host cache or root-owned image cache and
+   verifies its single-file path, size, and SHA-256 before tiktoken is imported;
+4. disables package-index access before tests, making any runtime lazy-install
    attempt fail visibly;
-4. runs the focused upstream SQLite/FAISS regression slice;
-5. requires and runs the frozen ten-file CARMA unit/integration test manifest;
+5. runs the focused upstream SQLite/FAISS regression slice;
+6. requires and runs the frozen ten-file CARMA unit/integration test manifest;
    and
-6. requires and calls `scripts/run_ci_benchmark.sh OUTPUT_DIR`.
+7. requires and calls `scripts/run_ci_benchmark.sh OUTPUT_DIR`.
 
 Set `CARMA_ARTIFACT_DIR` to retain benchmark outputs. Without it, verification
 uses a private temporary directory and removes it on exit.
@@ -122,9 +131,10 @@ the binding and requires a new run from a fresh root.
 
 `Dockerfile.project` pins the multi-architecture digest of
 `python:3.12.13-slim-bookworm`, installs only the authenticated wheel lock from
-the public PyPI index, copies an allowlisted build context, and runs as an
-unprivileged user. For a debugging run that is not paired Gate 8 evidence, build
-and retain its artifacts with:
+the public PyPI index, copies and re-hashes the exact tiktoken cache into
+root-owned `/opt/tiktoken-cache`, copies an allowlisted build context, and runs
+as an unprivileged user. For a debugging run that is not paired Gate 8 evidence,
+build and retain its artifacts with:
 
 ```bash
 docker build --no-cache --pull \

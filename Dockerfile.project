@@ -9,7 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_INDEX_URL=https://pypi.org/simple \
     PIP_NO_INPUT=1 \
-    PIP_ROOT_USER_ACTION=ignore
+    PIP_ROOT_USER_ACTION=ignore \
+    TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache
 
 WORKDIR /workspace
 
@@ -21,6 +22,11 @@ RUN python -m pip --isolated --disable-pip-version-check install \
     --no-cache-dir --no-input --index-url https://pypi.org/simple \
     --require-hashes --only-binary=:all: \
     --requirement requirements-project.lock
+
+# The exact cl100k_base cache object closes tiktoken's otherwise lazy Azure
+# fetch. It remains root-owned and read-only to the runtime project user.
+COPY assets/tiktoken-cache/9b5ad71b2ce5302211f9c61530b329a4922fc6a4 /opt/tiktoken-cache/9b5ad71b2ce5302211f9c61530b329a4922fc6a4
+RUN python -c 'import hashlib, pathlib, sys; root = pathlib.Path("/opt/tiktoken-cache"); path = root / "9b5ad71b2ce5302211f9c61530b329a4922fc6a4"; data = path.read_bytes(); valid = (not root.is_symlink() and not path.is_symlink() and list(root.iterdir()) == [path] and len(data) == 1681126 and hashlib.sha256(data).hexdigest() == "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7"); sys.exit(0 if valid else "invalid cl100k_base cache asset")'
 
 # Copy only executable project inputs; repository metadata, local environments,
 # result directories, and unrelated documentation never enter the image.

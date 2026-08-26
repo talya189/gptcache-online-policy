@@ -3,6 +3,9 @@ set -Eeuo pipefail
 
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 readonly BASELINE_COMMIT="c59fb3a6152a4458b2a070ca183b61c4b614095f"
+readonly TIKTOKEN_CACHE_KEY="9b5ad71b2ce5302211f9c61530b329a4922fc6a4"
+readonly TIKTOKEN_CACHE_SHA256="223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7"
+readonly TIKTOKEN_CACHE_SIZE="1681126"
 
 if [[ -n "${CARMA_ARTIFACT_DIR:-}" ]]; then
   ARTIFACT_DIR="${CARMA_ARTIFACT_DIR}"
@@ -35,6 +38,41 @@ if sys.version_info[:3] != (3, 12, 13):
 print(f"python={platform.python_version()} platform={platform.platform()}")
 PY
 python -m pip check
+
+echo "[verify] source-bound offline tiktoken cache"
+SOURCE_TIKTOKEN_CACHE_DIR="${PROJECT_ROOT}/assets/tiktoken-cache"
+readonly SOURCE_TIKTOKEN_CACHE_DIR
+if [[ -e "${SOURCE_TIKTOKEN_CACHE_DIR}" || -L "${SOURCE_TIKTOKEN_CACHE_DIR}" ]]; then
+  TIKTOKEN_CACHE_DIR="${SOURCE_TIKTOKEN_CACHE_DIR}"
+elif [[ "${TIKTOKEN_CACHE_DIR:-}" == "/opt/tiktoken-cache" ]]; then
+  TIKTOKEN_CACHE_DIR="/opt/tiktoken-cache"
+else
+  echo "[verify] exact tiktoken cache is unavailable" >&2
+  exit 2
+fi
+export TIKTOKEN_CACHE_DIR
+unset DATA_GYM_CACHE_DIR
+python -I - "${TIKTOKEN_CACHE_DIR}" "${TIKTOKEN_CACHE_KEY}" \
+  "${TIKTOKEN_CACHE_SHA256}" "${TIKTOKEN_CACHE_SIZE}" <<'PY'
+import hashlib
+import sys
+from pathlib import Path
+
+cache_root = Path(sys.argv[1])
+cache_file = cache_root / sys.argv[2]
+expected_sha256 = sys.argv[3]
+expected_size = int(sys.argv[4])
+if cache_root.is_symlink() or not cache_root.is_dir():
+    raise SystemExit("tiktoken cache root is not a real directory")
+entries = list(cache_root.iterdir())
+if entries != [cache_file] or cache_file.is_symlink() or not cache_file.is_file():
+    raise SystemExit("tiktoken cache must contain exactly one regular cache object")
+data = cache_file.read_bytes()
+observed_sha256 = hashlib.sha256(data).hexdigest()
+if len(data) != expected_size or observed_sha256 != expected_sha256:
+    raise SystemExit("tiktoken cache object size or SHA-256 changed")
+print("tiktoken_cache_sha256=%s" % observed_sha256)
+PY
 
 echo "[verify] pinned GPTCache ancestry"
 if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then

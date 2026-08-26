@@ -1,7 +1,9 @@
+import hashlib
 import io
 import json
 import os
 import subprocess
+import sys
 import tarfile
 from pathlib import Path
 
@@ -34,12 +36,23 @@ def test_docker_context_parent_exceptions_remain_tight():
         assert examples_parent < examples_reexclude < examples_benchmark
         assert examples_benchmark < examples_contents
 
+        assets_parent = active_patterns.index("!assets/")
+        assets_reexclude = active_patterns.index("assets/**")
+        cache_parent = active_patterns.index("!assets/tiktoken-cache/")
+        cache_reexclude = active_patterns.index("assets/tiktoken-cache/**")
+        cache_object = active_patterns.index(
+            "!assets/tiktoken-cache/9b5ad71b2ce5302211f9c61530b329a4922fc6a4"
+        )
+        assert assets_parent < assets_reexclude < cache_parent
+        assert cache_parent < cache_reexclude < cache_object
+
         scripts_parent = active_patterns.index("!scripts/")
         scripts_reexclude = active_patterns.index("scripts/**")
         required_scripts = (
             "!scripts/generate_hashed_locks.py",
             "!scripts/run_ci_benchmark.sh",
             "!scripts/run_qqp_validation.sh",
+            "!scripts/run_reproducibility_gate.sh",
             "!scripts/verify_project.sh",
             "!scripts/write_reproducibility_evidence.py",
         )
@@ -48,6 +61,58 @@ def test_docker_context_parent_exceptions_remain_tight():
             scripts_reexclude < active_patterns.index(pattern)
             for pattern in required_scripts
         )
+
+
+def _packaged_tiktoken_cache_root():
+    source_cache = PROJECT_ROOT / "assets" / "tiktoken-cache"
+    if source_cache.exists() or source_cache.is_symlink():
+        return source_cache
+    return Path(os.environ["TIKTOKEN_CACHE_DIR"])
+
+
+def test_source_bound_tiktoken_cache_asset_has_exact_identity():
+    official_url = (
+        "https://openaipublic.blob.core.windows.net/encodings/"
+        "cl100k_base.tiktoken"
+    )
+    assert hashlib.sha1(official_url.encode("utf-8")).hexdigest() == (
+        evidence.TIKTOKEN_CACHE_KEY
+    )
+    cache_root = _packaged_tiktoken_cache_root()
+    cache_file = cache_root / evidence.TIKTOKEN_CACHE_KEY
+    assert not cache_root.is_symlink()
+    assert list(cache_root.iterdir()) == [cache_file]
+    assert not cache_file.is_symlink()
+    payload = cache_file.read_bytes()
+    assert len(payload) == evidence.TIKTOKEN_CACHE_SIZE
+    assert hashlib.sha256(payload).hexdigest() == evidence.TIKTOKEN_CACHE_SHA256
+
+
+def test_source_bound_tiktoken_cache_closes_the_network_fetch():
+    environment = dict(os.environ)
+    environment["TIKTOKEN_CACHE_DIR"] = str(_packaged_tiktoken_cache_root())
+    program = """
+import sys
+sys.path.insert(0, sys.argv[1])
+import tiktoken.load
+
+def forbidden_fetch(*args, **kwargs):
+    raise AssertionError("network fetch attempted despite the checked-in cache")
+
+tiktoken.load.read_file = forbidden_fetch
+from benchmarks.carma.moss import TiktokenCounter
+counter = TiktokenCounter()
+assert counter.count("offline tokenizer closure") > 0
+"""
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", program, str(PROJECT_ROOT)],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+        env=environment,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def _stub_source_checks(monkeypatch):
@@ -203,6 +268,7 @@ def _container_inputs(root, second_phase=b"completed phase in 1s\n"):
                             "PIP_INDEX_URL=https://pypi.org/simple",
                             "PIP_NO_INPUT=1",
                             "PIP_ROOT_USER_ACTION=ignore",
+                            "TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache",
                         ],
                     },
                 }
@@ -257,6 +323,7 @@ def _container_inputs(root, second_phase=b"completed phase in 1s\n"):
                                 "PIP_INDEX_URL=https://pypi.org/simple",
                                 "PIP_NO_INPUT=1",
                                 "PIP_ROOT_USER_ACTION=ignore",
+                                "TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache",
                                 "CARMA_ARTIFACT_DIR=/artifacts",
                             ],
                         },
@@ -370,6 +437,23 @@ def test_image_contract_rejects_changed_entrypoint(tmp_path):
         evidence._validate_image_inspect(inspect_path, "sha256:" + "2" * 64)
 
 
+def test_image_contract_rejects_wrong_tiktoken_cache(tmp_path):
+    root = tmp_path / "container"
+    _container_inputs(root)
+    inspect_path = root / "container-image-inspect.json"
+    payload = json.loads(inspect_path.read_text(encoding="utf-8"))
+    payload[0]["Config"]["Env"] = [
+        value
+        if not value.startswith("TIKTOKEN_CACHE_DIR=")
+        else "TIKTOKEN_CACHE_DIR=/tmp/ambient-cache"
+        for value in payload[0]["Config"]["Env"]
+    ]
+    inspect_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(evidence.EvidenceError, match="pinned dependency environment"):
+        evidence._validate_image_inspect(inspect_path, "sha256:" + "2" * 64)
+
+
 def test_runtime_contract_rejects_changed_args(tmp_path):
     root = tmp_path / "container"
     _container_inputs(root)
@@ -395,6 +479,26 @@ def test_runtime_contract_rejects_false_no_new_privileges(tmp_path):
     inspect_path.write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(evidence.EvidenceError, match="exact no-new-privileges"):
+        evidence._validate_container_inspect(
+            inspect_path,
+            "sha256:" + "2" * 64,
+            root / "docker-run-1",
+        )
+
+
+def test_runtime_contract_rejects_missing_tiktoken_cache(tmp_path):
+    root = tmp_path / "container"
+    _container_inputs(root)
+    inspect_path = root / "docker-run-1.inspect.json"
+    payload = json.loads(inspect_path.read_text(encoding="utf-8"))
+    payload[0]["Config"]["Env"] = [
+        value
+        for value in payload[0]["Config"]["Env"]
+        if not value.startswith("TIKTOKEN_CACHE_DIR=")
+    ]
+    inspect_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(evidence.EvidenceError, match="required environment"):
         evidence._validate_container_inspect(
             inspect_path,
             "sha256:" + "2" * 64,

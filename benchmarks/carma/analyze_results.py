@@ -29,6 +29,16 @@ MOSS_SCHEMA = "carma-moss-recorded-response-v2"
 HOST_VERIFICATION_SCHEMA = "carma-host-verification-v1"
 CONTAINER_REPRODUCIBILITY_SCHEMA = "carma-container-reproducibility-v1"
 MATPLOTLIB_VERSION = "3.10.8"
+CONTAINER_IMAGE_ENVIRONMENT = {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1",
+    "PIP_CONFIG_FILE": "/dev/null",
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PIP_INDEX_URL": "https://pypi.org/simple",
+    "PIP_NO_INPUT": "1",
+    "PIP_ROOT_USER_ACTION": "ignore",
+    "TIKTOKEN_CACHE_DIR": "/opt/tiktoken-cache",
+}
 REPORT_TEXT_WIDTH_IN = 7.05
 PUBLICATION_FIGURE_WIDTH_IN = 8.0
 MAX_PUBLICATION_FIGURE_WIDTH_IN = 8.2
@@ -2109,16 +2119,10 @@ def _validate_image_inspect(path: Path, expected_image_id: str) -> None:
     environment = _environment_map(
         config.get("Env"), "paired-container inspected image"
     )
-    required = {
-        "PYTHONDONTWRITEBYTECODE": "1",
-        "PYTHONUNBUFFERED": "1",
-        "PIP_CONFIG_FILE": "/dev/null",
-        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
-        "PIP_INDEX_URL": "https://pypi.org/simple",
-        "PIP_NO_INPUT": "1",
-        "PIP_ROOT_USER_ACTION": "ignore",
-    }
-    if any(environment.get(key) != value for key, value in required.items()):
+    if any(
+        environment.get(key) != value
+        for key, value in CONTAINER_IMAGE_ENVIRONMENT.items()
+    ):
         raise AnalysisError(
             "paired-container inspected image lacks the pinned dependency environment"
         )
@@ -2177,21 +2181,13 @@ def _validate_container_inspect(
     if config.get("Cmd") not in (None, []):
         raise AnalysisError("%s runtime command is not empty" % label)
     environment = _environment_map(config.get("Env"), "%s runtime" % label)
-    required_environment = {
-        "PYTHONDONTWRITEBYTECODE": "1",
-        "PYTHONUNBUFFERED": "1",
-        "PIP_CONFIG_FILE": "/dev/null",
-        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
-        "PIP_INDEX_URL": "https://pypi.org/simple",
-        "PIP_NO_INPUT": "1",
-        "PIP_ROOT_USER_ACTION": "ignore",
-        "CARMA_ARTIFACT_DIR": "/artifacts",
-    }
+    required_environment = dict(CONTAINER_IMAGE_ENVIRONMENT)
+    required_environment["CARMA_ARTIFACT_DIR"] = "/artifacts"
     if any(
         environment.get(key) != value
         for key, value in required_environment.items()
     ):
-        raise AnalysisError("%s artifact environment is missing" % label)
+        raise AnalysisError("%s required environment is missing or changed" % label)
     mounts = item.get("Mounts")
     matching = (
         [

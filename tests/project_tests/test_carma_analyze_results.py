@@ -306,6 +306,7 @@ def _container_reproducibility_fixture(
                         "PIP_INDEX_URL=https://pypi.org/simple",
                         "PIP_NO_INPUT=1",
                         "PIP_ROOT_USER_ACTION=ignore",
+                        "TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache",
                     ],
                 },
             }
@@ -369,6 +370,7 @@ def _container_reproducibility_fixture(
                             "PIP_INDEX_URL=https://pypi.org/simple",
                             "PIP_NO_INPUT=1",
                             "PIP_ROOT_USER_ACTION=ignore",
+                            "TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache",
                             "CARMA_ARTIFACT_DIR=/artifacts",
                         ],
                     },
@@ -1890,6 +1892,28 @@ def test_forged_image_execution_contract_is_rejected(
         )
 
 
+def test_forged_image_tiktoken_cache_environment_is_rejected(tmp_path):
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    evidence = json.loads(container.read_text(encoding="utf-8"))
+    inspect_path = container.parent / evidence["image_inspect"]["path"]
+    inspection = json.loads(inspect_path.read_text(encoding="utf-8"))
+    environment = inspection[0]["Config"]["Env"]
+    inspection[0]["Config"]["Env"] = [
+        value
+        if not value.startswith("TIKTOKEN_CACHE_DIR=")
+        else "TIKTOKEN_CACHE_DIR=/tmp/ambient-cache"
+        for value in environment
+    ]
+    _write_json(inspect_path, inspection)
+    evidence["image_inspect"]["sha256"] = sha256_file(inspect_path)
+    _write_json(container, evidence)
+
+    with pytest.raises(AnalysisError, match="pinned dependency environment"):
+        analyze_results(
+            tmp_path / "analysis", container_reproducibility=container
+        )
+
+
 def test_forged_runtime_inspect_is_rejected(tmp_path):
     container = _container_reproducibility_fixture(tmp_path / "container")
     evidence = json.loads(container.read_text(encoding="utf-8"))
@@ -1956,6 +1980,28 @@ def test_forged_runtime_execution_contract_is_rejected(
     _write_json(container, evidence)
 
     with pytest.raises(AnalysisError, match=message):
+        analyze_results(
+            tmp_path / "analysis", container_reproducibility=container
+        )
+
+
+def test_forged_runtime_missing_tiktoken_cache_environment_is_rejected(tmp_path):
+    container = _container_reproducibility_fixture(tmp_path / "container")
+    evidence = json.loads(container.read_text(encoding="utf-8"))
+    runtime_ref = evidence["runs"][0]["container_inspect"]
+    inspect_path = container.parent / runtime_ref["path"]
+    inspection = json.loads(inspect_path.read_text(encoding="utf-8"))
+    environment = inspection[0]["Config"]["Env"]
+    inspection[0]["Config"]["Env"] = [
+        value
+        for value in environment
+        if not value.startswith("TIKTOKEN_CACHE_DIR=")
+    ]
+    _write_json(inspect_path, inspection)
+    runtime_ref["sha256"] = sha256_file(inspect_path)
+    _write_json(container, evidence)
+
+    with pytest.raises(AnalysisError, match="required environment"):
         analyze_results(
             tmp_path / "analysis", container_reproducibility=container
         )

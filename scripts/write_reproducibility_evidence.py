@@ -27,19 +27,45 @@ CONTAINER_ID = re.compile(r"[0-9a-f]{64}")
 PYTHON_IMAGE_DIGEST = (
     "sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2"
 )
+TIKTOKEN_CACHE_KEY = "9b5ad71b2ce5302211f9c61530b329a4922fc6a4"
+TIKTOKEN_CACHE_SHA256 = (
+    "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7"
+)
+TIKTOKEN_CACHE_SIZE = 1681126
+TIKTOKEN_IMAGE_CACHE_DIR = "/opt/tiktoken-cache"
 EXPECTED_ENTRYPOINT = ["bash", "scripts/verify_project.sh"]
+EXPECTED_IMAGE_ENVIRONMENT = {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1",
+    "PIP_CONFIG_FILE": "/dev/null",
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PIP_INDEX_URL": "https://pypi.org/simple",
+    "PIP_NO_INPUT": "1",
+    "PIP_ROOT_USER_ACTION": "ignore",
+    "TIKTOKEN_CACHE_DIR": TIKTOKEN_IMAGE_CACHE_DIR,
+}
 EXPECTED_DOCKERFILE_STATEMENTS = (
     "FROM python:3.12.13-slim-bookworm@%s" % PYTHON_IMAGE_DIGEST,
     "ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 "
     "PIP_CONFIG_FILE=/dev/null PIP_DISABLE_PIP_VERSION_CHECK=1 "
     "PIP_INDEX_URL=https://pypi.org/simple PIP_NO_INPUT=1 "
-    "PIP_ROOT_USER_ACTION=ignore",
+    "PIP_ROOT_USER_ACTION=ignore TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache",
     "WORKDIR /workspace",
     "COPY requirements-project.lock ./",
     "RUN python -m pip --isolated --disable-pip-version-check install "
     "--no-cache-dir --no-input --index-url https://pypi.org/simple "
     "--require-hashes --only-binary=:all: "
     "--requirement requirements-project.lock",
+    "COPY assets/tiktoken-cache/9b5ad71b2ce5302211f9c61530b329a4922fc6a4 "
+    "/opt/tiktoken-cache/9b5ad71b2ce5302211f9c61530b329a4922fc6a4",
+    "RUN python -c 'import hashlib, pathlib, sys; root = "
+    'pathlib.Path("/opt/tiktoken-cache"); path = root / '
+    '"9b5ad71b2ce5302211f9c61530b329a4922fc6a4"; data = '
+    "path.read_bytes(); valid = (not root.is_symlink() and not "
+    "path.is_symlink() and list(root.iterdir()) == [path] and "
+    "len(data) == 1681126 and hashlib.sha256(data).hexdigest() == "
+    '"223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7"); '
+    "sys.exit(0 if valid else \"invalid cl100k_base cache asset\")'",
     "COPY setup.py README.md requirements.txt ./",
     "COPY gptcache ./gptcache",
     "COPY gptcache_server ./gptcache_server",
@@ -62,6 +88,11 @@ EXPECTED_DOCKERIGNORE_PATTERNS = (
     "!setup.py",
     "!README.md",
     "!requirements.txt",
+    "!assets/",
+    "assets/**",
+    "!assets/tiktoken-cache/",
+    "assets/tiktoken-cache/**",
+    "!assets/tiktoken-cache/9b5ad71b2ce5302211f9c61530b329a4922fc6a4",
     "!gptcache/",
     "!gptcache/**",
     "!gptcache_server/",
@@ -79,6 +110,7 @@ EXPECTED_DOCKERIGNORE_PATTERNS = (
     "!scripts/generate_hashed_locks.py",
     "!scripts/run_ci_benchmark.sh",
     "!scripts/run_qqp_validation.sh",
+    "!scripts/run_reproducibility_gate.sh",
     "!scripts/verify_project.sh",
     "!scripts/write_reproducibility_evidence.py",
 )
@@ -586,16 +618,10 @@ def _validate_image_inspect(path: Path, expected_image_id: str) -> None:
     if config.get("Cmd") not in (None, []):
         raise EvidenceError("inspected image command adds unexpected verifier arguments")
     environment = _environment_map(config.get("Env"), "inspected image")
-    required = {
-        "PYTHONDONTWRITEBYTECODE": "1",
-        "PYTHONUNBUFFERED": "1",
-        "PIP_CONFIG_FILE": "/dev/null",
-        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
-        "PIP_INDEX_URL": "https://pypi.org/simple",
-        "PIP_NO_INPUT": "1",
-        "PIP_ROOT_USER_ACTION": "ignore",
-    }
-    if any(environment.get(key) != value for key, value in required.items()):
+    if any(
+        environment.get(key) != value
+        for key, value in EXPECTED_IMAGE_ENVIRONMENT.items()
+    ):
         raise EvidenceError("inspected image lacks the pinned dependency environment")
 
 
@@ -651,8 +677,13 @@ def _validate_container_inspect(
     ]:
         raise EvidenceError("container runtime did not execute the exact verifier")
     environment = _environment_map(config.get("Env"), "container runtime")
-    if environment.get("CARMA_ARTIFACT_DIR") != "/artifacts":
-        raise EvidenceError("container artifact environment is missing")
+    required_environment = dict(EXPECTED_IMAGE_ENVIRONMENT)
+    required_environment["CARMA_ARTIFACT_DIR"] = "/artifacts"
+    if any(
+        environment.get(key) != value
+        for key, value in required_environment.items()
+    ):
+        raise EvidenceError("container required environment is missing or changed")
     mounts = item.get("Mounts")
     matching = [
         mount
