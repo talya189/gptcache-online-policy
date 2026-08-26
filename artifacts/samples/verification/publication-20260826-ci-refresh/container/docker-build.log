@@ -1,0 +1,174 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.project
+#1 transferring dockerfile: 2.65kB done
+#1 DONE 0.0s
+
+#2 [internal] load .dockerignore
+#2 transferring context: 817B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12.13-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2
+#3 DONE 1.9s
+
+#4 [ 1/14] FROM docker.io/library/python:3.12.13-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2
+#4 DONE 0.0s
+
+#5 [ 2/14] WORKDIR /workspace
+#5 CACHED
+
+#6 [internal] load build context
+#6 transferring context: 8.36MB 0.1s done
+#6 DONE 0.1s
+
+#7 [ 3/14] COPY requirements-project.lock ./
+#7 DONE 0.0s
+
+#8 [ 4/14] RUN python -m pip --isolated --disable-pip-version-check install     --no-cache-dir --no-input --index-url https://pypi.org/simple     --require-hashes --only-binary=:all:     --requirement requirements-project.lock
+#8 1.685 Collecting pip==26.2.1 (from -r requirements-project.lock (line 5))
+#8 2.062   Downloading pip-26.2.1-py3-none-any.whl (1.8 MB)
+#8 2.768      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 3.1 MB/s eta 0:00:00
+#8 3.201 Collecting setuptools==84.0.0 (from -r requirements-project.lock (line 8))
+#8 3.272   Downloading setuptools-84.0.0-py3-none-any.whl (818 kB)
+#8 3.502      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 818.2/818.2 kB 3.1 MB/s eta 0:00:00
+#8 3.626 Collecting wheel==0.48.0 (from -r requirements-project.lock (line 11))
+#8 3.706   Downloading wheel-0.48.0-py3-none-any.whl (33 kB)
+#8 3.805 Collecting cachetools==7.1.7 (from -r requirements-project.lock (line 14))
+#8 3.878   Downloading cachetools-7.1.7-py3-none-any.whl (16 kB)
+#8 4.063 Collecting faiss-cpu==1.15.0 (from -r requirements-project.lock (line 17))
+#8 4.136   Downloading faiss_cpu-1.15.0-cp310-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (18.8 MB)
+#8 8.355      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 18.8/18.8 MB 4.5 MB/s eta 0:00:00
+#8 8.989 Collecting numpy==2.5.2 (from -r requirements-project.lock (line 30))
+#8 9.065   Downloading numpy-2.5.2-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.7 MB)
+#8 15.95      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.7/16.7 MB 2.4 MB/s eta 0:00:00
+#8 16.17 Collecting requests==2.34.2 (from -r requirements-project.lock (line 97))
+#8 16.24   Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+#8 16.89 Collecting SQLAlchemy==2.0.52 (from -r requirements-project.lock (line 100))
+#8 16.96   Downloading sqlalchemy-2.0.52-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.4 MB)
+#8 17.50      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.4/3.4 MB 6.2 MB/s eta 0:00:00
+#8 18.30 Collecting coverage==7.15.4 (from -r requirements-project.lock (line 153))
+#8 18.38   Downloading coverage-7.15.4-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (257 kB)
+#8 18.78 Collecting matplotlib==3.10.8 (from -r requirements-project.lock (line 275))
+#8 18.86   Downloading matplotlib-3.10.8-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (8.7 MB)
+#8 21.11      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.7/8.7 MB 3.8 MB/s eta 0:00:00
+#8 21.38 Collecting psutil==7.2.2 (from -r requirements-project.lock (line 331))
+#8 21.45   Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl (155 kB)
+#8 21.62 Collecting pytest==9.1.1 (from -r requirements-project.lock (line 353))
+#8 21.69   Downloading pytest-9.1.1-py3-none-any.whl (386 kB)
+#8 21.92 Collecting pytest-cov==7.1.0 (from -r requirements-project.lock (line 356))
+#8 22.00   Downloading pytest_cov-7.1.0-py3-none-any.whl (22 kB)
+#8 22.17 Collecting tiktoken==0.14.0 (from -r requirements-project.lock (line 359))
+#8 22.24   Downloading tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl (1.2 MB)
+#8 22.47      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 4.6 MB/s eta 0:00:00
+#8 22.59 Collecting certifi==2026.7.22 (from -r requirements-project.lock (line 424))
+#8 22.67   Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+#8 23.00 Collecting charset-normalizer==3.5.1 (from -r requirements-project.lock (line 427))
+#8 23.07   Downloading charset_normalizer-3.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (248 kB)
+#8 23.34 Collecting contourpy==1.3.3 (from -r requirements-project.lock (line 600))
+#8 23.48   Downloading contourpy-1.3.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (362 kB)
+#8 23.62 Collecting cycler==0.12.1 (from -r requirements-project.lock (line 673))
+#8 23.70   Downloading cycler-0.12.1-py3-none-any.whl (8.3 kB)
+#8 24.07 Collecting fonttools==4.63.0 (from -r requirements-project.lock (line 676))
+#8 24.15   Downloading fonttools-4.63.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.0 MB)
+#8 24.80      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.0/5.0 MB 7.6 MB/s eta 0:00:00
+#8 25.27 Collecting greenlet==3.5.5 (from -r requirements-project.lock (line 727))
+#8 25.34   Downloading greenlet-3.5.5-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (621 kB)
+#8 25.61      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 621.4/621.4 kB 1.7 MB/s eta 0:00:00
+#8 25.73 Collecting idna==3.19 (from -r requirements-project.lock (line 807))
+#8 25.81   Downloading idna-3.19-py3-none-any.whl (68 kB)
+#8 25.91 Collecting iniconfig==2.3.0 (from -r requirements-project.lock (line 810))
+#8 26.03   Downloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+#8 26.22 Collecting kiwisolver==1.5.0 (from -r requirements-project.lock (line 813))
+#8 26.30   Downloading kiwisolver-1.5.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.5 MB)
+#8 26.83      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.5/1.5 MB 2.6 MB/s eta 0:00:00
+#8 26.95 Collecting packaging==26.3 (from -r requirements-project.lock (line 931))
+#8 27.08   Downloading packaging-26.3-py3-none-any.whl (129 kB)
+#8 27.53 Collecting pillow==12.3.0 (from -r requirements-project.lock (line 934))
+#8 27.67   Downloading pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.9 MB)
+#8 29.79      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.9/6.9 MB 3.3 MB/s eta 0:00:00
+#8 29.92 Collecting pluggy==1.6.0 (from -r requirements-project.lock (line 1022))
+#8 29.99   Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+#8 30.10 Collecting Pygments==2.21.0 (from -r requirements-project.lock (line 1025))
+#8 30.23   Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+#8 30.39      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 8.2 MB/s eta 0:00:00
+#8 30.53 Collecting pyparsing==3.3.2 (from -r requirements-project.lock (line 1028))
+#8 30.60   Downloading pyparsing-3.3.2-py3-none-any.whl (122 kB)
+#8 30.76 Collecting python-dateutil==2.9.0.post0 (from -r requirements-project.lock (line 1031))
+#8 30.84   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+#8 31.61 Collecting regex==2026.7.19 (from -r requirements-project.lock (line 1034))
+#8 31.68   Downloading regex-2026.7.19-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (801 kB)
+#8 31.86      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 801.8/801.8 kB 3.6 MB/s eta 0:00:00
+#8 31.97 Collecting six==1.17.0 (from -r requirements-project.lock (line 1149))
+#8 32.04   Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+#8 32.15 Collecting typing_extensions==4.16.0 (from -r requirements-project.lock (line 1152))
+#8 32.22   Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#8 32.43 Collecting urllib3==2.7.0 (from -r requirements-project.lock (line 1155))
+#8 32.50   Downloading urllib3-2.7.0-py3-none-any.whl (131 kB)
+#8 32.66 Installing collected packages: urllib3, typing_extensions, six, setuptools, regex, pyparsing, Pygments, psutil, pluggy, pip, pillow, packaging, numpy, kiwisolver, iniconfig, idna, greenlet, fonttools, cycler, coverage, charset-normalizer, certifi, cachetools, wheel, SQLAlchemy, requests, python-dateutil, pytest, faiss-cpu, contourpy, tiktoken, pytest-cov, matplotlib
+#8 33.59   Attempting uninstall: pip
+#8 33.59     Found existing installation: pip 25.0.1
+#8 33.62     Uninstalling pip-25.0.1:
+#8 33.67       Successfully uninstalled pip-25.0.1
+#8 38.81 Successfully installed Pygments-2.21.0 SQLAlchemy-2.0.52 cachetools-7.1.7 certifi-2026.7.22 charset-normalizer-3.5.1 contourpy-1.3.3 coverage-7.15.4 cycler-0.12.1 faiss-cpu-1.15.0 fonttools-4.63.0 greenlet-3.5.5 idna-3.19 iniconfig-2.3.0 kiwisolver-1.5.0 matplotlib-3.10.8 numpy-2.5.2 packaging-26.3 pillow-12.3.0 pip-26.2.1 pluggy-1.6.0 psutil-7.2.2 pyparsing-3.3.2 pytest-9.1.1 pytest-cov-7.1.0 python-dateutil-2.9.0.post0 regex-2026.7.19 requests-2.34.2 setuptools-84.0.0 six-1.17.0 tiktoken-0.14.0 typing_extensions-4.16.0 urllib3-2.7.0 wheel-0.48.0
+#8 38.81 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#8 DONE 38.9s
+
+#9 [ 5/14] COPY assets/tiktoken-cache/9b5ad71b2ce5302211f9c61530b329a4922fc6a4 /opt/tiktoken-cache/9b5ad71b2ce5302211f9c61530b329a4922fc6a4
+#9 DONE 0.0s
+
+#10 [ 6/14] RUN python -c 'import hashlib, pathlib, sys; root = pathlib.Path("/opt/tiktoken-cache"); path = root / "9b5ad71b2ce5302211f9c61530b329a4922fc6a4"; data = path.read_bytes(); valid = (not root.is_symlink() and not path.is_symlink() and list(root.iterdir()) == [path] and len(data) == 1681126 and hashlib.sha256(data).hexdigest() == "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7"); sys.exit(0 if valid else "invalid cl100k_base cache asset")'
+#10 DONE 0.4s
+
+#11 [ 7/14] COPY setup.py README.md requirements.txt ./
+#11 DONE 0.0s
+
+#12 [ 8/14] COPY gptcache ./gptcache
+#12 DONE 0.0s
+
+#13 [ 9/14] COPY gptcache_server ./gptcache_server
+#13 DONE 0.0s
+
+#14 [10/14] COPY benchmarks ./benchmarks
+#14 DONE 0.0s
+
+#15 [11/14] COPY examples/benchmark ./examples/benchmark
+#15 DONE 0.0s
+
+#16 [12/14] COPY tests ./tests
+#16 DONE 0.0s
+
+#17 [13/14] COPY scripts ./scripts
+#17 DONE 0.0s
+
+#18 [14/14] RUN python -m pip --isolated --disable-pip-version-check install     --no-cache-dir --no-input --no-index --no-deps --no-build-isolation --editable .     && addgroup --system project     && adduser --system --ingroup project --home /home/project project     && chown -R project:project /workspace /home/project
+#18 0.666 Obtaining file:///workspace
+#18 0.668   Checking if build backend supports build_editable: started
+#18 1.072   Checking if build backend supports build_editable: finished with status 'done'
+#18 1.074   Preparing editable metadata (pyproject.toml): started
+#18 1.513   Preparing editable metadata (pyproject.toml): finished with status 'done'
+#18 1.519 Building wheels for collected packages: gptcache
+#18 1.519   Building editable for gptcache (pyproject.toml): started
+#18 1.993   Building editable for gptcache (pyproject.toml): finished with status 'done'
+#18 1.994   Created wheel for gptcache: filename=gptcache-0.1.44-0.editable-py3-none-any.whl size=14033 sha256=dc58a75896d9a03fa81d8ca78be3898342c15e5257a72fef1163e52e98fcae61
+#18 1.994   Stored in directory: /tmp/pip-ephem-wheel-cache-64f2c6yg/wheels/b0/41/ab/4e04a8678980f3355548f1261923479fbf2a713a7393a7dea8
+#18 2.000 Successfully built gptcache
+#18 2.029 Installing collected packages: gptcache
+#18 2.039 Successfully installed gptcache-0.1.44
+#18 2.039 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#18 2.167 Adding group `project' (GID 101) ...
+#18 2.200 Done.
+#18 2.287 Adding system user `project' (UID 100) ...
+#18 2.287 Adding new user `project' (UID 100) with group `project' ...
+#18 2.325 Creating home directory `/home/project' ...
+#18 DONE 2.5s
+
+#19 exporting to image
+#19 exporting layers
+#19 exporting layers 0.5s done
+#19 writing image sha256:150c957a35b476874392ae185e78b6709934e675f71ec02d2a62004c0d0e91b2 done
+#19 naming to docker.io/library/carma-project:repro-9ee91f1ec6b1-28366 done
+#19 DONE 0.5s
+
+What's Next?
+  1. Sign in to your Docker account → docker login
+  2. View a summary of image vulnerabilities and recommendations → docker scout quickview

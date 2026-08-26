@@ -1,0 +1,115 @@
+{
+  "build_log": {
+    "path": "docker-build.log",
+    "sha256": "ec360d4754dae15bd24d19de0e10dc3fb8db4368cc76ef7bc8c517896c6971a1"
+  },
+  "comparisons": {
+    "hash_lists_identical": true,
+    "manifest_json_identical": true,
+    "non_timing_logs_identical": true,
+    "requests_jsonl_identical": true,
+    "runs_csv_identical": true
+  },
+  "controls": {
+    "binary_only_dependencies": true,
+    "capabilities_dropped": "ALL",
+    "checkout_credentials_persisted": false,
+    "dependency_hashes_required": true,
+    "dependency_index_url": "https://pypi.org/simple",
+    "generated_lock_check_passed": true,
+    "no_new_privileges": true,
+    "runtime_network": "none"
+  },
+  "dependency_lock": {
+    "path": "requirements-project.lock",
+    "sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721"
+  },
+  "fresh_container_count": 2,
+  "image_id": "sha256:150c957a35b476874392ae185e78b6709934e675f71ec02d2a62004c0d0e91b2",
+  "image_inspect": {
+    "path": "container-image-inspect.json",
+    "sha256": "0955116a9ddb4cc46bd81a1eda5483ae3d2954efc69c33803eeaf9585d2ef47a"
+  },
+  "platform": "linux/amd64",
+  "runs": [
+    {
+      "artifact_mount_source": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/docker-run-1",
+      "benchmark_artifacts": {
+        "manifest.json": {
+          "path": "docker-run-1/benchmark/manifest.json",
+          "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+        },
+        "requests.jsonl": {
+          "path": "docker-run-1/benchmark/requests.jsonl",
+          "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+        },
+        "runs.csv": {
+          "path": "docker-run-1/benchmark/runs.csv",
+          "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+        }
+      },
+      "container_inspect": {
+        "path": "docker-run-1.inspect.json",
+        "sha256": "9623a812fc78eac36c3e00cf121666c9f92a68beb6344519be672e82b69f2d19"
+      },
+      "hash_list": {
+        "path": "docker-run-1.sha256",
+        "sha256": "0140f569f89fbc583711b9c723e47aabd0b0b797492917585961a788cfdde5b6"
+      },
+      "label": "docker-run-1",
+      "non_timing_log": {
+        "path": "docker-run-1.nontiming.log",
+        "sha256": "02d0741cbfd53a02e2139e50ca4f3e55b1797723c042315960ee58afa571a9a1"
+      },
+      "raw_log": {
+        "path": "docker-run-1.log",
+        "sha256": "6cea2e073b57ea2694e73ff7d9503a978f0898bbce09649b6b387f04dd6843ed"
+      }
+    },
+    {
+      "artifact_mount_source": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/docker-run-2",
+      "benchmark_artifacts": {
+        "manifest.json": {
+          "path": "docker-run-2/benchmark/manifest.json",
+          "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+        },
+        "requests.jsonl": {
+          "path": "docker-run-2/benchmark/requests.jsonl",
+          "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+        },
+        "runs.csv": {
+          "path": "docker-run-2/benchmark/runs.csv",
+          "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+        }
+      },
+      "container_inspect": {
+        "path": "docker-run-2.inspect.json",
+        "sha256": "67c8574c9ae8e6bd9bfbcec7fc127adc2fe11f32c27618f2ebd79438ee0ee849"
+      },
+      "hash_list": {
+        "path": "docker-run-2.sha256",
+        "sha256": "0140f569f89fbc583711b9c723e47aabd0b0b797492917585961a788cfdde5b6"
+      },
+      "label": "docker-run-2",
+      "non_timing_log": {
+        "path": "docker-run-2.nontiming.log",
+        "sha256": "02d0741cbfd53a02e2139e50ca4f3e55b1797723c042315960ee58afa571a9a1"
+      },
+      "raw_log": {
+        "path": "docker-run-2.log",
+        "sha256": "97a9a90f4258a2312a42fd538bf7b89d52a0de990beb017119e994e8a203669d"
+      }
+    }
+  ],
+  "schema_version": "carma-container-reproducibility-v1",
+  "source_archive": {
+    "archive_sha256": "ed24bc311dd5a454fcba22c8fd58ed635266343a440c375ec3047f27d31aceda",
+    "format": "git-archive-tar",
+    "path": "source-archive.sha256",
+    "sha256": "c544b5ac0b18faae1b0ab3fceb25164602f0e1e05062c8ab6bed85955616564d",
+    "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+    "tracked_file_count": 468
+  },
+  "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+  "status": "pass"
+}

@@ -87,9 +87,9 @@ manager = manager_factory(
 
 Exact commands are recorded in `docs/project/completion-audit.md`; final counts
 and logs are retained under
-`artifacts/samples/verification/publication-20260826/`. The exact-source host
-verifier passed 8 upstream eviction tests, 2 SQLite/FAISS tests (1 optional
-deselected), and 179 project tests (2 skipped).
+`artifacts/samples/verification/publication-20260826-ci-refresh/`. The
+exact-source host verifier passed 8 upstream eviction tests, 2 SQLite/FAISS
+tests (1 optional deselected), and 179 project tests (2 skipped).
 
 ## Benchmark summary
 

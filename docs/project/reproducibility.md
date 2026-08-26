@@ -195,24 +195,27 @@ not validate the generated hash locks or paired-container controls added later.
 
 The later final gate supersedes the execution limitations in the historical
 record above. It ran from clean source commit
-`fd09291a0f2deb71199b14478b15ef9947ceab5f` and one 435-file Git archive with
-SHA-256 `e803c51707af732b8c3f5b8c34b4810a0da90a00ef71718e2e5ddd6e54dcfe76`.
+`9ee91f1ec6b10d1c2831a15fb80e5032353e3af4` and one 468-file Git archive with
+SHA-256 `ed24bc311dd5a454fcba22c8fd58ed635266343a440c375ec3047f27d31aceda`.
 The complete gate passed and produced:
 
 - a macOS arm64 host verification under exact CPython 3.12.13, including 8
   upstream eviction tests, 2 SQLite/FAISS tests (1 deselected), 179 passing
   project tests (2 skipped), `pip check`, and the deterministic CI benchmark;
 - two distinct fresh `linux/amd64` containers from image
-  `sha256:d6caa03491ac11730f39ed1c9a1a68999f81963f07d53073fe2f235f856c91a4`,
+  `sha256:150c957a35b476874392ae185e78b6709934e675f71ec02d2a62004c0d0e91b2`,
   each unprivileged, network-isolated, with all capabilities dropped and
   `no-new-privileges=true`; and
 - byte-identical container benchmark manifests, 15,600-row request logs,
   16-row run tables, normalized verifier logs, and artifact hash lists.
 
 The authoritative host status SHA-256 is
-`32874e928ebb21c0004d6a33ae60fb430ec6b21e7fcca55a82688b87f530386b`;
+`365fa5ee1a97d731738d2d4d968d951fd0c55153a7f2a7d3a27ede71a1dff3ab`;
 the paired-container status SHA-256 is
-`62851fd0eb0c44833aaed8b808be3960225a6e64f2c84ab209fa104eeb468f1f`.
+`e840d06adb33da01f9b3e6020be912fa5517030b3ee7b94db96f223ae3b381d1`.
 Their complete referenced topology is retained under
-`artifacts/samples/verification/publication-20260826/`, and every file in that
-refresh is covered by its colocated `SHA256SUMS`.
+`artifacts/samples/verification/publication-20260826-ci-refresh/`, and every
+file in that refresh is covered by its colocated `SHA256SUMS`. This refresh
+also includes the hosted-workflow correction from unavailable Python 3.8.20 to
+the newest Ubuntu 22.04 x64 build in GitHub's manifest, Python 3.8.18; the
+patch-neutral `cp38` dependency lock is unchanged.

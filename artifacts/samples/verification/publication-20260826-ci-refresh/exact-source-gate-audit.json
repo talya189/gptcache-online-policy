@@ -1,0 +1,1278 @@
+{
+  "artifacts": {
+    "capacity-curve.png": {
+      "bytes": 170137,
+      "sha256": "a495a59e0dfaf18c33c9f64dd03ad35322fae4e03c1141430748448ee64d6e6c"
+    },
+    "capacity-curve.svg": {
+      "bytes": 46152,
+      "sha256": "1a0a5ca3a848a02bc98a1050ef3d7084c462912ebd9c0b9749421c111cf8cf68"
+    },
+    "latency-resources.png": {
+      "bytes": 199205,
+      "sha256": "85021710f9c4d7138a21e1eb4d011604465f62fae4d702225e7a79449ed05064"
+    },
+    "latency-resources.svg": {
+      "bytes": 106136,
+      "sha256": "716b7fde810fc5fb8ed9a341c6a6db76b23ec322fb7603e7510175b0afe1ccaa"
+    },
+    "scan-return.png": {
+      "bytes": 108020,
+      "sha256": "dca9e35aa22df8cc19d8d37eabcc1315de11a1b8b7ea13069d3aa4a72e3c7b59"
+    },
+    "scan-return.svg": {
+      "bytes": 12443,
+      "sha256": "5d190d2224fc8a41b1785a4363d58cabcf530af08ac4d7e70e722d18b24c13b3"
+    },
+    "summary.csv": {
+      "bytes": 1801,
+      "sha256": "f25cc7b27460c304e857978e06985b201550258d96ff5c44cd435b0087084d09"
+    },
+    "vhr-deltas.png": {
+      "bytes": 103500,
+      "sha256": "0776c56d1dec1858d5761afa617ab9c36304a4912865ce1c76768c3d5ad5f3a5"
+    },
+    "vhr-deltas.svg": {
+      "bytes": 11027,
+      "sha256": "4c2fbf3cc80ea00b299c6965e9c5b6970462804afc752506e953e806bb3717ed"
+    }
+  },
+  "figures": {
+    "capacity-curve": {
+      "files": [
+        "capacity-curve.svg",
+        "capacity-curve.png"
+      ],
+      "observations": 36,
+      "publication_contract": {
+        "minimum_font_at_report_width_pt": 11.015625,
+        "minimum_source_font_pt": 12.5,
+        "rendered_text_labels_checked": 24,
+        "report_width_in": 7.05,
+        "required_minimum_report_font_pt": 10.0,
+        "scale_to_report_width": 0.88125,
+        "source_height_in": 6.6,
+        "source_width_in": 8.0
+      },
+      "sha256": {
+        "capacity-curve.png": "a495a59e0dfaf18c33c9f64dd03ad35322fae4e03c1141430748448ee64d6e6c",
+        "capacity-curve.svg": "1a0a5ca3a848a02bc98a1050ef3d7084c462912ebd9c0b9749421c111cf8cf68"
+      },
+      "status": "rendered",
+      "value_axis": {
+        "domain": [
+          0,
+          80
+        ],
+        "metric": "valid_hit_rate",
+        "shared_across_panels": true,
+        "ticks": [
+          0,
+          20,
+          40,
+          60,
+          80
+        ],
+        "unit": "percent"
+      }
+    },
+    "latency-resources": {
+      "files": [
+        "latency-resources.svg",
+        "latency-resources.png"
+      ],
+      "observations": 15,
+      "publication_contract": {
+        "minimum_font_at_report_width_pt": 11.015625,
+        "minimum_source_font_pt": 12.5,
+        "rendered_text_labels_checked": 43,
+        "report_width_in": 7.05,
+        "required_minimum_report_font_pt": 10.0,
+        "scale_to_report_width": 0.88125,
+        "source_height_in": 7.6,
+        "source_width_in": 8.0
+      },
+      "sha256": {
+        "latency-resources.png": "85021710f9c4d7138a21e1eb4d011604465f62fae4d702225e7a79449ed05064",
+        "latency-resources.svg": "716b7fde810fc5fb8ed9a341c6a6db76b23ec322fb7603e7510175b0afe1ccaa"
+      },
+      "status": "rendered"
+    },
+    "scan-return": {
+      "files": [
+        "scan-return.svg",
+        "scan-return.png"
+      ],
+      "observations": 3,
+      "publication_contract": {
+        "minimum_font_at_report_width_pt": 11.015625,
+        "minimum_source_font_pt": 12.5,
+        "rendered_text_labels_checked": 19,
+        "report_width_in": 7.05,
+        "required_minimum_report_font_pt": 10.0,
+        "scale_to_report_width": 0.88125,
+        "source_height_in": 5.2,
+        "source_width_in": 8.0
+      },
+      "sha256": {
+        "scan-return.png": "dca9e35aa22df8cc19d8d37eabcc1315de11a1b8b7ea13069d3aa4a72e3c7b59",
+        "scan-return.svg": "5d190d2224fc8a41b1785a4363d58cabcf530af08ac4d7e70e722d18b24c13b3"
+      },
+      "status": "rendered"
+    },
+    "vhr-deltas": {
+      "files": [
+        "vhr-deltas.svg",
+        "vhr-deltas.png"
+      ],
+      "observations": 3,
+      "publication_contract": {
+        "minimum_font_at_report_width_pt": 11.015625,
+        "minimum_source_font_pt": 12.5,
+        "rendered_text_labels_checked": 16,
+        "report_width_in": 7.05,
+        "required_minimum_report_font_pt": 10.0,
+        "scale_to_report_width": 0.88125,
+        "source_height_in": 5.2,
+        "source_width_in": 8.0
+      },
+      "sha256": {
+        "vhr-deltas.png": "0776c56d1dec1858d5761afa617ab9c36304a4912865ce1c76768c3d5ad5f3a5",
+        "vhr-deltas.svg": "4c2fbf3cc80ea00b299c6965e9c5b6970462804afc752506e953e806bb3717ed"
+      },
+      "status": "rendered"
+    }
+  },
+  "gates": {
+    "gate_1_correctness": {
+      "claimable": true,
+      "criterion": "all relevant tests pass and all integrity failures are zero",
+      "host_verification": {
+        "benchmark_artifacts": {
+          "manifest.json": {
+            "bytes": 1695,
+            "path": "benchmark/manifest.json",
+            "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+          },
+          "requests.jsonl": {
+            "bytes": 10097239,
+            "path": "benchmark/requests.jsonl",
+            "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+          },
+          "runs.csv": {
+            "bytes": 9040,
+            "path": "benchmark/runs.csv",
+            "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+          }
+        },
+        "benchmark_request_rows": 15600,
+        "benchmark_run_rows": 16,
+        "benchmark_validation": {
+          "request_rows": 15600,
+          "run_ids": [
+            "d76bc9330993dc35b9ae",
+            "55710f78c7dcb5bd3a6c",
+            "b3997a7b659212522f4b",
+            "2d11cb798039d787a975",
+            "10b53ecd9f35eb3cddbe",
+            "d2b4800184b4a8189a1a",
+            "6e948dfec20c2e2e1274",
+            "1c4350b27a5663315674",
+            "98fc9598322448cbaf8f",
+            "3ac047de3c71c9d33752",
+            "d1cb6cb9445d621ef97e",
+            "95eeac1c8fa429829498",
+            "30f61f424e0b782b41db",
+            "52128b655632750a751f",
+            "1b4833220c3a18d3bbb9",
+            "ca5ec4a8d7b926c8d47d"
+          ],
+          "run_rows": 16,
+          "schema_version": "carma-benchmark-v2",
+          "timing_is_measured": false,
+          "trace_hashes": {
+            "novel": "c792eb90f50c8f876174c6dad2c39b25a25434493d4fab93833e19630e146d5b",
+            "phase_shift": "33b33e7cb8ce53bf09995fbae11c1a36cc68359a81219347756f4ebffdee6a8e",
+            "pollution_scan": "20f6ff91585d15e59208b644ddd1e61770dee4f944ef62867b19cc6dc62457f1",
+            "stationary": "1312c8e2eae38b177ef6debaf6162befd3b528299ae3ce7e5fc62cd153ec4802"
+          }
+        },
+        "commit_binding": {
+          "current_git_head": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+          "evidence_source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+          "exact_match": true,
+          "status": "verified"
+        },
+        "current_dependency_lock_sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721",
+        "dependency_lock": {
+          "bytes": 93179,
+          "path": "requirements-project.lock",
+          "sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721"
+        },
+        "environment_install_log": {
+          "bytes": 6745,
+          "path": "host-install.log",
+          "sha256": "a357023cc2f59ffefabad4313123e648c0ccc25a7652b9f4280946a51255144a"
+        },
+        "environment_validation": {
+          "install_sentinel": "[install] pip check PASS",
+          "installed_project": "gptcache==0.1.44",
+          "locked_package_count": 33
+        },
+        "installed_packages": {
+          "bytes": 581,
+          "path": "host-packages.txt",
+          "sha256": "bb6dec9daa40c21aee348de2178906121b06c13d72bbffccc7c2068db5623d54"
+        },
+        "path": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/ci/host-verification.json",
+        "platform": "macOS-26.5.2-arm64-arm-64bit",
+        "python": {
+          "implementation": "CPython",
+          "version": "3.12.13"
+        },
+        "schema_version": "carma-host-verification-v1",
+        "sha256": "365fa5ee1a97d731738d2d4d968d951fd0c55153a7f2a7d3a27ede71a1dff3ab",
+        "source_archive": {
+          "archive_sha256": "ed24bc311dd5a454fcba22c8fd58ed635266343a440c375ec3047f27d31aceda",
+          "bytes": 118,
+          "format": "git-archive-tar",
+          "git_recomputed": true,
+          "path": "source-archive.sha256",
+          "sha256": "c544b5ac0b18faae1b0ab3fceb25164602f0e1e05062c8ab6bed85955616564d",
+          "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+          "tracked_file_count": 468
+        },
+        "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+        "status": "verified",
+        "verification_log": {
+          "bytes": 1096,
+          "path": "host-verification.log",
+          "sha256": "700de8771838bd201f87e8efe61294e6ead0ed89aba4fce11c8a004936c43617"
+        }
+      },
+      "observed_integrity_failures": [],
+      "reason": "clean-host verifier passed and integration integrity failures are zero",
+      "status": "pass"
+    },
+    "gate_2_semantic_safety": {
+      "claimable": true,
+      "criterion": "QQP precision >= 0.99, Wilson lower >= 0.98, and CARMA FHR upper delta bound <= 0.001",
+      "qqp": {
+        "calibration_grid": {
+          "best_wilson_row": {
+            "false_negative": 4968,
+            "false_positive": 17,
+            "false_positive_rate": 0.008184882041405874,
+            "precision": 0.9757489300998573,
+            "recall": 0.12101910828025478,
+            "threshold": 0.96,
+            "true_negative": 2060,
+            "true_positive": 684,
+            "wilson_precision_lower_one_sided_95": 0.9642078179927354
+          },
+          "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/qqp-full/evaluation/calibration_thresholds.csv",
+          "qualifying_thresholds": 0,
+          "rows": 20,
+          "sha256": "374909bca33799b58e25c00c498dc4b916c470f543fba155a0a24d77f8d3c6de"
+        },
+        "calibration_pairs": 7729,
+        "reason": "no calibration threshold met the prerequisite precision rule",
+        "status": "fail",
+        "test_pairs_not_evaluated": 56963
+      },
+      "reason": "the QQP calibration precision prerequisite failed before held-out evaluation",
+      "status": "fail",
+      "synthetic_fhr_by_workload": {
+        "phase_shift": {
+          "delta_ci_high": 0.0,
+          "delta_ci_low": 0.0,
+          "delta_mean": 0.0,
+          "meets_0.001_upper_bound": true
+        },
+        "pollution_scan": {
+          "delta_ci_high": 0.0,
+          "delta_ci_low": 0.0,
+          "delta_mean": 0.0,
+          "meets_0.001_upper_bound": true
+        },
+        "stationary": {
+          "delta_ci_high": 0.0,
+          "delta_ci_low": 0.0,
+          "delta_mean": 0.0,
+          "meets_0.001_upper_bound": true
+        }
+      }
+    },
+    "gate_3_phase_shift_vhr": {
+      "claimable": true,
+      "observed_ci_high": 0.05088,
+      "observed_ci_low": 0.04677,
+      "observed_delta": 0.04885,
+      "observed_holm_p": 0.0234375,
+      "passes": true,
+      "source": "full synthetic metadata reconciled to aggregate.csv",
+      "status": "pass"
+    },
+    "gate_4_scan_return_vhr": {
+      "claimable": true,
+      "observed_ci_high": 0.000166665,
+      "observed_ci_low": 0.0,
+      "observed_delta": 6.6666e-05,
+      "observed_holm_p": 1.0,
+      "passes": false,
+      "source": "full synthetic metadata reconciled to aggregate.csv",
+      "status": "fail"
+    },
+    "gate_5_stationary_nonregression": {
+      "claimable": true,
+      "observed_ci_high": 0.07709025,
+      "observed_ci_low": 0.06572,
+      "observed_delta": 0.07122,
+      "passes": true,
+      "source": "full synthetic metadata reconciled to aggregate.csv",
+      "status": "pass"
+    },
+    "gate_6_token_saving_nonregression": {
+      "claimable": true,
+      "passes": true,
+      "source": "full synthetic metadata reconciled to aggregate.csv",
+      "status": "pass",
+      "workloads": {
+        "phase_shift": {
+          "observed_ci_high": 0.0547527647,
+          "observed_ci_low": 0.0500882964,
+          "observed_delta": 0.052513031
+        },
+        "pollution_scan": {
+          "observed_ci_high": 3.6978e-05,
+          "observed_ci_low": 0.0,
+          "observed_delta": 1.491e-05
+        },
+        "stationary": {
+          "observed_ci_high": 0.1044318435,
+          "observed_ci_low": 0.0864129521,
+          "observed_delta": 0.095032395
+        }
+      }
+    },
+    "gate_7_system_overhead": {
+      "claimable": false,
+      "conservative_require_every_seed_interpretation": {
+        "claimable_as_frozen_gate": false,
+        "status": "pass"
+      },
+      "criterion": "p95 <= 1.25x LRU and <= +0.5 ms; throughput >= 0.90x; peak RSS <= 1.20x and <= +64 MiB",
+      "diagnostic_by_seed": [
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": -234.916,
+          "p95_ratio": 0.9356533968,
+          "rss_delta_bytes": 5013504,
+          "rss_ratio": 1.0434288958,
+          "seed": 20260901,
+          "throughput_ratio": 1.0695750496
+        },
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": -43.25,
+          "p95_ratio": 0.9877610227,
+          "rss_delta_bytes": 3031040,
+          "rss_ratio": 1.0264097074,
+          "seed": 20260902,
+          "throughput_ratio": 1.1048464219
+        },
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": 109.75,
+          "p95_ratio": 1.0317989207,
+          "rss_delta_bytes": 3424256,
+          "rss_ratio": 1.0299341163,
+          "seed": 20260903,
+          "throughput_ratio": 0.9967589775
+        },
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": 54.875,
+          "p95_ratio": 1.0157995145,
+          "rss_delta_bytes": 2588672,
+          "rss_ratio": 1.0225135366,
+          "seed": 20260904,
+          "throughput_ratio": 1.0223872773
+        },
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": -94.375,
+          "p95_ratio": 0.9725972706,
+          "rss_delta_bytes": 2883584,
+          "rss_ratio": 1.0251392658,
+          "seed": 20260905,
+          "throughput_ratio": 1.0388625938
+        }
+      ],
+      "distinct_seed_count": 5,
+      "reason": "the frozen contract requires five seeds and does not define how their per-seed p95/resource values adjudicate one gate",
+      "required_seed_count": 5,
+      "status": "pending"
+    },
+    "gate_8_reproducibility": {
+      "claimable": true,
+      "container_reproducibility": {
+        "build_log": {
+          "bytes": 13718,
+          "path": "docker-build.log",
+          "sha256": "ec360d4754dae15bd24d19de0e10dc3fb8db4368cc76ef7bc8c517896c6971a1"
+        },
+        "commit_binding": {
+          "current_git_head": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+          "evidence_source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+          "exact_match": true,
+          "status": "verified"
+        },
+        "comparisons": {
+          "hash_lists_identical": true,
+          "manifest_json_identical": true,
+          "non_timing_logs_identical": true,
+          "requests_jsonl_identical": true,
+          "runs_csv_identical": true
+        },
+        "controls": {
+          "binary_only_dependencies": true,
+          "capabilities_dropped": "ALL",
+          "checkout_credentials_persisted": false,
+          "dependency_hashes_required": true,
+          "dependency_index_url": "https://pypi.org/simple",
+          "generated_lock_check_passed": true,
+          "no_new_privileges": true,
+          "runtime_network": "none"
+        },
+        "current_dependency_lock_sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721",
+        "dependency_lock": {
+          "bytes": 93179,
+          "path": "requirements-project.lock",
+          "sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721"
+        },
+        "fresh_container_count": 2,
+        "image_id": "sha256:150c957a35b476874392ae185e78b6709934e675f71ec02d2a62004c0d0e91b2",
+        "image_inspect": {
+          "bytes": 5605,
+          "path": "container-image-inspect.json",
+          "sha256": "0955116a9ddb4cc46bd81a1eda5483ae3d2954efc69c33803eeaf9585d2ef47a"
+        },
+        "path": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/container-reproducibility.json",
+        "platform": "linux/amd64",
+        "runs": [
+          {
+            "artifact_mount_source": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/docker-run-1",
+            "benchmark_artifacts": {
+              "manifest.json": {
+                "bytes": 1695,
+                "path": "docker-run-1/benchmark/manifest.json",
+                "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+              },
+              "requests.jsonl": {
+                "bytes": 10097239,
+                "path": "docker-run-1/benchmark/requests.jsonl",
+                "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+              },
+              "runs.csv": {
+                "bytes": 9040,
+                "path": "docker-run-1/benchmark/runs.csv",
+                "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+              }
+            },
+            "benchmark_validation": {
+              "request_rows": 15600,
+              "run_ids": [
+                "d76bc9330993dc35b9ae",
+                "55710f78c7dcb5bd3a6c",
+                "b3997a7b659212522f4b",
+                "2d11cb798039d787a975",
+                "10b53ecd9f35eb3cddbe",
+                "d2b4800184b4a8189a1a",
+                "6e948dfec20c2e2e1274",
+                "1c4350b27a5663315674",
+                "98fc9598322448cbaf8f",
+                "3ac047de3c71c9d33752",
+                "d1cb6cb9445d621ef97e",
+                "95eeac1c8fa429829498",
+                "30f61f424e0b782b41db",
+                "52128b655632750a751f",
+                "1b4833220c3a18d3bbb9",
+                "ca5ec4a8d7b926c8d47d"
+              ],
+              "run_rows": 16,
+              "schema_version": "carma-benchmark-v2",
+              "timing_is_measured": false,
+              "trace_hashes": {
+                "novel": "c792eb90f50c8f876174c6dad2c39b25a25434493d4fab93833e19630e146d5b",
+                "phase_shift": "33b33e7cb8ce53bf09995fbae11c1a36cc68359a81219347756f4ebffdee6a8e",
+                "pollution_scan": "20f6ff91585d15e59208b644ddd1e61770dee4f944ef62867b19cc6dc62457f1",
+                "stationary": "1312c8e2eae38b177ef6debaf6162befd3b528299ae3ce7e5fc62cd153ec4802"
+              }
+            },
+            "container_id": "fac73c88817821f1360202ac6e3e106353885f3025323ad143980d6301ebaeff",
+            "container_inspect": {
+              "bytes": 9576,
+              "path": "docker-run-1.inspect.json",
+              "sha256": "9623a812fc78eac36c3e00cf121666c9f92a68beb6344519be672e82b69f2d19"
+            },
+            "hash_list": {
+              "bytes": 236,
+              "path": "docker-run-1.sha256",
+              "sha256": "0140f569f89fbc583711b9c723e47aabd0b0b797492917585961a788cfdde5b6"
+            },
+            "label": "docker-run-1",
+            "non_timing_log": {
+              "bytes": 1063,
+              "path": "docker-run-1.nontiming.log",
+              "sha256": "02d0741cbfd53a02e2139e50ca4f3e55b1797723c042315960ee58afa571a9a1"
+            },
+            "raw_log": {
+              "bytes": 1051,
+              "path": "docker-run-1.log",
+              "sha256": "6cea2e073b57ea2694e73ff7d9503a978f0898bbce09649b6b387f04dd6843ed"
+            }
+          },
+          {
+            "artifact_mount_source": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/docker-run-2",
+            "benchmark_artifacts": {
+              "manifest.json": {
+                "bytes": 1695,
+                "path": "docker-run-2/benchmark/manifest.json",
+                "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+              },
+              "requests.jsonl": {
+                "bytes": 10097239,
+                "path": "docker-run-2/benchmark/requests.jsonl",
+                "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+              },
+              "runs.csv": {
+                "bytes": 9040,
+                "path": "docker-run-2/benchmark/runs.csv",
+                "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+              }
+            },
+            "benchmark_validation": {
+              "request_rows": 15600,
+              "run_ids": [
+                "d76bc9330993dc35b9ae",
+                "55710f78c7dcb5bd3a6c",
+                "b3997a7b659212522f4b",
+                "2d11cb798039d787a975",
+                "10b53ecd9f35eb3cddbe",
+                "d2b4800184b4a8189a1a",
+                "6e948dfec20c2e2e1274",
+                "1c4350b27a5663315674",
+                "98fc9598322448cbaf8f",
+                "3ac047de3c71c9d33752",
+                "d1cb6cb9445d621ef97e",
+                "95eeac1c8fa429829498",
+                "30f61f424e0b782b41db",
+                "52128b655632750a751f",
+                "1b4833220c3a18d3bbb9",
+                "ca5ec4a8d7b926c8d47d"
+              ],
+              "run_rows": 16,
+              "schema_version": "carma-benchmark-v2",
+              "timing_is_measured": false,
+              "trace_hashes": {
+                "novel": "c792eb90f50c8f876174c6dad2c39b25a25434493d4fab93833e19630e146d5b",
+                "phase_shift": "33b33e7cb8ce53bf09995fbae11c1a36cc68359a81219347756f4ebffdee6a8e",
+                "pollution_scan": "20f6ff91585d15e59208b644ddd1e61770dee4f944ef62867b19cc6dc62457f1",
+                "stationary": "1312c8e2eae38b177ef6debaf6162befd3b528299ae3ce7e5fc62cd153ec4802"
+              }
+            },
+            "container_id": "b2fb306593ccd0f4e1fc2457f5a1db67b3f5dc338ec9dfd2a202f752d0b3af9c",
+            "container_inspect": {
+              "bytes": 9574,
+              "path": "docker-run-2.inspect.json",
+              "sha256": "67c8574c9ae8e6bd9bfbcec7fc127adc2fe11f32c27618f2ebd79438ee0ee849"
+            },
+            "hash_list": {
+              "bytes": 236,
+              "path": "docker-run-2.sha256",
+              "sha256": "0140f569f89fbc583711b9c723e47aabd0b0b797492917585961a788cfdde5b6"
+            },
+            "label": "docker-run-2",
+            "non_timing_log": {
+              "bytes": 1063,
+              "path": "docker-run-2.nontiming.log",
+              "sha256": "02d0741cbfd53a02e2139e50ca4f3e55b1797723c042315960ee58afa571a9a1"
+            },
+            "raw_log": {
+              "bytes": 1051,
+              "path": "docker-run-2.log",
+              "sha256": "97a9a90f4258a2312a42fd538bf7b89d52a0de990beb017119e994e8a203669d"
+            }
+          }
+        ],
+        "schema_version": "carma-container-reproducibility-v1",
+        "sha256": "e840d06adb33da01f9b3e6020be912fa5517030b3ee7b94db96f223ae3b381d1",
+        "source_archive": {
+          "archive_sha256": "ed24bc311dd5a454fcba22c8fd58ed635266343a440c375ec3047f27d31aceda",
+          "bytes": 118,
+          "format": "git-archive-tar",
+          "git_recomputed": true,
+          "path": "source-archive.sha256",
+          "sha256": "c544b5ac0b18faae1b0ab3fceb25164602f0e1e05062c8ab6bed85955616564d",
+          "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+          "tracked_file_count": 468
+        },
+        "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+        "status": "verified"
+      },
+      "criterion": "two clean Docker CI runs have identical non-timing logs and all pinned downloads verify without credentials",
+      "partial_provenance": {
+        "full_git": {
+          "experiment_contract_path": "docs/project/experiment-contract.md",
+          "experiment_contract_sha256": "7a97eb9ee4891855b1a1025fbe5de703d6c73bc9c1c44968a8ffe9c1c742d776",
+          "git_head_commit": "28129f0b9785232827e741c0e2ff2bb96cc19423",
+          "git_status_at_start": [],
+          "git_worktree_clean_at_start": true,
+          "source_sha256": {
+            "benchmarks/carma/full_experiment.py": "f0520e18e09a76fdaaf77c6f00b0e3d2ea9dc71b2eb7db9bcd137979e2dc4dcd",
+            "benchmarks/carma/runner.py": "8a477c861dffcad8af9e2bbeeb211c4a8a4e859b5f64445f2cda70deef8edfa9",
+            "benchmarks/carma/statistics.py": "87d1e542eabbf7609cfcda5942342096026f6d5cc64e03aeb2c266591adb682d",
+            "benchmarks/carma/synthetic.py": "27dc87690d60dba13c520b31de5177cdb84d0673d4210057dc6ad1b3657b6422",
+            "gptcache/manager/eviction/carma.py": "1d2babec766c2888b9c668c890bc3a35494537594220bddcc5b0c8e474250c11"
+          }
+        },
+        "moss": "official_verified",
+        "qqp": {
+          "archive_sha256": "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58",
+          "calibration_grid": {
+            "best_wilson_row": {
+              "false_negative": 4968,
+              "false_positive": 17,
+              "false_positive_rate": 0.008184882041405874,
+              "precision": 0.9757489300998573,
+              "recall": 0.12101910828025478,
+              "threshold": 0.96,
+              "true_negative": 2060,
+              "true_positive": 684,
+              "wilson_precision_lower_one_sided_95": 0.9642078179927354
+            },
+            "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/qqp-full/evaluation/calibration_thresholds.csv",
+            "qualifying_thresholds": 0,
+            "rows": 20,
+            "sha256": "374909bca33799b58e25c00c498dc4b916c470f543fba155a0a24d77f8d3c6de"
+          },
+          "embeddings_manifest_sha256": "b15ce2c3312099c08e8bd060b38aada6be545d52a4ccc4081a2e5e264e956d64",
+          "model_revision": "5b562a100bc67e898ac89814e7a4668a18d65756",
+          "note": "sibling stage manifests verify their own inputs, but result.json does not cryptographically link to them",
+          "prepared_manifest_sha256": "c57d719457fe40f2b3d898509a0f63c92ff65a4e2494d68300a6a522c3711a5b",
+          "status": "partial_with_verified_siblings",
+          "tokenizer_revision": "5fb246187b5489d59ce0db167e739192759defab",
+          "verified_artifacts": {
+            "embeddings/embeddings.npy": "ff4c9f086e62ac15a9384e74c00c79b16416637f6e04413f2863fb99895931bf",
+            "prepared/pairs.jsonl": "c84d9897bd4838e8c12f45d59e04401031bbd5fa533570490db016cf40235126",
+            "prepared/texts.jsonl": "645ece94cebf36d1d37a66410d925d7d2252b6d39dd42b473e866289d1576dc3"
+          }
+        }
+      },
+      "reason": "two fresh locked containers passed and all declared comparisons match",
+      "status": "pass"
+    }
+  },
+  "methodology_limits": [
+    "Gate 2 does not freeze which synthetic workload owns the CARMA false-hit-rate upper-bound criterion.",
+    "Gate 7 requires five fresh-process system seeds but does not freeze an across-seed aggregation rule."
+  ],
+  "overall_status": "fail",
+  "renderer": {
+    "backend": "Agg",
+    "library": "matplotlib",
+    "png_dpi": 220,
+    "publication_contract": {
+      "maximum_source_width_in": 8.2,
+      "minimum_report_font_pt": 10.0,
+      "minimum_source_font_pt": 12.5,
+      "nominal_minimum_font_at_report_width_pt": 11.015625,
+      "nominal_scale_to_report_width": 0.88125,
+      "report_text_width_in": 7.05,
+      "source_width_in": 8.0
+    },
+    "svg_hashsalt": "carma-post-analysis-v2",
+    "version": "3.10.8"
+  },
+  "schema_version": "carma-post-analysis-v2",
+  "sources": {
+    "container_reproducibility": {
+      "build_log": {
+        "bytes": 13718,
+        "path": "docker-build.log",
+        "sha256": "ec360d4754dae15bd24d19de0e10dc3fb8db4368cc76ef7bc8c517896c6971a1"
+      },
+      "commit_binding": {
+        "current_git_head": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+        "evidence_source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+        "exact_match": true,
+        "status": "verified"
+      },
+      "comparisons": {
+        "hash_lists_identical": true,
+        "manifest_json_identical": true,
+        "non_timing_logs_identical": true,
+        "requests_jsonl_identical": true,
+        "runs_csv_identical": true
+      },
+      "controls": {
+        "binary_only_dependencies": true,
+        "capabilities_dropped": "ALL",
+        "checkout_credentials_persisted": false,
+        "dependency_hashes_required": true,
+        "dependency_index_url": "https://pypi.org/simple",
+        "generated_lock_check_passed": true,
+        "no_new_privileges": true,
+        "runtime_network": "none"
+      },
+      "current_dependency_lock_sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721",
+      "dependency_lock": {
+        "bytes": 93179,
+        "path": "requirements-project.lock",
+        "sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721"
+      },
+      "fresh_container_count": 2,
+      "image_id": "sha256:150c957a35b476874392ae185e78b6709934e675f71ec02d2a62004c0d0e91b2",
+      "image_inspect": {
+        "bytes": 5605,
+        "path": "container-image-inspect.json",
+        "sha256": "0955116a9ddb4cc46bd81a1eda5483ae3d2954efc69c33803eeaf9585d2ef47a"
+      },
+      "path": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/container-reproducibility.json",
+      "platform": "linux/amd64",
+      "runs": [
+        {
+          "artifact_mount_source": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/docker-run-1",
+          "benchmark_artifacts": {
+            "manifest.json": {
+              "bytes": 1695,
+              "path": "docker-run-1/benchmark/manifest.json",
+              "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+            },
+            "requests.jsonl": {
+              "bytes": 10097239,
+              "path": "docker-run-1/benchmark/requests.jsonl",
+              "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+            },
+            "runs.csv": {
+              "bytes": 9040,
+              "path": "docker-run-1/benchmark/runs.csv",
+              "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+            }
+          },
+          "benchmark_validation": {
+            "request_rows": 15600,
+            "run_ids": [
+              "d76bc9330993dc35b9ae",
+              "55710f78c7dcb5bd3a6c",
+              "b3997a7b659212522f4b",
+              "2d11cb798039d787a975",
+              "10b53ecd9f35eb3cddbe",
+              "d2b4800184b4a8189a1a",
+              "6e948dfec20c2e2e1274",
+              "1c4350b27a5663315674",
+              "98fc9598322448cbaf8f",
+              "3ac047de3c71c9d33752",
+              "d1cb6cb9445d621ef97e",
+              "95eeac1c8fa429829498",
+              "30f61f424e0b782b41db",
+              "52128b655632750a751f",
+              "1b4833220c3a18d3bbb9",
+              "ca5ec4a8d7b926c8d47d"
+            ],
+            "run_rows": 16,
+            "schema_version": "carma-benchmark-v2",
+            "timing_is_measured": false,
+            "trace_hashes": {
+              "novel": "c792eb90f50c8f876174c6dad2c39b25a25434493d4fab93833e19630e146d5b",
+              "phase_shift": "33b33e7cb8ce53bf09995fbae11c1a36cc68359a81219347756f4ebffdee6a8e",
+              "pollution_scan": "20f6ff91585d15e59208b644ddd1e61770dee4f944ef62867b19cc6dc62457f1",
+              "stationary": "1312c8e2eae38b177ef6debaf6162befd3b528299ae3ce7e5fc62cd153ec4802"
+            }
+          },
+          "container_id": "fac73c88817821f1360202ac6e3e106353885f3025323ad143980d6301ebaeff",
+          "container_inspect": {
+            "bytes": 9576,
+            "path": "docker-run-1.inspect.json",
+            "sha256": "9623a812fc78eac36c3e00cf121666c9f92a68beb6344519be672e82b69f2d19"
+          },
+          "hash_list": {
+            "bytes": 236,
+            "path": "docker-run-1.sha256",
+            "sha256": "0140f569f89fbc583711b9c723e47aabd0b0b797492917585961a788cfdde5b6"
+          },
+          "label": "docker-run-1",
+          "non_timing_log": {
+            "bytes": 1063,
+            "path": "docker-run-1.nontiming.log",
+            "sha256": "02d0741cbfd53a02e2139e50ca4f3e55b1797723c042315960ee58afa571a9a1"
+          },
+          "raw_log": {
+            "bytes": 1051,
+            "path": "docker-run-1.log",
+            "sha256": "6cea2e073b57ea2694e73ff7d9503a978f0898bbce09649b6b387f04dd6843ed"
+          }
+        },
+        {
+          "artifact_mount_source": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/docker-run-2",
+          "benchmark_artifacts": {
+            "manifest.json": {
+              "bytes": 1695,
+              "path": "docker-run-2/benchmark/manifest.json",
+              "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+            },
+            "requests.jsonl": {
+              "bytes": 10097239,
+              "path": "docker-run-2/benchmark/requests.jsonl",
+              "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+            },
+            "runs.csv": {
+              "bytes": 9040,
+              "path": "docker-run-2/benchmark/runs.csv",
+              "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+            }
+          },
+          "benchmark_validation": {
+            "request_rows": 15600,
+            "run_ids": [
+              "d76bc9330993dc35b9ae",
+              "55710f78c7dcb5bd3a6c",
+              "b3997a7b659212522f4b",
+              "2d11cb798039d787a975",
+              "10b53ecd9f35eb3cddbe",
+              "d2b4800184b4a8189a1a",
+              "6e948dfec20c2e2e1274",
+              "1c4350b27a5663315674",
+              "98fc9598322448cbaf8f",
+              "3ac047de3c71c9d33752",
+              "d1cb6cb9445d621ef97e",
+              "95eeac1c8fa429829498",
+              "30f61f424e0b782b41db",
+              "52128b655632750a751f",
+              "1b4833220c3a18d3bbb9",
+              "ca5ec4a8d7b926c8d47d"
+            ],
+            "run_rows": 16,
+            "schema_version": "carma-benchmark-v2",
+            "timing_is_measured": false,
+            "trace_hashes": {
+              "novel": "c792eb90f50c8f876174c6dad2c39b25a25434493d4fab93833e19630e146d5b",
+              "phase_shift": "33b33e7cb8ce53bf09995fbae11c1a36cc68359a81219347756f4ebffdee6a8e",
+              "pollution_scan": "20f6ff91585d15e59208b644ddd1e61770dee4f944ef62867b19cc6dc62457f1",
+              "stationary": "1312c8e2eae38b177ef6debaf6162befd3b528299ae3ce7e5fc62cd153ec4802"
+            }
+          },
+          "container_id": "b2fb306593ccd0f4e1fc2457f5a1db67b3f5dc338ec9dfd2a202f752d0b3af9c",
+          "container_inspect": {
+            "bytes": 9574,
+            "path": "docker-run-2.inspect.json",
+            "sha256": "67c8574c9ae8e6bd9bfbcec7fc127adc2fe11f32c27618f2ebd79438ee0ee849"
+          },
+          "hash_list": {
+            "bytes": 236,
+            "path": "docker-run-2.sha256",
+            "sha256": "0140f569f89fbc583711b9c723e47aabd0b0b797492917585961a788cfdde5b6"
+          },
+          "label": "docker-run-2",
+          "non_timing_log": {
+            "bytes": 1063,
+            "path": "docker-run-2.nontiming.log",
+            "sha256": "02d0741cbfd53a02e2139e50ca4f3e55b1797723c042315960ee58afa571a9a1"
+          },
+          "raw_log": {
+            "bytes": 1051,
+            "path": "docker-run-2.log",
+            "sha256": "97a9a90f4258a2312a42fd538bf7b89d52a0de990beb017119e994e8a203669d"
+          }
+        }
+      ],
+      "schema_version": "carma-container-reproducibility-v1",
+      "sha256": "e840d06adb33da01f9b3e6020be912fa5517030b3ee7b94db96f223ae3b381d1",
+      "source_archive": {
+        "archive_sha256": "ed24bc311dd5a454fcba22c8fd58ed635266343a440c375ec3047f27d31aceda",
+        "bytes": 118,
+        "format": "git-archive-tar",
+        "git_recomputed": true,
+        "path": "source-archive.sha256",
+        "sha256": "c544b5ac0b18faae1b0ab3fceb25164602f0e1e05062c8ab6bed85955616564d",
+        "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+        "tracked_file_count": 468
+      },
+      "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+      "status": "verified"
+    },
+    "full": {
+      "files": {
+        "aggregate.csv": "64974947bacd35dace1661a9ced515990ffcb131fc353b7d9ae6d13afddb564c",
+        "runs.csv": "fc049a34792fd3f144e20861b00b6552fea2ca5c3896c5f7207704a777bb99db",
+        "validation.csv": "dc121bdea10ad50e3c3e618048ebca1d51383bdbd5da444e81c52edac4bf4098",
+        "validation_runs.csv": "1da8c2855fc7ab87df0ecf6bef2f546449c7e6861d678da1fd9ede92757cd6b3"
+      },
+      "git_provenance": {
+        "experiment_contract_path": "docs/project/experiment-contract.md",
+        "experiment_contract_sha256": "7a97eb9ee4891855b1a1025fbe5de703d6c73bc9c1c44968a8ffe9c1c742d776",
+        "git_head_commit": "28129f0b9785232827e741c0e2ff2bb96cc19423",
+        "git_status_at_start": [],
+        "git_worktree_clean_at_start": true,
+        "source_sha256": {
+          "benchmarks/carma/full_experiment.py": "f0520e18e09a76fdaaf77c6f00b0e3d2ea9dc71b2eb7db9bcd137979e2dc4dcd",
+          "benchmarks/carma/runner.py": "8a477c861dffcad8af9e2bbeeb211c4a8a4e859b5f64445f2cda70deef8edfa9",
+          "benchmarks/carma/statistics.py": "87d1e542eabbf7609cfcda5942342096026f6d5cc64e03aeb2c266591adb682d",
+          "benchmarks/carma/synthetic.py": "27dc87690d60dba13c520b31de5177cdb84d0673d4210057dc6ad1b3657b6422",
+          "gptcache/manager/eviction/carma.py": "1d2babec766c2888b9c668c890bc3a35494537594220bddcc5b0c8e474250c11"
+        }
+      },
+      "inferential": true,
+      "local_source_verification": {
+        "mismatches": [
+          {
+            "path": "benchmarks/carma/full_experiment.py",
+            "reason": "SHA-256 differs"
+          },
+          {
+            "path": "benchmarks/carma/runner.py",
+            "reason": "SHA-256 differs"
+          },
+          {
+            "path": "gptcache/manager/eviction/carma.py",
+            "reason": "SHA-256 differs"
+          },
+          {
+            "path": "docs/project/experiment-contract.md",
+            "reason": "contract SHA-256 differs"
+          }
+        ],
+        "status": "historical_or_modified",
+        "verified_paths": [
+          "benchmarks/carma/statistics.py",
+          "benchmarks/carma/synthetic.py"
+        ]
+      },
+      "metadata_sha256": "bec65257479f3a0d4a2dac1512bf85457564f395f431aeac7dcb89b442d3e46b",
+      "mode": "full",
+      "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/carma-full-20260826",
+      "rows": {
+        "aggregate.csv": 480,
+        "runs.csv": 357,
+        "validation.csv": 96,
+        "validation_runs.csv": 864
+      },
+      "schema_version": "carma-full-experiment-v2",
+      "selected_config_id": "2976a9153db4de63",
+      "status": "verified"
+    },
+    "host_verification": {
+      "benchmark_artifacts": {
+        "manifest.json": {
+          "bytes": 1695,
+          "path": "benchmark/manifest.json",
+          "sha256": "bb81b4c20df2665b8983da770af43d03bb8f257e67c01065c052ac4bdbc8a1dd"
+        },
+        "requests.jsonl": {
+          "bytes": 10097239,
+          "path": "benchmark/requests.jsonl",
+          "sha256": "d264c0fe6a54d3493a4f071293e11825dd7be77c67026250c63d606600a40768"
+        },
+        "runs.csv": {
+          "bytes": 9040,
+          "path": "benchmark/runs.csv",
+          "sha256": "f09ce66b31d0522e7e3e51e539ec097ad6c9c4e61c95205cde47fe3c27a18acb"
+        }
+      },
+      "benchmark_request_rows": 15600,
+      "benchmark_run_rows": 16,
+      "benchmark_validation": {
+        "request_rows": 15600,
+        "run_ids": [
+          "d76bc9330993dc35b9ae",
+          "55710f78c7dcb5bd3a6c",
+          "b3997a7b659212522f4b",
+          "2d11cb798039d787a975",
+          "10b53ecd9f35eb3cddbe",
+          "d2b4800184b4a8189a1a",
+          "6e948dfec20c2e2e1274",
+          "1c4350b27a5663315674",
+          "98fc9598322448cbaf8f",
+          "3ac047de3c71c9d33752",
+          "d1cb6cb9445d621ef97e",
+          "95eeac1c8fa429829498",
+          "30f61f424e0b782b41db",
+          "52128b655632750a751f",
+          "1b4833220c3a18d3bbb9",
+          "ca5ec4a8d7b926c8d47d"
+        ],
+        "run_rows": 16,
+        "schema_version": "carma-benchmark-v2",
+        "timing_is_measured": false,
+        "trace_hashes": {
+          "novel": "c792eb90f50c8f876174c6dad2c39b25a25434493d4fab93833e19630e146d5b",
+          "phase_shift": "33b33e7cb8ce53bf09995fbae11c1a36cc68359a81219347756f4ebffdee6a8e",
+          "pollution_scan": "20f6ff91585d15e59208b644ddd1e61770dee4f944ef62867b19cc6dc62457f1",
+          "stationary": "1312c8e2eae38b177ef6debaf6162befd3b528299ae3ce7e5fc62cd153ec4802"
+        }
+      },
+      "commit_binding": {
+        "current_git_head": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+        "evidence_source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+        "exact_match": true,
+        "status": "verified"
+      },
+      "current_dependency_lock_sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721",
+      "dependency_lock": {
+        "bytes": 93179,
+        "path": "requirements-project.lock",
+        "sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721"
+      },
+      "environment_install_log": {
+        "bytes": 6745,
+        "path": "host-install.log",
+        "sha256": "a357023cc2f59ffefabad4313123e648c0ccc25a7652b9f4280946a51255144a"
+      },
+      "environment_validation": {
+        "install_sentinel": "[install] pip check PASS",
+        "installed_project": "gptcache==0.1.44",
+        "locked_package_count": 33
+      },
+      "installed_packages": {
+        "bytes": 581,
+        "path": "host-packages.txt",
+        "sha256": "bb6dec9daa40c21aee348de2178906121b06c13d72bbffccc7c2068db5623d54"
+      },
+      "path": "/Users/matangoldfarb/Desktop/talya/carma-ci-refresh-evidence.UgvwDe/ci/host-verification.json",
+      "platform": "macOS-26.5.2-arm64-arm-64bit",
+      "python": {
+        "implementation": "CPython",
+        "version": "3.12.13"
+      },
+      "schema_version": "carma-host-verification-v1",
+      "sha256": "365fa5ee1a97d731738d2d4d968d951fd0c55153a7f2a7d3a27ede71a1dff3ab",
+      "source_archive": {
+        "archive_sha256": "ed24bc311dd5a454fcba22c8fd58ed635266343a440c375ec3047f27d31aceda",
+        "bytes": 118,
+        "format": "git-archive-tar",
+        "git_recomputed": true,
+        "path": "source-archive.sha256",
+        "sha256": "c544b5ac0b18faae1b0ab3fceb25164602f0e1e05062c8ab6bed85955616564d",
+        "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+        "tracked_file_count": 468
+      },
+      "source_commit": "9ee91f1ec6b10d1c2831a15fb80e5032353e3af4",
+      "status": "verified",
+      "verification_log": {
+        "bytes": 1096,
+        "path": "host-verification.log",
+        "sha256": "700de8771838bd201f87e8efe61294e6ead0ed89aba4fce11c8a004936c43617"
+      }
+    },
+    "integration": {
+      "comparable_across_seeds": true,
+      "distinct_seeds": [
+        20260901,
+        20260902,
+        20260903,
+        20260904,
+        20260905
+      ],
+      "inputs": [
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/integration-full-20260901",
+          "resources": {
+            "rows": 369,
+            "sha256": "5b88155523d7d334f1465f7f2e9aa7e55457fa7a12f54da594e4f79e988e2f51"
+          },
+          "runs": 3,
+          "runs_sha256": "23f5bfb71372db060323b113b4d75c350bbd401bbfb0dfdcc9e46470067653ff",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260901,
+          "status": "verified"
+        },
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/integration-full-20260902",
+          "resources": {
+            "rows": 369,
+            "sha256": "3665e224b51982d5b4bd8faabb74ea37f823c6d2f1035a8a0da09789cbd63ef1"
+          },
+          "runs": 3,
+          "runs_sha256": "6fa64896c413b1a48b80cdb5f42a98ca58fc2fe9baebcd198365f0cd106e4e42",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260902,
+          "status": "verified"
+        },
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/integration-full-20260903",
+          "resources": {
+            "rows": 369,
+            "sha256": "087c99544511ce98af560b2b99152eab93bf1c713381e2ab667d4cd828a14f34"
+          },
+          "runs": 3,
+          "runs_sha256": "2b11010908d9ba83d38d833290d12fcb43adfdecff90ce7c45d01ac16320be18",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260903,
+          "status": "verified"
+        },
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/integration-full-20260904",
+          "resources": {
+            "rows": 369,
+            "sha256": "44f46c53da30a30364f81a22d13a5492701211ea6be92032db44d815f87bd655"
+          },
+          "runs": 3,
+          "runs_sha256": "f167199e85568f6652d6d23cc2d5f5ea862f269d9ed34ce532d73c62663be869",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260904,
+          "status": "verified"
+        },
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/integration-full-20260905",
+          "resources": {
+            "rows": 369,
+            "sha256": "74343346e6ab557787bc393df4de6bab0dba9a6d30d89363a49075787470e0ca"
+          },
+          "runs": 3,
+          "runs_sha256": "7608f115092283bb3896c37ffa36738af416e4e8da03c1226ac90ef2cd7d2ca9",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260905,
+          "status": "verified"
+        }
+      ],
+      "status": "verified",
+      "verified_inputs": 5
+    },
+    "moss": {
+      "artifacts": {
+        "pool.jsonl": "3c36be19ff50f2ca9f1e40642b649dac8383959c71087ca5d54f6c00d097fa73",
+        "prepare-manifest.json": "74b3c820aa59b303cbdbe147cff0a29130fb1820455bda9389d87838aca4fd70",
+        "requests.jsonl": "e8f55dbd90677c81884cc8ba55dafbb6d6136e9a2d0b138642de4212ad431c78",
+        "runs.csv": "e87ea3731d8f6962884fdf5afda117e69eda9802d2e46882d52a0489f9affc32"
+      },
+      "manifest_sha256": "15dc90e62e920e8c5bd192a038c9730783d994fb45105079a849500869adbc1c",
+      "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/moss-full",
+      "request_rows": 200,
+      "runs": 1,
+      "runs_sha256": "e87ea3731d8f6962884fdf5afda117e69eda9802d2e46882d52a0489f9affc32",
+      "schema_version": "carma-moss-recorded-response-v2",
+      "source_irregularities": {
+        "declared_turn_count_mismatches": 2727,
+        "negative_id_identity_rule": "SHA-256 of canonical source-row JSON; the declared ID is retained",
+        "negative_sentinel_conversation_id_rows": 30000,
+        "turn_count_resolution": "contiguous chat keys turn_1..turn_k are authoritative; the declared num_turns value is retained"
+      },
+      "source_provenance": "official_verified",
+      "source_revision": "42e216d3e3fb331c18d5fa6e7cb4f1c53eef24a4",
+      "status": "verified"
+    },
+    "qqp": {
+      "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/qqp-full/evaluation/result.json",
+      "provenance": {
+        "archive_sha256": "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58",
+        "calibration_grid": {
+          "best_wilson_row": {
+            "false_negative": 4968,
+            "false_positive": 17,
+            "false_positive_rate": 0.008184882041405874,
+            "precision": 0.9757489300998573,
+            "recall": 0.12101910828025478,
+            "threshold": 0.96,
+            "true_negative": 2060,
+            "true_positive": 684,
+            "wilson_precision_lower_one_sided_95": 0.9642078179927354
+          },
+          "path": "/Users/matangoldfarb/Desktop/talya/gptcache-online-policy/artifacts/qqp-full/evaluation/calibration_thresholds.csv",
+          "qualifying_thresholds": 0,
+          "rows": 20,
+          "sha256": "374909bca33799b58e25c00c498dc4b916c470f543fba155a0a24d77f8d3c6de"
+        },
+        "embeddings_manifest_sha256": "b15ce2c3312099c08e8bd060b38aada6be545d52a4ccc4081a2e5e264e956d64",
+        "model_revision": "5b562a100bc67e898ac89814e7a4668a18d65756",
+        "note": "sibling stage manifests verify their own inputs, but result.json does not cryptographically link to them",
+        "prepared_manifest_sha256": "c57d719457fe40f2b3d898509a0f63c92ff65a4e2494d68300a6a522c3711a5b",
+        "status": "partial_with_verified_siblings",
+        "tokenizer_revision": "5fb246187b5489d59ce0db167e739192759defab",
+        "verified_artifacts": {
+          "embeddings/embeddings.npy": "ff4c9f086e62ac15a9384e74c00c79b16416637f6e04413f2863fb99895931bf",
+          "prepared/pairs.jsonl": "c84d9897bd4838e8c12f45d59e04401031bbd5fa533570490db016cf40235126",
+          "prepared/texts.jsonl": "645ece94cebf36d1d37a66410d925d7d2252b6d39dd42b473e866289d1576dc3"
+        }
+      },
+      "result_status": "no_threshold_met_precision_gate",
+      "schema_version": "carma-qqp-v1",
+      "sha256": "ebddac9eb2e169371cc4241f7beb326d9216571a195aa9b45ea781445da09969",
+      "status": "verified"
+    }
+  },
+  "status_precedence": "fail > pending > pass",
+  "supplemental_checks": {
+    "moss_recorded_response": {
+      "criterion": "recorded responses only, zero live model calls and false hits",
+      "failures": [],
+      "source_provenance": "official_verified",
+      "status": "pass"
+    }
+  }
+}
