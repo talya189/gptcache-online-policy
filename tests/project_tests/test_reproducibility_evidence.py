@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import subprocess
 import tarfile
 from pathlib import Path
@@ -525,3 +526,43 @@ def test_local_gate_is_bash32_safe_before_any_container():
     host_block = gate[host_start:host_end]
     assert 'export PATH="${HOST_ENV}/bin:${PATH}"' in host_block
     assert 'PYTHON_BIN="${HOST_PYTHON}"' not in host_block
+
+
+def test_local_gate_source_archive_temp_is_bsd_mktemp_compatible(tmp_path):
+    gate = (PROJECT_ROOT / "scripts" / "run_reproducibility_gate.sh").read_text(
+        encoding="utf-8"
+    )
+    helper_start = gate.index("create_source_archive_temp() {")
+    helper_end = gate.index("\n}", helper_start) + 2
+    helper_function = gate[helper_start:helper_end]
+    cleanup_start = gate.index("cleanup() {")
+    cleanup_end = gate.index("\n}\ntrap cleanup EXIT", cleanup_start) + 3
+    cleanup_function = gate[cleanup_start:cleanup_end]
+    program = (
+        "set -Eeuo pipefail\n"
+        "BUILD_CONTEXT=''\nHOST_ENV=''\nCONTAINER_IDS=()\n"
+        + helper_function
+        + "\n"
+        + cleanup_function
+        + "\nSOURCE_ARCHIVE=\"$(create_source_archive_temp)\"\n"
+        + "test -f \"${SOURCE_ARCHIVE}\"\n"
+        + "printf '%s\\n' \"${SOURCE_ARCHIVE}\"\n"
+        + "cleanup\n"
+        + "test ! -e \"${SOURCE_ARCHIVE}\"\n"
+    )
+    environment = dict(os.environ)
+    environment["TMPDIR"] = str(tmp_path)
+    result = subprocess.run(
+        ["/bin/bash", "-c", program],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+        env=environment,
+    )
+    assert result.returncode == 0, result.stderr
+    source_archive = Path(result.stdout.strip())
+    assert source_archive.parent.resolve() == tmp_path.resolve()
+    assert source_archive.name.startswith("carma-gate-source.")
+    assert len(source_archive.name) == len("carma-gate-source.") + 6
+    assert not source_archive.exists()

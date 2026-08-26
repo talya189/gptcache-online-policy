@@ -91,6 +91,9 @@ BUILD_CONTEXT=""
 HOST_ENV=""
 SOURCE_ARCHIVE=""
 CONTAINER_IDS=()
+create_source_archive_temp() {
+  mktemp "${TMPDIR:-/tmp}/carma-gate-source.XXXXXX"
+}
 cleanup() {
   local container_id
   if (( ${#CONTAINER_IDS[@]} > 0 )); then
@@ -107,7 +110,7 @@ cleanup() {
     rm -rf -- "${HOST_ENV}"
   fi
   if [[ -n "${SOURCE_ARCHIVE}" && -f "${SOURCE_ARCHIVE}" \
-        && "$(basename "${SOURCE_ARCHIVE}")" == carma-gate-source.*.tar ]]; then
+        && "$(basename "${SOURCE_ARCHIVE}")" == carma-gate-source.?????? ]]; then
     rm -f -- "${SOURCE_ARCHIVE}"
   fi
 }
@@ -140,7 +143,7 @@ if [[ -L "${HOST_ROOT}" \
   exit 2
 fi
 BUILD_CONTEXT="$(mktemp -d "${TMPDIR:-/tmp}/carma-gate-context.XXXXXX")"
-SOURCE_ARCHIVE="$(mktemp "${TMPDIR:-/tmp}/carma-gate-source.XXXXXX.tar")"
+SOURCE_ARCHIVE="$(create_source_archive_temp)"
 git -c tar.umask=0002 archive --format=tar \
   --output="${SOURCE_ARCHIVE}" "${SOURCE_COMMIT}"
 SOURCE_ARCHIVE_SHA256="$("${PYTHON_BIN}" -I -c \
