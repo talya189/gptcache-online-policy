@@ -1581,6 +1581,7 @@ def _current_git_head() -> Dict[str, Any]:
 
 
 PACKAGING_DOCUMENT_PATHS = {
+    "handoff.md",
     "docs/project/chart-map.md",
     "docs/project/completion-audit.md",
     "docs/project/draft-pr.md",

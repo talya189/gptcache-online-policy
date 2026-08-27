@@ -51,7 +51,8 @@ EXPECTED_DOCKERFILE_STATEMENTS = (
     "PIP_INDEX_URL=https://pypi.org/simple PIP_NO_INPUT=1 "
     "PIP_ROOT_USER_ACTION=ignore TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache",
     "WORKDIR /workspace",
-    "COPY requirements-project.lock ./",
+    "COPY Dockerfile.project ./Dockerfile.project",
+    "COPY requirements-project.lock requirements-benchmark.lock ./",
     "RUN python -m pip --isolated --disable-pip-version-check install "
     "--no-cache-dir --no-input --index-url https://pypi.org/simple "
     "--require-hashes --only-binary=:all: "
@@ -72,6 +73,9 @@ EXPECTED_DOCKERFILE_STATEMENTS = (
     "COPY benchmarks ./benchmarks",
     "COPY docs/project/gate7-remediation-contract.md "
     "./docs/project/gate7-remediation-contract.md",
+    "COPY docs/project/gate7-v2-remediation-contract.md "
+    "./docs/project/gate7-v2-remediation-contract.md",
+    "COPY docs/project/evidence ./docs/project/evidence",
     "COPY examples/benchmark ./examples/benchmark",
     "COPY tests ./tests",
     "COPY scripts ./scripts",
@@ -86,6 +90,7 @@ EXPECTED_DOCKERFILE_STATEMENTS = (
 EXPECTED_DOCKERIGNORE_PATTERNS = (
     "*",
     "!Dockerfile.project",
+    "!requirements-benchmark.lock",
     "!requirements-project.lock",
     "!setup.py",
     "!README.md",
@@ -106,6 +111,9 @@ EXPECTED_DOCKERIGNORE_PATTERNS = (
     "!docs/project/",
     "docs/project/**",
     "!docs/project/gate7-remediation-contract.md",
+    "!docs/project/gate7-v2-remediation-contract.md",
+    "!docs/project/evidence/",
+    "!docs/project/evidence/**",
     "!examples/",
     "examples/**",
     "!examples/benchmark/",
@@ -115,7 +123,9 @@ EXPECTED_DOCKERIGNORE_PATTERNS = (
     "!scripts/",
     "scripts/**",
     "!scripts/generate_hashed_locks.py",
+    "!scripts/gate7_v2_isolated_bootstrap.py",
     "!scripts/run_ci_benchmark.sh",
+    "!scripts/run_gate7_v2_onnx_integration_benchmark.sh",
     "!scripts/run_qqp_validation.sh",
     "!scripts/run_reproducibility_gate.sh",
     "!scripts/verify_project.sh",

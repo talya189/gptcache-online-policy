@@ -21,6 +21,11 @@ def test_docker_context_parent_exceptions_remain_tight():
     wrapper = PROJECT_ROOT / "scripts" / "run_qqp_validation.sh"
     assert wrapper.is_file()
 
+    dockerfile = PROJECT_ROOT / "Dockerfile.project"
+    assert tuple(evidence._dockerfile_statements(dockerfile)) == (
+        evidence.EXPECTED_DOCKERFILE_STATEMENTS
+    )
+
     dockerignore = PROJECT_ROOT / ".dockerignore"
     if dockerignore.is_file():
         active_patterns = [
@@ -43,8 +48,15 @@ def test_docker_context_parent_exceptions_remain_tight():
         gate7_contract = active_patterns.index(
             "!docs/project/gate7-remediation-contract.md"
         )
+        gate7_v2_contract = active_patterns.index(
+            "!docs/project/gate7-v2-remediation-contract.md"
+        )
+        evidence_parent = active_patterns.index("!docs/project/evidence/")
+        evidence_contents = active_patterns.index("!docs/project/evidence/**")
         assert docs_parent < docs_reexclude < project_parent
         assert project_parent < project_reexclude < gate7_contract
+        assert gate7_contract < gate7_v2_contract < evidence_parent
+        assert evidence_parent < evidence_contents
 
         assets_parent = active_patterns.index("!assets/")
         assets_reexclude = active_patterns.index("assets/**")
@@ -60,7 +72,9 @@ def test_docker_context_parent_exceptions_remain_tight():
         scripts_reexclude = active_patterns.index("scripts/**")
         required_scripts = (
             "!scripts/generate_hashed_locks.py",
+            "!scripts/gate7_v2_isolated_bootstrap.py",
             "!scripts/run_ci_benchmark.sh",
+            "!scripts/run_gate7_v2_onnx_integration_benchmark.sh",
             "!scripts/run_qqp_validation.sh",
             "!scripts/run_reproducibility_gate.sh",
             "!scripts/verify_project.sh",

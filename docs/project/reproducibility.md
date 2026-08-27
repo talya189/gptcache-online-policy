@@ -111,6 +111,7 @@ against `S` directly whenever possible. The only permitted self-packaging step
 is one subsequent non-merge commit `P` whose direct parent is `S`. Its diff is
 limited to the following report-only boundary:
 
+- the repository-level `handoff.md`;
 - existing or new versions of exactly `docs/project/report.tex`,
   `docs/project/report.pdf`, `docs/project/completion-audit.md`,
   `docs/project/reproducibility.md`, `docs/project/draft-pr.md`, and
@@ -174,54 +175,108 @@ Each status additionally records the reproducible source-archive digest, source
 commit, format, and tracked-file count; the analyzer checks that both status
 files bind to the same exact archive.
 
-## Prospective Gate 7 ONNX follow-up
+## Gate 7 v2 ONNX protocol
 
-Gate 7 now has a separate full-path producer and independent verifier. The
-historical precomputed-vector evidence and its pending status are immutable.
-Install `requirements-benchmark.lock`, review and commit the intended source,
-and use a fresh output directory:
+Gate 7 v2 is a separate full-request-path experiment and independent audit.
+The historical v1 precomputed-vector evidence remains immutable and is linked
+into the v2 genesis rather than rewritten. Install `requirements-benchmark.lock`
+in the exact project `.venv`, run development smoke checks outside the formal
+root, and commit the complete intended source before creating the formal tag:
 
 ```bash
-# Development orchestration only; fake embedding and never claimable.
-scripts/run_onnx_integration_benchmark.sh smoke artifacts/gate7-onnx-smoke
+# Development only: fake embeddings, non-formal output, never claimable.
+/bin/bash scripts/run_gate7_v2_onnx_integration_benchmark.sh \
+  smoke artifacts/gate7-v2-onnx-smoke
 
-# Five frozen seeds x three policies with the pinned CPU ONNX model.
-scripts/run_onnx_integration_benchmark.sh full
+# After the contract hash is frozen in producer, auditor, and isolated-bootstrap
+# source, from a clean source commit that has passed the reproducibility gate
+# and hosted CI:
+contract_sha256=$(shasum -a 256 \
+  docs/project/gate7-v2-remediation-contract.md | awk '{print $1}')
+git tag -a gate7c-onnx-v2-formal-source -F - <<EOF
+experiment_id=gate7c-onnx-v2
+contract_sha256=$contract_sha256
+EOF
+git push submission refs/tags/gate7c-onnx-v2-formal-source
+
+# Formal execution accepts no output override or other runner arguments. The
+# operator-controlled outer env-i boundary is the shell root of trust: it
+# prevents Bash startup hooks or exported functions from running before the
+# wrapper can validate the environment visible at its first executable line.
+/usr/bin/env -i \
+  CARMA_GATE7_WRAPPER_SHELL=gate7c-shell-v1 \
+  HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+  LANG=C.UTF-8 LC_ALL=C.UTF-8 LC_CTYPE=C.UTF-8 TZ=UTC TMPDIR=/tmp \
+  /usr/bin/caffeinate -dimsu \
+  /bin/bash "$PWD/scripts/run_gate7_v2_onnx_integration_benchmark.sh" full
 ```
 
-Formal mode serializes attempts with an interprocess lock and records each
-attempt with hash-chained `START` and `TERMINAL` events in
-`artifacts/gate7-onnx-attempts/attempt-ledger.jsonl`.
-It refuses a dirty worktree, non-frozen values, wrong QQP/model identity,
-provider fallback, malformed predecessor history, and incomplete or
-structurally inconsistent child runs. It retains one trace per seed plus
-combined request, resource, whole-run/outcome-latency, and run evidence. Fixed
-request dictionaries and the full
-embedding-evidence matrix are resident before the mandatory RSS start sample.
-Before releasing the lock, the runner invokes
-`benchmarks/carma/gate7_audit.py --preterminal`, binds that immutable report and
-the exact manifest in the `TERMINAL` event, and propagates its status. A later
-normal invocation of the auditor independently
-recomputes artifact hashes and sizes, request quantiles, loop throughput,
-resource/CPU/I/O summaries, sample cadence, semantic hit validity, retained
-trace/source reconstruction, outcome summaries, process/storage isolation, and
-all five per-seed CARMA/LRU limits. Contract/source/Git identities are checked
-at both ends of every child and again at bundle completion. Only a complete
-valid full bundle can return `pass` or `fail`; smoke or incomplete evidence
-remains `pending`, while any integrity failure is `invalid`. A pre-manifest
-child crash
-retains `attempt-failure.json`, observed samples, and child logs under the same
-attempt ID. Other post-start failures retain the failure record and every
-resource sample accumulated so far; child logs exist when a child-process error
-provided them. A failure after atomic manifest publication but before terminal
-append leaves an unmatched `START` and blocks all later formal attempts until
-external forensic resolution; the producer never rewrites a published
-manifest into a cleaner-looking failure. The auditor also validates the full
-event chain, terminal-bound
-bytes, and predecessor directories, so the complete attempt root must be
-preserved and audited. This protection is scoped to that retained checkout
-root; a claim of global uniqueness across clones needs an external immutable
-run token or append-only authority.
+The formal wrapper clears inherited environment state and launches the parent,
+every policy child, the preterminal auditor, and the ordinary auditor through
+`scripts/gate7_v2_isolated_bootstrap.py` with Python `-S -P`. Before any
+third-party import, that bootstrap requires exact CPython 3.12.13, the project
+`.venv`, the frozen benchmark lock/package map, byte-verified RECORD members,
+the exact local editable GPTCache RECORD, an unexecuted `.pth` boundary, no
+site customization, no unowned site-packages path, and a small allowlisted
+environment. It verifies the same state again on process exit. This closes the
+Python dependency/import boundary on the recorded host; it does not make the
+kernel, hardware, stdlib, system libraries, or Accelerate implementation a
+fully hermetic machine image.
+
+Formal mode serializes attempts with an interprocess lock and creates exactly
+one hash-chained `PROTOCOL_GENESIS`, followed by one `START`/`TERMINAL` pair per
+whole-matrix attempt in
+`artifacts/gate7-v2-onnx-attempts/attempt-ledger.jsonl`. Genesis and every START
+bind the clean tagged HEAD, the exact `submission` fetch/push repository URL
+`https://github.com/MatanGoldfarB/gptcache-online-policy.git`, the remote
+annotated tag object and raw annotation,
+contract, dependency/bootstrap/environment observations, prepared QQP inputs,
+v1 terminal lineage, source identities, and pre-run power state. A dangling or
+malformed predecessor is a fail-stop. A seed or policy is never selectively
+rerun: any eligible retry is a new randomized five-seed by three-policy matrix.
+
+Each policy runs in a fresh child process. All policies use the same retained
+real-text trace, capacity, seeds, tokenizer/model, ONNX CPU provider, SQLite and
+FAISS configuration, warmup rule, and fixed per-seed randomized policy order.
+Per-request evidence separates embedding, FAISS, policy, SQLite, response-return,
+and total latency. Retained whole-run/resource evidence supports service and
+loop throughput, p50/p95/p99 latency, CPU/I/O, sample cadence, and peak RSS.
+The formal comparison uses `requests / sum(request_total_ns)` as service
+throughput; loop-wall throughput remains diagnostic only.
+
+Before the producer lock is released, the producer launches
+`benchmarks/carma/gate7_v2_audit.py --preterminal` in a fresh sealed auditor
+process, rechecks its own live runtime and all source/input/tag identities, and
+prepares a canonical terminal intent. It does not append a completed-manifest
+TERMINAL. After the target exits, the isolated parent bootstrap repeats its
+authoritative private source, target, environment, pycache, import-path, and
+sealed-dependency checks. Only then does it reacquire the same root lock,
+revalidate the still-unmatched START and immutable manifest/report bytes, and
+append TERMINAL with a self-hashed bootstrap-completion receipt bound to the
+intent and target exit status. A post-target failure therefore leaves an
+unmatched START and can never create claimable evidence. Catchable failures
+before manifest publication retain a producer-written invalid failure
+TERMINAL with null bootstrap completion.
+
+The ordinary auditor independently reconstructs the intent and completion
+hashes, validates the complete ledger and retained bundle, and writes
+`gate7-adjudication.json`. Only a structurally valid, complete full bundle can
+be `pass` or `fail`; development smoke evidence is `pending`, and any
+evidence-integrity or protocol violation is `invalid`. Gate 2 remains a
+separate semantic qualification: its threshold is calibration-only and frozen
+before any held-out endpoint resolution; if no threshold qualifies, held-out
+evaluation is not performed and Gate 2 remains failed without falsifying the
+system-performance result.
+
+All formal attempt bytes and the root ledger are append-only evidence. Preserve
+the entire root even after a failure. A late rejection after manifest
+publication can intentionally leave a dangling START that requires external
+forensic resolution; the producer does not rewrite immutable evidence into a
+cleaner outcome. A process/host crash during the bootstrap's single physical
+TERMINAL append can instead leave a truncated noncanonical row; that is also a
+nonclaimable fail-stop and is never repaired or skipped. These protections are
+scoped to this retained checkout root. Global uniqueness across clones would
+require an external append-only run authority.
 
 ## Historical validation record: 2026-08-25
 

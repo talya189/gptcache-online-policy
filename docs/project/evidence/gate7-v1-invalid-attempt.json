@@ -1,0 +1,54 @@
+{
+  "archive": {
+    "bytes": 484539,
+    "path": "docs/project/evidence/gate7-v1-invalid-attempt.tar.gz",
+    "sha256": "cb326101dcc8323575be376d923630cfda6191c2e7adbc3b7fd6b01acf6b9147"
+  },
+  "attempt": {
+    "attempt_id": "20260827T084100878176Z-b74ed9553e7c",
+    "directory": "attempt-20260827T084100Z-89406",
+    "failure_sha256": "41a7af508e769f24a91e72b221906fd7e50c6d20176032a9d58590ba9feb9f12",
+    "status": "invalid",
+    "terminal_entry_sha256": "768d681eac5f5f39e7517275ef7c2b29ff4f57d5fa7e2531c45e3db6142157a5"
+  },
+  "contract": {
+    "path": "docs/project/gate7-remediation-contract.md",
+    "sha256": "e93b3f301373a0b1a1c9fa99378f555bd45b9c6e8f8717ac82ea817763ecdf4a"
+  },
+  "files": {
+    "gate7-onnx-attempts/.formal-attempt.lock": {
+      "bytes": 66,
+      "sha256": "af8d5abd594993a7e45a6322dd243b2803a8d53e8505426f71c7e76b3ae28607"
+    },
+    "gate7-onnx-attempts/attempt-20260827T084100Z-89406/attempt-failure.json": {
+      "bytes": 4796,
+      "sha256": "41a7af508e769f24a91e72b221906fd7e50c6d20176032a9d58590ba9feb9f12"
+    },
+    "gate7-onnx-attempts/attempt-20260827T084100Z-89406/child.stderr.log": {
+      "bytes": 1298,
+      "sha256": "0d33e61edc23d87f6a9c88bbf13f4945d2405aa9c2349f44b4c37776f30136b7"
+    },
+    "gate7-onnx-attempts/attempt-20260827T084100Z-89406/child.stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "gate7-onnx-attempts/attempt-20260827T084100Z-89406/failed-resources.jsonl": {
+      "bytes": 7285237,
+      "rows": 12248,
+      "sha256": "8fe285a46c0370d0741b6c6dceeea52c371ee01b65d20f839f7d292719e28adb"
+    },
+    "gate7-onnx-attempts/attempt-20260827T084100Z-89406/traces/seed-20261001.jsonl": {
+      "bytes": 1079075,
+      "rows": 3000,
+      "sha256": "d37a6beb7835541269f404a82b36ac1b1c662ce03c759f2eb978cd98ca48d6c1"
+    },
+    "gate7-onnx-attempts/attempt-ledger.jsonl": {
+      "bytes": 1390,
+      "rows": 2,
+      "sha256": "96539252388659e779ac09014895886156e9f405020ce278527b82bfea22aeb7"
+    }
+  },
+  "head_commit": "b74ed9553e7c0a8bad71e3dbd90e047dbcd654dc",
+  "kind": "gate7_v1_invalid_attempt_preservation",
+  "schema_version": "carma-gate7-v1-preservation-v1"
+}

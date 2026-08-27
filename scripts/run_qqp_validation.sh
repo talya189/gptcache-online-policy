@@ -38,7 +38,7 @@ export PYTHONPATH="${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
   --prepared "${OUTPUT_ROOT}/prepared" \
   --output "${OUTPUT_ROOT}/embeddings" \
   --batch-size "${CARMA_QQP_BATCH_SIZE:-32}"
-"${PYTHON_BIN}" -m benchmarks.carma.qqp calibrate \
+"${PYTHON_BIN}" -m benchmarks.carma.qqp_v2 \
   --prepared "${OUTPUT_ROOT}/prepared" \
   --embeddings "${OUTPUT_ROOT}/embeddings" \
   --output "${OUTPUT_ROOT}/evaluation"

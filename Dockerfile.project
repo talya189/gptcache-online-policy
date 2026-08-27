@@ -14,10 +14,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /workspace
 
-# Cache dependency installation separately from source changes. The wheel-only
-# hash lock authenticates every downloaded artifact. The checkout is installed
-# with --no-deps below, so setup.py cannot expand this environment.
-COPY requirements-project.lock ./
+COPY Dockerfile.project ./Dockerfile.project
+
+# Cache dependency installation separately from source changes. The project
+# wheel-only hash lock authenticates every downloaded artifact; the benchmark
+# lock is retained for v2 source-identity checks but is not installed here.
+# The checkout is installed with --no-deps below, so setup.py cannot expand
+# this environment.
+COPY requirements-project.lock requirements-benchmark.lock ./
 RUN python -m pip --isolated --disable-pip-version-check install \
     --no-cache-dir --no-input --index-url https://pypi.org/simple \
     --require-hashes --only-binary=:all: \
@@ -35,6 +39,8 @@ COPY gptcache ./gptcache
 COPY gptcache_server ./gptcache_server
 COPY benchmarks ./benchmarks
 COPY docs/project/gate7-remediation-contract.md ./docs/project/gate7-remediation-contract.md
+COPY docs/project/gate7-v2-remediation-contract.md ./docs/project/gate7-v2-remediation-contract.md
+COPY docs/project/evidence ./docs/project/evidence
 COPY examples/benchmark ./examples/benchmark
 COPY tests ./tests
 COPY scripts ./scripts

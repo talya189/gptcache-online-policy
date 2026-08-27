@@ -1324,6 +1324,7 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
             return (current + " " + source + "\n").encode("ascii")
         if "diff" in command:
             return (
+                b"M\0handoff.md\0"
                 b"M\0docs/project/report.pdf\0"
                 b"M\0artifacts/samples/analysis/gates.json\0"
                 b"A\0artifacts/samples/qqp/result.json\0"
@@ -1338,6 +1339,7 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
     assert _packaging_descendant_changes(
         source, current, "fixture evidence"
     ) == [
+        {"status": "M", "path": "handoff.md"},
         {"status": "M", "path": "docs/project/report.pdf"},
         {"status": "M", "path": "artifacts/samples/analysis/gates.json"},
         {"status": "A", "path": "artifacts/samples/qqp/result.json"},
