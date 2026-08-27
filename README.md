@@ -115,6 +115,7 @@ multi-million-request frozen study:
 scripts/run_ci_benchmark.sh artifacts/carma-ci
 scripts/run_full_benchmark.sh smoke artifacts/carma-full-smoke
 scripts/run_integration_benchmark.sh smoke artifacts/carma-integration-smoke
+scripts/run_onnx_integration_benchmark.sh smoke artifacts/gate7-onnx-smoke
 ```
 
 The complete commands are:
@@ -134,7 +135,34 @@ done
 CARMA_ONNX_WORKERS=8 CARMA_ONNX_THREADS=1 \
   scripts/run_qqp_validation.sh artifacts/qqp
 scripts/run_moss_benchmark.sh run /path/to/checksum-pinned-moss.zip artifacts/carma-moss
+
+# Prospective Gate 7 follow-up. This requires a clean committed worktree and
+# runs 15 fresh real-ONNX policy children; it can take several hours on CPU.
+scripts/run_onnx_integration_benchmark.sh full
 ```
+
+The ONNX wrapper registers each formal run with a hash-chained `START` event,
+then writes retained per-seed traces, per-request timings, external
+resource samples, whole-run plus four-way outcome latency summaries, run
+summaries, and a hash-linked manifest. While holding the same root lock, it
+runs the independent auditor and appends a `TERMINAL` event binding the exact
+manifest and immutable preterminal adjudication. A later offline audit writes
+`gate7-adjudication.json`. Smoke mode deliberately uses a fake
+embedding and is always non-claimable; it tests orchestration quickly. Full mode
+uses the pinned 768-dimensional CPU ONNX model and refuses dirty source,
+non-frozen configuration, an alternate contract, source changes during the
+run, mismatched QQP/model identities, concurrent formal execution, or an
+incomplete/malformed predecessor history. A pre-manifest failure leaves an
+identified failure record and all resource evidence accumulated so far. A
+failure after manifest publication leaves an unmatched `START` as a deliberate
+fail-stop and blocks every later formal attempt pending external forensic
+resolution. Claimability requires the complete retained
+`artifacts/gate7-onnx-attempts/` root, not a copied attempt directory alone.
+That first-attempt guarantee is deliberately checkout-root scoped; proving one
+global first run across separate clones requires an external immutable run
+authority.
+The auditor exits `0/1/2/3` for pass/fail/pending/invalid; the wrapper treats
+the expected pending status of smoke mode as a successful development check.
 
 Analyze only completed, manifest-endorsed artifacts; the analyzer rejects
 tampered hashes, partial staging directories, and incompatible legacy schemas.
@@ -170,6 +198,14 @@ per-seed latency, throughput, and RSS limits on a precomputed synthetic-vector
 path. That system result is diagnostic rather than a formal Gate 7 pass because
 the frozen contract named an ONNX embedding path and did not specify an
 across-seed aggregation rule.
+
+A separate prospective Gate 7 remediation is now implemented. It enters through
+GPTCache's real `adapt` path with calibration-only QQP text, pinned ONNX
+embeddings, counterbalanced isolated LRU/LFU/CARMA processes, full per-request
+stage timing, and externally sampled resources. Its conservative rule requires
+all five seeds to satisfy every paired CARMA-versus-LRU bound. Development smoke
+runs do not change the historical status; a claimable result exists only after
+the complete clean-source full bundle passes the independent auditor.
 
 The preregistered scan-return claim **failed**: CARMA achieved 100% return-phase
 valid hits, but LFU achieved 99.993%, so the stronger-baseline gain was only

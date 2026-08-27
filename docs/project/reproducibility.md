@@ -174,6 +174,55 @@ Each status additionally records the reproducible source-archive digest, source
 commit, format, and tracked-file count; the analyzer checks that both status
 files bind to the same exact archive.
 
+## Prospective Gate 7 ONNX follow-up
+
+Gate 7 now has a separate full-path producer and independent verifier. The
+historical precomputed-vector evidence and its pending status are immutable.
+Install `requirements-benchmark.lock`, review and commit the intended source,
+and use a fresh output directory:
+
+```bash
+# Development orchestration only; fake embedding and never claimable.
+scripts/run_onnx_integration_benchmark.sh smoke artifacts/gate7-onnx-smoke
+
+# Five frozen seeds x three policies with the pinned CPU ONNX model.
+scripts/run_onnx_integration_benchmark.sh full
+```
+
+Formal mode serializes attempts with an interprocess lock and records each
+attempt with hash-chained `START` and `TERMINAL` events in
+`artifacts/gate7-onnx-attempts/attempt-ledger.jsonl`.
+It refuses a dirty worktree, non-frozen values, wrong QQP/model identity,
+provider fallback, malformed predecessor history, and incomplete or
+structurally inconsistent child runs. It retains one trace per seed plus
+combined request, resource, whole-run/outcome-latency, and run evidence. Fixed
+request dictionaries and the full
+embedding-evidence matrix are resident before the mandatory RSS start sample.
+Before releasing the lock, the runner invokes
+`benchmarks/carma/gate7_audit.py --preterminal`, binds that immutable report and
+the exact manifest in the `TERMINAL` event, and propagates its status. A later
+normal invocation of the auditor independently
+recomputes artifact hashes and sizes, request quantiles, loop throughput,
+resource/CPU/I/O summaries, sample cadence, semantic hit validity, retained
+trace/source reconstruction, outcome summaries, process/storage isolation, and
+all five per-seed CARMA/LRU limits. Contract/source/Git identities are checked
+at both ends of every child and again at bundle completion. Only a complete
+valid full bundle can return `pass` or `fail`; smoke or incomplete evidence
+remains `pending`, while any integrity failure is `invalid`. A pre-manifest
+child crash
+retains `attempt-failure.json`, observed samples, and child logs under the same
+attempt ID. Other post-start failures retain the failure record and every
+resource sample accumulated so far; child logs exist when a child-process error
+provided them. A failure after atomic manifest publication but before terminal
+append leaves an unmatched `START` and blocks all later formal attempts until
+external forensic resolution; the producer never rewrites a published
+manifest into a cleaner-looking failure. The auditor also validates the full
+event chain, terminal-bound
+bytes, and predecessor directories, so the complete attempt root must be
+preserved and audited. This protection is scoped to that retained checkout
+root; a claim of global uniqueness across clones needs an external immutable
+run token or append-only authority.
+
 ## Historical validation record: 2026-08-25
 
 The bullets below are retained as the pre-hardening historical record. They do

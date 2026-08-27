@@ -103,6 +103,9 @@ expected_project_tests=(
   tests/project_tests/test_carma_integration_protocol.py
   tests/project_tests/test_carma_phase_metrics.py
   tests/project_tests/test_carma_protocol_remediation.py
+  tests/project_tests/test_gate7_audit.py
+  tests/project_tests/test_gate7_onnx_integration.py
+  tests/project_tests/test_gate7_trace.py
   tests/project_tests/test_moss_benchmark.py
   tests/project_tests/test_qqp_wrapper.py
   tests/project_tests/test_reproducibility_evidence.py

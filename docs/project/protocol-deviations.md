@@ -153,6 +153,13 @@ invoke the pinned ONNX model inside the measured request path, freeze how the
 five seeds are aggregated, and publish that rule before results are observed.
 It must not replace or relabel the existing precomputed-vector manifests.
 
+Implementation status: this remediation is now encoded prospectively in
+`docs/project/gate7-remediation-contract.md`, with a real-text GPTCache adapter
+runner, retained per-request/resource evidence, counterbalanced policy order,
+and an independent all-seeds adjudicator. Development smoke runs are excluded
+from the claim. Until the complete clean-source five-seed matrix is executed,
+the follow-up is pending and the historical status above is unchanged.
+
 ### 6. QQP held-out similarities were computed before the calibration abort
 
 Contract commitment: select an answer threshold using calibration pairs only,

@@ -450,6 +450,51 @@ cross-seed distribution of p95 summaries, not a reconstructable per-request
 CDF. This is an artifact-granularity limitation despite collecting the frozen
 mean, p50, p95, and p99 metrics in process.
 
+\subsection{Prospective full-path ONNX follow-up}
+
+A separately versioned remediation protocol is now implemented without
+relabeling the historical result. Its runner enters through
+\code{gptcache.adapter.adapter.adapt} with real QQP calibration text, computes
+the checksum-pinned 768-dimensional ALBERT ONNX embedding inside every request,
+and executes the normal GPTCache preprocessing, similarity, SQLite, FAISS,
+eviction, recorded miss-response, and response-return path. The three policies
+use the same retained 3,000-request trace per seed, fresh child processes and
+storage, a prospectively counterbalanced five-seed order, and identical frozen
+configuration.
+
+Every request retains mutually exclusive preprocessing/tokenization, ONNX,
+embedding postprocessing, FAISS search/mutation, SQLite read/write, similarity,
+policy, response-return, residual, and total timings. An external supervisor
+collects mandatory boundary and 100-ms resource samples. Fixed request records
+and the complete embedding-evidence matrix are resident before the start
+snapshot, and sample gaps above 200 ms invalidate a run. The manifest hashes
+the code, container, locks, contract, model/tokenizer, QQP sources, traces,
+requests, resources, whole-run plus four-way outcome summaries, and run
+summaries. Formal runs are serialized and recorded as hash-chained
+\texttt{START}/\texttt{TERMINAL} events.  The terminal event binds the exact
+manifest and immutable preterminal adjudication, so a later auditor revision
+cannot erase an earlier eligible verdict.  The auditor requires the complete
+retained predecessor root; this protects one formal checkout root, while global
+uniqueness across clones would require an external immutable run authority.
+Source, contract, and Git identities are checked around every child and again
+immediately before manifest publication.  Pre-manifest failures retain an
+invalid-attempt record and accumulated samples; a post-publication finalization
+failure leaves an unmatched \texttt{START} that blocks every later formal run
+pending external forensic resolution.
+
+A separate offline adjudicator does not import the producer. It recomputes
+artifact integrity, returned-concept hit validity, whole-run and outcome
+nearest-rank quantiles, throughput, CPU/I/O and memory summaries, sampling
+cadence, retained traces from calibration source data, structural invariants,
+and all five per-seed CARMA-versus-LRU bounds.
+
+Development fake-embedding and pinned-ONNX smoke executions verify the process,
+adapter, model, timing, and evidence paths but are intentionally non-claimable.
+The prospective follow-up remains \pendingmark{} until one clean committed
+invocation completes all 15 children and the independent adjudicator returns a
+valid five-seed verdict. That verdict may be pass or fail; it cannot retroactively
+change the historical Gate 7 entry above.
+
 \subsection{Pinned MOSS recorded-response replay}
 
 The CC-BY-4.0 MOSS archive \cite{moss-source} is fixed by repository revision
@@ -552,13 +597,15 @@ The exact historical result remains tied to clean commit
 retroactively alter its status. A separate deviation ledger documents impact
 and future-run remediation.
 
-Final correctness and reproducibility evidence is tied to exact source commit:
+The historical correctness and reproducibility evidence is tied to exact source commit:
 \newline\code{9ee91f1ec6b10d1c2831a15fb80e5032353e3af4}. The clean host and both
 containers used the same 468-file Git archive, SHA-256:
 \newline\code{ed24bc311dd5a454fcba22c8fd58ed635266343a440c375ec3047f27d31aceda}.
-This report and its curated evidence are packaged in the single permitted
-direct-child report commit; the analyzer requires that relationship and its
-restricted path set before Gates 1 and 8 remain claimable.
+That historical report and its curated evidence were packaged in the single
+permitted direct-child report commit. The prospective Gate 7 implementation is
+a later, separately identified extension and does not inherit a claim from
+those earlier container runs; its own manifest records the exact clean source
+commit used for any confirmatory execution.
 
 \subsection{External validity}
 
@@ -629,16 +676,18 @@ and real SQLite/FAISS tests. \\
 \path{protocol-deviations.md}, \path{reproducibility.md}, and \path{chart-map.md}. \\
 \path{benchmarks/carma/}; \path{scripts/} & Synthetic, integration, QQP, MOSS,
 statistics, and analysis; benchmark, analyzer, and verifier wrappers. \\
+\path{benchmarks/carma/gate7_trace.py};
+\path{benchmarks/carma/onnx_integration_benchmark.py};
+\path{benchmarks/carma/gate7_audit.py} & Prospective real-text trace,
+full GPTCache ONNX runner, and independent Gate 7 adjudicator. \\
 \path{Dockerfile.project}; \path{.dockerignore}; \path{requirements-*.lock};
 \path{scripts/generate_hashed_locks.py} & Pinned container, allowlisted context,
 hashed dependency locks, and lock generator. \\
 \path{README.md}; \path{.github/workflows/carma-ci.yml} & Installation,
 benchmark how-to, and immutable host/container CI. \\
-\path{artifacts/samples/} & \path{full/}, \path{integration/}, and \path{moss/}
-hold curated raw evidence; \path{qqp/} holds stage manifests plus calibration
-and terminal results. \path{analysis/}, \path{verification/}, \path{README.md},
-and \path{SHA256SUMS} hold audit outputs and hashes. Source archives, raw QQP
-pairs/texts, model files, and embeddings are excluded. \\
+\path{artifacts/samples/} & Curated raw evidence, QQP stage results, analysis,
+verification records, documentation, and checksums; raw source archives, model
+files, and embeddings are excluded. \\
 \path{docs/project/completion-audit.md}; \path{docs/project/draft-pr.md};
 \path{docs/project/report.pdf} & Rubric map, unpublished upstream PR draft, and this final
 single-PDF handoff. \\
@@ -646,6 +695,10 @@ single-PDF handoff. \\
 \end{tabularx}
 \endgroup
 
+\begingroup
+\setlength{\parskip}{0pt}
+\setlength{\itemsep}{0pt}
+\setlength{\parsep}{0pt}
 \begin{thebibliography}{9}
 \bibitem{gptcache-paper}
 F. Bang. ``GPTCache: An Open-Source Semantic Cache for LLM Applications
@@ -669,5 +722,6 @@ Quora. ``First Quora Dataset Release: Question Pairs.'' 2017.
 \href{https://quoradata.quora.com/First-Quora-Dataset-Release-Question-Pairs}{Quora
 Data release page}.
 \end{thebibliography}
+\endgroup
 
 \end{document}

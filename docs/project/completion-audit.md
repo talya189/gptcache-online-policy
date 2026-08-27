@@ -11,7 +11,7 @@ completed, negative result rather than being rewritten.
 |---|---:|---|
 | Build on an open-source LLM caching library | Complete | GPTCache baseline commit `c59fb3a6152a4458b2a070ca183b61c4b614095f`; feature branch `feature/online-cluster-aware-cache` |
 | Design and implement an enhanced policy | Complete | `gptcache/manager/eviction/carma.py`; `docs/project/policy-design.md` |
-| Evaluate a measurable performance claim | Complete, mixed result | `artifacts/samples/full/`; Gates 3/5/6 pass, Gates 2/4 fail, Gate 7 remains pending |
+| Evaluate a measurable performance claim | Complete, mixed result | `artifacts/samples/full/`; Gates 3/5/6 pass, Gates 2/4 fail, historical Gate 7 remains pending; a separately versioned full-path ONNX follow-up is implemented but not yet confirmatory |
 | Explain a defensible claim to fame | Complete | `docs/project/report.tex`; adaptive category-shift gain and real-system overhead boundary, with failed scan and QQP claims retained |
 
 ## 2. Baseline framework and paper
@@ -109,7 +109,10 @@ This criterion is mixed rather than globally passed. Category shift improves
 by 4.885 percentage points with a positive paired CI and corrected
 significance. Stationary and token-saving safety gates pass, and every real
 system seed satisfies the numerical overhead limits, although formal Gate 7
-remains pending because no across-seed rule was frozen. The preregistered
+remains pending because no across-seed rule was frozen. A prospective
+real-text GPTCache/ONNX contract, runner, evidence schema, and independent
+all-seeds adjudicator now remedy the design gap for a future clean execution;
+they do not retroactively promote the historical result. The preregistered
 pollution return-phase gate fails because LFU is already 99.993%, and semantic
 safety Gate 2 fails at calibration before held-out evaluation.
 

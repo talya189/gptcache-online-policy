@@ -711,6 +711,204 @@ The artifacts retain only each process’s mean and quantiles, not individual
 request latencies. The figure therefore shows the cross-seed distribution of
 p95 summaries, not a reconstructable request-level CDF.
 
+### Prospective Gate 7 ONNX remediation now implemented
+
+Do not confuse this new implementation with the historical run above. The old
+Gate 7 entry stays pending forever under its original evidence identity. A new
+contract in `docs/project/gate7-remediation-contract.md` defines a separately
+named `gate7b-onnx-v1` follow-up that can end in pass, fail, invalid, or pending.
+
+The implementation consists of:
+
+- `benchmarks/carma/gate7_trace.py`: calibration-only real-text QQP trace
+  construction;
+- `benchmarks/carma/onnx_integration_benchmark.py`: isolated GPTCache adapter,
+  ONNX, SQLite, FAISS, timing, and resource runner;
+- `benchmarks/carma/gate7_audit.py`: independent offline evidence verifier and
+  adjudicator; and
+- `scripts/run_onnx_integration_benchmark.sh`: reproducible smoke/full wrapper
+  that runs the auditor after the producer completes.
+
+#### Frozen comparison
+
+- Contract SHA-256:
+  `e93b3f301373a0b1a1c9fa99378f555bd45b9c6e8f8717ac82ea817763ecdf4a`;
+  both the producer and independent auditor reject any other bytes.
+- Five seeds: `20261001` through `20261005`.
+- Policies: LRU, LFU, CARMA; capacity 100; `clean_size=1`; `top_k=1`.
+- Cosine answer threshold: 0.97.
+- CARMA: topic 0.70, cell 0.97, half-life 500, quota 1.0, ghost support
+  1.5, admission margin 1.05, centroid alpha 0.05, entry-hit weight 0.25.
+- Pinned tokenizer/model revisions and ONNX file SHA-256 are checked before a
+  real run. Formal mode additionally verifies the exact prepared QQP pair,
+  text, and archive hashes.
+- CPU execution only, 512 tokens, one ONNX intra-op and inter-op thread, and
+  one BLAS/tokenizer worker setting throughout.
+- The all-seeds rule is intentionally conservative: every seed must satisfy
+  both latency limits, the throughput limit, and both RSS limits.
+
+The policy sequence is counterbalanced prospectively rather than always
+running CARMA last:
+
+| Seed | First | Second | Third |
+| ---: | --- | --- | --- |
+| 20261001 | CARMA | LFU | LRU |
+| 20261002 | LFU | LRU | CARMA |
+| 20261003 | LRU | CARMA | LFU |
+| 20261004 | LRU | LFU | CARMA |
+| 20261005 | CARMA | LRU | LFU |
+
+#### Real request path
+
+The measured call now enters `gptcache.adapter.adapter.adapt`; it is not a
+manual manager-only replay. For every request the path is:
+
+```text
+raw QQP prompt
+  -> GPTCache pre-embedding normalization
+  -> pinned tokenizer and ONNX inference
+  -> mean pooling and L2 normalization
+  -> GPTCache DataManager FAISS search and SQLite lookup
+  -> cosine threshold decision
+  -> LRU/LFU/CARMA hit or admission/eviction callback
+  -> deterministic recorded miss response or cached answer
+  -> fully materialized response returned by adapt
+```
+
+There is no network or paid/live LLM call. On a miss, the local handler returns
+`recorded-response:<concept_id>` and GPTCache saves it through its normal adapter
+callback. This preserves cache behavior while preventing remote generation
+latency from overwhelming the comparison.
+
+#### Trace construction
+
+Each seed receives 3,000 requests from the QQP calibration split only:
+
+- 900 requests over 80 hot ground-truth concepts;
+- 1,200 distinct scan concepts; and
+- 900 returns with exactly the warm-phase hot multiplicities.
+
+Concepts use their lexicographically smallest text ID. Candidate and phase
+orders use domain-separated SHA-256 rankings. The serialized
+`traces/seed-<seed>.jsonl` file is retained and its file hash is the trace hash.
+All three policies for a seed receive that same exact file. Held-out Gate 2
+rows are read only far enough to inspect the split label, then skipped; their
+endpoint IDs, concepts, and labels are never selected, resolved through the
+text catalog, embedded, timed, or used.
+
+#### Isolation and timing
+
+Every seed-policy run loads and warms its own pinned model in a new child,
+creates a new SQLite database and FAISS index, and constructs a new eviction
+object. The 20 warm-ups are outside the request timer and happen before storage
+creation. Formal mode refuses a dirty or uncommitted worktree, fake embedding,
+wrong seed/configuration, provider fallback, wrong embedding dimension, wrong
+model/QQP hash, false hit, stale vector, unknown answer, or capacity violation.
+
+Every request retains exclusive nanosecond fields for text preprocessing and
+tokenization, ONNX inference, embedding postprocessing, FAISS search/mutation,
+SQLite read/write, similarity decision, policy work, response return, residual,
+and total latency. LRU and LFU `put` calls pass through the same measured policy
+boundary as CARMA's `put_with_metadata`. Nested physical cleanup is charged to
+SQLite/FAISS, not double-counted as policy-exclusive time. Raw request text is
+not repeated in `requests.jsonl`; source text IDs and normalized-text hashes are.
+
+Before the mandatory RSS start snapshot, the child allocates every fixed-key
+request dictionary and physically touches one contiguous
+`requests x embedding_dimension` float32 evidence matrix. Each request only
+mutates its reserved row and copies its embedding into that matrix, so growing
+evidence lists cannot bias one policy's sampled peak. It does no JSONL write or
+`psutil` call inside a request timer. The parent samples RSS, VMS, USS, CPU,
+threads, and available I/O every 100 ms plus mandatory start/end snapshots.
+Timestamps must be strictly increasing, bracket the request loop, and have no
+gap over 200 ms. The formal memory value is the maximum external sampled RSS;
+lifetime OS high-water RSS is retained only as a startup-inclusive diagnostic.
+
+`response_return_ns` includes the materialization callbacks and the measured
+propagation from the final callback through the actual `adapt` return. Tokenizer
+timing includes conversion into the ONNX input arrays. Every named stage gets a
+whole-run nearest-rank summary, plus separate summaries for the four required
+outcomes: hit, admitted without eviction, admitted with eviction, and rejected.
+
+#### Evidence and independent audit
+
+One successful full invocation produces:
+
+```text
+artifacts/gate7-onnx-attempts/
+  attempt-ledger.jsonl             # hash-chained START/TERMINAL events
+  attempt-<UTC>-<pid>/
+    manifest.json
+    runs.csv                       # 15 child summaries
+    requests.jsonl                # 45,000 request rows
+    resources.jsonl               # external process samples
+    outcome-latency.jsonl         # whole run + 4 outcomes per child
+    traces/seed-20261001.jsonl    # one retained trace per seed
+    ...
+    gate7-preterminal-adjudication.json # immutable, terminal-bound audit
+    gate7-adjudication.json        # later independent offline audit
+```
+
+Formal attempts are serialized by an interprocess lock. Before results exist,
+the producer appends a `START` event with the attempt ID, UTC start, Git HEAD,
+output directory, and predecessor-list hash. The manifest binds its exact ledger
+prefix as well as the clean start/end Git HEAD, historical baseline,
+source/container/lock/contract hashes, model/tokenizer identity, exact config,
+planned/actual order, child/storage identities, run summaries, and every
+artifact's row count, byte count, and SHA-256. While retaining the root lock,
+the producer invokes the independent auditor, saves an immutable preterminal
+report, and appends a `TERMINAL` event binding the exact manifest, report,
+verdict, and auditor identity. Historical eligibility uses that bound verdict,
+so a later auditor revision cannot retroactively free another attempt.
+Claimability requires the whole
+retained attempt root—not a copied attempt directory—because the auditor checks
+the ledger and every declared predecessor. Each child and the supervisor bind
+to the same source snapshot before and after execution. The auditor does not
+import the producer. It independently recomputes hashes,
+semantic valid/false hits from returned concepts, timing identities and derived
+fields, whole-run and outcome nearest-rank p50/p95/p99, throughput from
+monotonic loop boundaries, resource/CPU/I/O summaries and cadence, the retained
+trace from calibration source files, process/storage isolation, structural
+counters, and each paired gate boolean.
+
+The first-valid-attempt guarantee is scoped to this one complete, continuously
+retained checkout root. It cannot establish global uniqueness across separately
+created clones or after deleting the entire root; that stronger claim needs a
+lecturer-issued token or protected external append-only ledger.
+
+If any post-registration step fails before manifest publication, the incomplete
+attempt retains `attempt-failure.json`, every trace already created, and all
+resource samples accumulated across completed and active children. Child
+stdout/stderr are retained when the error originated in a child process. The
+attempt is invalid, never silently retried, and cannot be numerically
+adjudicated; a retry uses a new attempt ID and reruns the entire five-seed,
+three-policy matrix.
+
+If the manifest was already published but the independent preterminal audit,
+post-audit integrity check, or `TERMINAL` append fails, the producer does not
+rewrite that manifest into a cleaner failure. Its unmatched `START` is a
+deliberate fail-stop and blocks every later formal attempt until an external
+forensic resolution versions the protocol.
+
+Use:
+
+```bash
+# Fast orchestration test; fake embedding, therefore always pending.
+scripts/run_onnx_integration_benchmark.sh smoke artifacts/gate7-onnx-smoke
+
+# Confirmatory matrix; requires clean committed source and several CPU hours.
+scripts/run_onnx_integration_benchmark.sh full
+```
+
+The fake three-policy smoke bundle audits as `PENDING` with zero errors and
+warnings. A separate pinned-model development smoke confirmed the exact model
+hash, CPU provider, 768-dimensional output, real adapter call, evidence schema,
+and zero structural failures. These development runs are not numerical Gate 7
+evidence. At roughly 0.45 seconds per request in the observed real-model smoke,
+the frozen 45,000-request matrix is expected to take multiple hours on this Mac.
+Until that clean full run exists and the auditor returns `PASS` or `FAIL`, the
+prospective result is still pending and no full-path overhead claim is allowed.
+
 ## 16. MOSS recorded-response replay
 
 The MOSS source is `OpenMOSS-Team/moss-003-sft-data` at revision
@@ -1155,10 +1353,14 @@ threshold changes.
 
 ### 25.2 Complete Gate 7 properly
 
-Freeze an across-seed aggregation rule first. Then run the pinned ONNX embedding
-inside the measured request path on Linux, retain per-request latency and
-resource samples, and evaluate the full gate without replacing the historical
-precomputed-vector run.
+The protocol, real GPTCache/ONNX runner, retained evidence, counterbalanced
+order, and independent all-seeds adjudicator are implemented. The remaining
+work is execution, not experimental design: commit a reviewed clean source
+identity, run the full 15-child wrapper into a fresh ignored artifact root, keep
+any failed partial attempt, and report the auditor's result without selectively
+rerunning a favorable policy. A Linux replication remains valuable after the
+same frozen Mac-host run, but it must use a separately identified machine block
+rather than being pooled post hoc.
 
 ### 25.3 Semantic safety
 
@@ -1295,9 +1497,11 @@ easy landing page, the full inherited GPTCache history is preserved, and all
 write/push access but not owner/admin repository-management powers. True admin
 access requires an organization-owned repository. Talya’s invitation therefore
 must use the highest permission actually available on this personal repository.
-The email address alone could not be resolved through GitHub's collaborator
-API; the invitation remains pending until her GitHub username is supplied (or
-an authenticated GitHub browser session is used for the email-address flow).
+The supplied username was confirmed as `talya189`. GitHub's collaborator API
+reports that account as an active collaborator with `write` permission. This is
+the highest ordinary outside-collaborator permission granted on this personal
+repository; it permits clone, pull, branch, commit, and push workflows but is
+not owner/admin repository-management authority.
 
 The first hosted Actions run exposed one runner-availability issue before any
 compatibility test executed: GitHub's Python manifest has no 3.8.20 x64 build
@@ -1325,13 +1529,18 @@ the requested one.
   source commit.
 - [x] Post-packaging analyzer reports `verified_packaging_descendant`.
 - [x] Gates 1/3/5/6/8 pass, 2/4 fail, and 7 is pending in the current audit.
+- [x] Prospective Gate 7 contract, real-text trace, GPTCache/ONNX runner,
+  independent auditor, and wrapper are implemented and tested.
+- [x] Fake-embedding and pinned-real-ONNX development smoke paths complete
+  structurally; the fake bundle independently audits as pending with no errors.
+- [ ] The prospective five-seed, 15-child full ONNX bundle has completed and
+  received a claimable independent `PASS` or `FAIL` verdict.
 - [x] Curated checksum manifests verify every listed file.
 - [x] `docs/project/report.pdf` is present, 8--12 pages, and visually checked.
 - [x] GitHub repository is private and both `main` and feature branch resolve
   to the expected final commit.
-- [ ] Talya has the highest available personal-repository collaborator access,
-  or the repository has been moved to an organization if true admin control is
-  required.
+- [x] Talya (`talya189`) has active personal-repository `write` access; true
+  owner/admin control would require an organization-owned repository.
 - [x] No API key, credential, raw model weight, oversized raw source archive,
   or unlicensed data was committed.
 - [x] Any future modification is treated as a new source/evidence generation.
