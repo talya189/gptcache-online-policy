@@ -276,6 +276,25 @@ def _formal_context(head):
     }
 
 
+def test_process_lifetime_storage_cleanup_runs_after_context(monkeypatch):
+    registrations = []
+
+    def capture(function, *args, **kwargs):
+        registrations.append((function, args, kwargs))
+        return function
+
+    monkeypatch.setattr(gate7_runner.atexit, "register", capture)
+    with gate7_runner._process_lifetime_storage_directory("LRU") as root:
+        path = Path(root)
+        assert path.is_dir()
+    assert path.is_dir()
+    assert len(registrations) == 1
+    function, args, kwargs = registrations[0]
+    function(*args, **kwargs)
+    assert kwargs == {"ignore_errors": True}
+    assert not path.exists()
+
+
 def _register_attempt(output, attempt_id, started, head, prior_attempts, context=None):
     context = context or _formal_context(head)
     declaration = gate7_runner._register_formal_attempt(

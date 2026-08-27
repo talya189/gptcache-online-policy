@@ -15,6 +15,7 @@ request records only after the child has finished.
 from __future__ import annotations
 
 import argparse
+import atexit
 import base64
 import csv
 import fcntl
@@ -3553,6 +3554,18 @@ def _formal_attempt_lock(enabled: bool) -> Iterable[None]:
             os.close(descriptor)
 
 
+@contextmanager
+def _process_lifetime_storage_directory(policy: str) -> Iterable[str]:
+    """Keep cache files alive until GPTCache's later atexit close runs."""
+
+    root = tempfile.mkdtemp(prefix="gate7-%s-" % policy.lower())
+    # Cache.init registers its own close handler inside this context.  Python
+    # runs atexit handlers in reverse registration order, so that close runs
+    # while the storage path still exists and this cleanup runs afterwards.
+    atexit.register(shutil.rmtree, root, ignore_errors=True)
+    yield root
+
+
 def _retain_attempt_failure(
     output_dir: Path,
     attempt_id: str,
@@ -5051,7 +5064,7 @@ def _execute_child(
     loop_start_monotonic_ns: Optional[int] = None
     loop_end_monotonic_ns: Optional[int] = None
 
-    with tempfile.TemporaryDirectory(prefix="gate7-%s-" % policy.lower()) as root:
+    with _process_lifetime_storage_directory(policy) as root:
         storage_instance_sha256 = hashlib.sha256(
             str(Path(root).resolve()).encode("utf-8")
         ).hexdigest()
@@ -7267,7 +7280,10 @@ def _run_bundle_impl(
             for seed in sorted(seeds)
         },
         "policy_orders": actual_orders,
-        "process_isolation": "one fresh child process and TemporaryDirectory per seed/policy",
+        "process_isolation": (
+            "one fresh child process and process-lifetime temporary storage "
+            "directory per seed/policy"
+        ),
         "storage_isolation": "fresh SQLite database and FAISS index per seed/policy",
         "trace_source": (
             "Gate 7 v2 frozen QQP trace and selected-component semantic index; "
