@@ -70,6 +70,8 @@ EXPECTED_DOCKERFILE_STATEMENTS = (
     "COPY gptcache ./gptcache",
     "COPY gptcache_server ./gptcache_server",
     "COPY benchmarks ./benchmarks",
+    "COPY docs/project/gate7-remediation-contract.md "
+    "./docs/project/gate7-remediation-contract.md",
     "COPY examples/benchmark ./examples/benchmark",
     "COPY tests ./tests",
     "COPY scripts ./scripts",
