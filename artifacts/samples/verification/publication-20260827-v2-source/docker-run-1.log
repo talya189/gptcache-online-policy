@@ -1,0 +1,24 @@
+[verify] interpreter and dependency integrity
+python=3.12.13 platform=Linux-6.5.11-linuxkit-x86_64-with-glibc2.36
+No broken requirements found.
+[verify] source-bound offline tiktoken cache
+tiktoken_cache_sha256=223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7
+[verify] pinned GPTCache ancestry
+[verify] Git metadata unavailable; host CI owns the ancestry check
+[verify] upstream SQLite/FAISS regression slice
+........                                                                 [100%]
+8 passed in 0.77s
+..                                                                       [100%]
+2 passed, 1 deselected in 1.74s
+[verify] CARMA project tests (19 files)
+s..............s........................................................ [ 15%]
+........................................................................ [ 31%]
+........................................................................ [ 47%]
+........................................................................ [ 63%]
+........................................................................ [ 78%]
+..............s...............s......................................... [ 94%]
+.........................                                                [100%]
+453 passed, 4 skipped in 23.48s
+[verify] deterministic CI benchmark
+CARMA CI benchmark deterministic: /artifacts/benchmark
+[verify] PASS

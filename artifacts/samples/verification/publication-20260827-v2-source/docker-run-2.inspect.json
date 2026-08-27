@@ -1,0 +1,231 @@
+[
+    {
+        "Id": "8f74795510b6abb2a793b3e700119260eff62f599075b83f809cead39b249870",
+        "Created": "2026-08-27T13:09:14.236971303Z",
+        "Path": "bash",
+        "Args": [
+            "scripts/verify_project.sh"
+        ],
+        "State": {
+            "Status": "exited",
+            "Running": false,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 0,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-08-27T13:09:14.33959572Z",
+            "FinishedAt": "2026-08-27T13:09:51.339019459Z"
+        },
+        "Image": "sha256:a5203e8d3f3beba85c5dc542b3573e724fb4da26cca65e82b3fb90a1a26985b1",
+        "ResolvConfPath": "/var/lib/docker/containers/8f74795510b6abb2a793b3e700119260eff62f599075b83f809cead39b249870/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/8f74795510b6abb2a793b3e700119260eff62f599075b83f809cead39b249870/hostname",
+        "HostsPath": "/var/lib/docker/containers/8f74795510b6abb2a793b3e700119260eff62f599075b83f809cead39b249870/hosts",
+        "LogPath": "/var/lib/docker/containers/8f74795510b6abb2a793b3e700119260eff62f599075b83f809cead39b249870/8f74795510b6abb2a793b3e700119260eff62f599075b83f809cead39b249870-json.log",
+        "Name": "/unruffled_mccarthy",
+        "RestartCount": 0,
+        "Driver": "overlay2",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "none",
+            "PortBindings": {},
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": [
+                "ALL"
+            ],
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": [
+                "no-new-privileges=true"
+            ],
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": [],
+            "BlkioDeviceReadBps": [],
+            "BlkioDeviceWriteBps": [],
+            "BlkioDeviceReadIOps": [],
+            "BlkioDeviceWriteIOps": [],
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": [],
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "Mounts": [
+                {
+                    "Type": "bind",
+                    "Source": "/Users/matangoldfarb/Desktop/talya/carma-repro-evidence.GURyC5/docker-run-2",
+                    "Target": "/artifacts"
+                }
+            ],
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware",
+                "/sys/devices/virtual/powercap"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/4ad758991aebbe5ff4835973bf59cada523298cc8a1a1a19f9f30add624b2a55-init/diff:/var/lib/docker/overlay2/tg18ytd2fvfoi8on4n27xbtdt/diff:/var/lib/docker/overlay2/zbjlxyvcdp0f2wpkebyb6l2za/diff:/var/lib/docker/overlay2/hb3frn4a3ra4xoqjv280n0n2y/diff:/var/lib/docker/overlay2/mr3pfuxltoujcktiknrw97r2t/diff:/var/lib/docker/overlay2/ls384kaonlgqzwxghfstmmoy9/diff:/var/lib/docker/overlay2/zj03nc160h7r002t3zvfvwthp/diff:/var/lib/docker/overlay2/7ixggk463o29t6vnog5ijjmfg/diff:/var/lib/docker/overlay2/f4ioahl4bti5hrz7xg2rwh8h5/diff:/var/lib/docker/overlay2/5zg5nl026ygfhiidf5llyd9pl/diff:/var/lib/docker/overlay2/wku0eu6c466v2wx8jk57rbbbw/diff:/var/lib/docker/overlay2/razw17555yup8njrzaeb1q3cn/diff:/var/lib/docker/overlay2/w5u335ceqm2s14solohyu2d05/diff:/var/lib/docker/overlay2/p0s1pmhtlda2sgspbki2gaqau/diff:/var/lib/docker/overlay2/472av0krbcanp2flojnj64ft0/diff:/var/lib/docker/overlay2/yzdcoec3umpkojeddqyjxlocm/diff:/var/lib/docker/overlay2/a6k7os8fdnvpzpk1zsfoekmt0/diff:/var/lib/docker/overlay2/mavgv92djfziagds87wbo6nk4/diff:/var/lib/docker/overlay2/875b2ec06326f078949325237c8c5f9d045102504b422fbff03c90cead400b91/diff:/var/lib/docker/overlay2/2d446409fa0a2c91725813751a75e28b6ff2a2cf57d4cb17795fcecbbbc7b293/diff:/var/lib/docker/overlay2/3b232c9e24d8eec52cf40136e12358b9e160d3407e815b92b0b1a4d203bd76d7/diff:/var/lib/docker/overlay2/88c33045aafe74d1039d0191a6e25455479648fbf6ebb0c6dcd82852143296fc/diff",
+                "MergedDir": "/var/lib/docker/overlay2/4ad758991aebbe5ff4835973bf59cada523298cc8a1a1a19f9f30add624b2a55/merged",
+                "UpperDir": "/var/lib/docker/overlay2/4ad758991aebbe5ff4835973bf59cada523298cc8a1a1a19f9f30add624b2a55/diff",
+                "WorkDir": "/var/lib/docker/overlay2/4ad758991aebbe5ff4835973bf59cada523298cc8a1a1a19f9f30add624b2a55/work"
+            },
+            "Name": "overlay2"
+        },
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/Users/matangoldfarb/Desktop/talya/carma-repro-evidence.GURyC5/docker-run-2",
+                "Destination": "/artifacts",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "8f74795510b6",
+            "Domainname": "",
+            "User": "project",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "CARMA_ARTIFACT_DIR=/artifacts",
+                "PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+                "PYTHON_VERSION=3.12.13",
+                "PYTHON_SHA256=c08bc65a81971c1dd5783182826503369466c7e67374d1646519adf05207b684",
+                "PYTHONDONTWRITEBYTECODE=1",
+                "PYTHONUNBUFFERED=1",
+                "PIP_CONFIG_FILE=/dev/null",
+                "PIP_DISABLE_PIP_VERSION_CHECK=1",
+                "PIP_INDEX_URL=https://pypi.org/simple",
+                "PIP_NO_INPUT=1",
+                "PIP_ROOT_USER_ACTION=ignore",
+                "TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache"
+            ],
+            "Cmd": null,
+            "Image": "carma-project:repro-557c6ac0578c-285",
+            "Volumes": null,
+            "WorkingDir": "/workspace",
+            "Entrypoint": [
+                "bash",
+                "scripts/verify_project.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {}
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "69984aa4cd4574cb485340ddaca71588ab7103b39ddede1f766ed95029af73e9",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {},
+            "SandboxKey": "/var/run/docker/netns/69984aa4cd45",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "none": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "MacAddress": "",
+                    "NetworkID": "4a37c15e76810676120416d8ab002cb0b28ac89475b83ea03787cfbbb9236940",
+                    "EndpointID": "",
+                    "Gateway": "",
+                    "IPAddress": "",
+                    "IPPrefixLen": 0,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DriverOpts": null
+                }
+            }
+        }
+    }
+]

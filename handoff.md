@@ -34,13 +34,25 @@ The short version is:
   `cfc7167e7604247432f980ed8fb54bc896364fe9`.
 - Previously verified packaging commit:
   `e1775ccbe9b771182db9784085ebe665656be92e`.
+- Gate 7 v2 formal source commit:
+  `557c6ac0578cb6b77c5ae51595b49abdc0407e10`.
+- Gate 7 v2 formal tag: `gate7c-onnx-v2-formal-source`, annotated tag object
+  `550e33a38ae59c992f25fc20023f5717c5fdd1ce`.
 - Published/private GitHub repository:
   <https://github.com/MatanGoldfarB/gptcache-online-policy>.
+- Public upstream fork/branch:
+  <https://github.com/MatanGoldfarB/GPTCache/tree/feat/carma-online-policy>.
+- Upstream contribution: [zilliztech/GPTCache PR #696](https://github.com/zilliztech/GPTCache/pull/696),
+  open and ready for review against `dev`, mergeable and DCO-passing at
+  publication time, but not yet reviewed or adopted.
 - Result: the implementation and reproducibility work are complete, but the
   research hypothesis is only partly supported. Gates 1, 3, 5, 6, and 8 pass;
-  Gates 2 and 4 fail; Gate 7 is pending. The overall frozen audit is therefore
-  `FAIL` under `fail > pending > pass`, even though the phase-shift result is
-  strong and statistically supported.
+  Gates 2 and 4 fail. The original precomputed-vector Gate 7 entry remains
+  `PENDING`. The later `gate7b-onnx-v1` and `gate7c-onnx-v2` attempts are
+  separately preserved as `INVALID` and nonclaimable; v2 completed all 15
+  children, but did not terminalize. The original frozen eight-gate audit is
+  therefore still `FAIL` under `fail > pending > pass`, while v2 supplies a
+  separate invalid evidence record, not a replacement verdict.
 
 Do not turn that last sentence into “the project failed.” The correct reading
 is that the engineering deliverable is complete and several claims pass, while
@@ -85,7 +97,8 @@ The concrete lecturer-facing deliverables now present in the repository are:
   evidence gate;
 - curated, checksum-sealed result artifacts and publication figures;
 - an 8--12 page final PDF report and its LaTeX source;
-- a requirement-by-requirement audit and an unpublished upstream PR draft.
+- a requirement-by-requirement audit and a published, signed upstream PR ready
+  for review.
 
 ## 2. Why GPTCache was selected
 
@@ -169,6 +182,14 @@ structure matter. The deliberate departure is execution model: CARMA learns
 topics, cells, reuse support, and miss pressure online, under strict bounds,
 without offline priority ranks.
 
+The conventional comparison is equally important: 2Q and TinyLFU motivate
+history/admission against one-hit pollution, while LRFU and ARC adapt between
+recency and frequency. CARMA's decay and repeat evidence overlap those ideas;
+its distinguishing mechanism is bounded online semantic organization with
+topic-level retention controls. Canonical references and links are collected
+in the report bibliography. The ablations support decay and admission most
+strongly; they do not isolate a causal clustering or quota benefit.
+
 ### 3.3 Derived research question
 
 The project’s question became:
@@ -188,15 +209,17 @@ CARMA stands for **Cluster-Adaptive Reuse and Miss-pressure Admission**. It
 combines five ideas:
 
 1. Online coarse topics group broad regions of the embedding space.
-2. Fine cells group closer paraphrase-like residents within a topic.
+2. Fine cells group closer candidate reuse regions within a topic.
 3. Lazy exponential decay lets recent demand replace obsolete lifetime demand.
 4. Topic quotas allocate finite capacity according to decayed demand and miss
    pressure.
 5. Ghost cells retain bounded evidence about rejected candidates so the second
    similar miss can be distinguished from a one-shot scan.
 
-The policy is opt-in. Existing LRU/LFU/FIFO/random behavior and the default LRU
-path are unchanged.
+The policy is opt-in. The factory default remains LRU and the public interface
+is preserved for valid existing inputs. Shared vector normalization, input
+validation, and cleanup were hardened, so the common storage implementation is
+not byte-for-byte unchanged.
 
 ## 5. CARMA state and equations
 
@@ -483,13 +506,19 @@ same concept                         1.00
 deliberate near-twin wrong answers   0.96
 different concepts in one cell      0.88
 other topic-local relation           0.72
-different topics                    <= 0.12
+different topics                    measured range 0.00 to 0.12
 ```
 
 The primary synthetic answer threshold is `0.97`, which separates the
 deliberate 0.96 hard negatives. A separate exploratory threshold-0.95
 diagnostic intentionally triggers them to verify false-hit accounting. That
 diagnostic is not used for tuning or for the main safety claim.
+
+The selected CARMA `cell_threshold` is also `0.97`. Because every distinct
+synthetic concept is at most 0.96 similar, no two distinct concepts share a
+learned CARMA cell in the primary synthetic run. The central gain therefore
+does not establish paraphrase-cell aggregation; it chiefly exercises decay,
+admission, and retention under the controlled geometry.
 
 The full catalog reuses orthogonal cell-local feature blocks across topics. It
 preserves the frozen cosine hierarchy in 834 dimensions instead of using more
@@ -529,9 +558,12 @@ safe_token_saving_ratio = tokens attached to valid hits / all tokens
 scan_return_valid_hit_rate = valid hits in return phase / return requests
 ```
 
-False hits save zero valid tokens. System measurements include mean, p50, p95,
-p99 latency, throughput, CPU time/utilization, sampled RSS/USS, disk/I/O where
-available, admissions, rejections, evictions, and storage integrity.
+False hits save zero valid tokens. In the synthetic benchmark, `token_cost` is
+the deterministic weight `16 + (31*topic + 17*cell + 13*local) % 241`; the
+result is a weighted-savings proxy, not empirical model-token savings. MOSS
+separately counts actual corpus tokens. System measurements include mean, p50,
+p95, p99 latency, throughput, CPU time/utilization, sampled RSS/USS, disk/I/O
+where available, admissions, rejections, evictions, and storage integrity.
 
 Recovery lag is the earliest start of a contiguous window covering 10% of a
 phase whose VHR reaches 90% of the reuse-opportunity rate in that phase’s final
@@ -595,13 +627,16 @@ baseline would overstate the contribution.
 | 4 | Scan-return VHR gain >= 5 pp, CI above zero, Holm p <= .05 | **FAIL**, claimable negative result |
 | 5 | Stationary VHR lower CI no worse than -1 pp | **PASS**, claimable |
 | 6 | Safe-token lower CI no worse than -0.5 pp in each primary workload | **PASS**, claimable |
-| 7 | Latency/throughput/RSS within frozen limits | **PENDING**, diagnostic only |
+| 7 | Latency/throughput/RSS within frozen limits | **PENDING**, diagnostic only in the original eight-gate audit; later ONNX v1/v2 attempts are separate **INVALID**, nonclaimable generations |
 | 8 | Two clean Docker runs have identical non-timing logs and trace hashes | **PASS**, claimable |
 
 The machine-readable authority is
 `artifacts/samples/analysis/gate-audit.json`. Prose must agree with it. The
-overall status is fail because the audit precedence is fail, then pending,
-then pass; passing most gates cannot erase a failed preregistered hypothesis.
+historical eight-gate aggregate status is fail because its precedence is fail,
+then pending, then pass; this is not a claim that the lecturer's overall
+project verdict is "fail." Passing most gates cannot erase a failed
+preregistered hypothesis, while the deliverable is judged on the full weighted
+rubric.
 
 ## 13. Main synthetic results
 
@@ -711,44 +746,61 @@ The artifacts retain only each process’s mean and quantiles, not individual
 request latencies. The figure therefore shows the cross-seed distribution of
 p95 summaries, not a reconstructable request-level CDF.
 
-### Prospective Gate 7 ONNX remediation now implemented
+### Gate 7 follow-up history: v1 and v2 are both invalid
 
-Do not confuse this new implementation with the historical run above. The old
-Gate 7 entry stays pending forever under its original evidence identity. A new
-contract in `docs/project/gate7-remediation-contract.md` defines a separately
-named `gate7b-onnx-v1` follow-up that can end in pass, fail, invalid, or pending.
+Do not confuse either ONNX follow-up with the historical run above. The old
+precomputed-vector Gate 7 entry stays `PENDING` forever under its original
+evidence identity. `gate7b-onnx-v1` is a separate `INVALID` attempt: its first
+CARMA child completed all 3,000 real-text requests, but one cross-concept cache
+return was classified both as a false hit and an unknown answer, and the runner
+stopped before the other 14 children. Its frozen preservation manifest and
+archive are `docs/project/evidence/gate7-v1-invalid-attempt.json` and
+`docs/project/evidence/gate7-v1-invalid-attempt.tar.gz`.
+
+`gate7c-onnx-v2` is a third, separately frozen experiment governed by
+`docs/project/gate7-v2-remediation-contract.md`. V2 separates semantic
+disagreement from structural corruption, so the matrix could finish. It did
+finish all 15 children, but its preterminal evidence check failed and its
+ledger never terminalized. V2 is therefore also `INVALID` and nonclaimable.
 
 The implementation consists of:
 
-- `benchmarks/carma/gate7_trace.py`: calibration-only real-text QQP trace
+- `benchmarks/carma/gate7_v2_trace.py`: calibration-only real-text QQP trace
   construction;
-- `benchmarks/carma/onnx_integration_benchmark.py`: isolated GPTCache adapter,
-  ONNX, SQLite, FAISS, timing, and resource runner;
-- `benchmarks/carma/gate7_audit.py`: independent offline evidence verifier and
+- `benchmarks/carma/gate7_v2_onnx_integration_benchmark.py`: isolated GPTCache
+  adapter, ONNX, SQLite, FAISS, timing, and resource runner;
+- `benchmarks/carma/gate7_v2_audit.py`: independent evidence verifier and
   adjudicator; and
-- `scripts/run_onnx_integration_benchmark.sh`: reproducible smoke/full wrapper
-  that runs the auditor after the producer completes.
+- `scripts/run_gate7_v2_onnx_integration_benchmark.sh` plus
+  `scripts/gate7_v2_isolated_bootstrap.py`: sealed smoke/formal orchestration,
+  preterminal audit, and terminalization boundary.
 
 #### Frozen comparison
 
+- Exact source commit:
+  `557c6ac0578cb6b77c5ae51595b49abdc0407e10`.
+- Annotated tag: `gate7c-onnx-v2-formal-source`; tag object
+  `550e33a38ae59c992f25fc20023f5717c5fdd1ce`.
 - Contract SHA-256:
-  `e93b3f301373a0b1a1c9fa99378f555bd45b9c6e8f8717ac82ea817763ecdf4a`;
+  `4cb2d289bf9516e73bdc53c3f021ab9dc0e6b850c243e38bc57cc49244573f30`;
   both the producer and independent auditor reject any other bytes.
+- Attempt ID: `20260827T131743602373Z-557c6ac0578c`; retained directory
+  `artifacts/gate7-v2-onnx-attempts/attempt-20260827T131736Z-1784/`.
 - Five seeds: `20261001` through `20261005`.
 - Policies: LRU, LFU, CARMA; capacity 100; `clean_size=1`; `top_k=1`.
 - Cosine answer threshold: 0.97.
 - CARMA: topic 0.70, cell 0.97, half-life 500, quota 1.0, ghost support
   1.5, admission margin 1.05, centroid alpha 0.05, entry-hit weight 0.25.
-- Pinned tokenizer/model revisions and ONNX file SHA-256 are checked before a
-  real run. Formal mode additionally verifies the exact prepared QQP pair,
-  text, and archive hashes.
+- Pinned tokenizer/model revisions and ONNX file SHA-256 were checked before
+  every child. Formal mode also bound the exact prepared QQP pair, text, and
+  archive hashes.
 - CPU execution only, 512 tokens, one ONNX intra-op and inter-op thread, and
   one BLAS/tokenizer worker setting throughout.
 - The all-seeds rule is intentionally conservative: every seed must satisfy
   both latency limits, the throughput limit, and both RSS limits.
 
-The policy sequence is counterbalanced prospectively rather than always
-running CARMA last:
+The policy sequence was frozen before execution rather than always running
+CARMA last:
 
 | Seed | First | Second | Third |
 | ---: | --- | --- | --- |
@@ -760,8 +812,8 @@ running CARMA last:
 
 #### Real request path
 
-The measured call now enters `gptcache.adapter.adapter.adapt`; it is not a
-manual manager-only replay. For every request the path is:
+The completed v2 calls entered `gptcache.adapter.adapter.adapt`; this was not a
+manual manager-only replay. For every request the path was:
 
 ```text
 raw QQP prompt
@@ -798,12 +850,15 @@ text catalog, embedded, timed, or used.
 
 #### Isolation and timing
 
-Every seed-policy run loads and warms its own pinned model in a new child,
-creates a new SQLite database and FAISS index, and constructs a new eviction
-object. The 20 warm-ups are outside the request timer and happen before storage
-creation. Formal mode refuses a dirty or uncommitted worktree, fake embedding,
-wrong seed/configuration, provider fallback, wrong embedding dimension, wrong
-model/QQP hash, false hit, stale vector, unknown answer, or capacity violation.
+Every seed-policy run loaded and warmed its own pinned model in a new child,
+created a new SQLite database and FAISS index, and constructed a new eviction
+object. The 20 warm-ups were outside the request timer and happened before
+storage creation. Formal mode rejected a dirty or uncommitted worktree, fake
+embedding, wrong seed/configuration, provider fallback, wrong embedding
+dimension, wrong model/QQP hash, stale vector, broken response provenance, or
+capacity violation. Cross-component semantic returns were retained and
+classified by the separate guardrail instead of being treated as structural
+corruption.
 
 Every request retains exclusive nanosecond fields for text preprocessing and
 tokenization, ONNX inference, embedding postprocessing, FAISS search/mutation,
@@ -832,12 +887,12 @@ outcomes: hit, admitted without eviction, admitted with eviction, and rejected.
 
 #### Evidence and independent audit
 
-One successful full invocation produces:
+The completed v2 invocation retained:
 
 ```text
-artifacts/gate7-onnx-attempts/
-  attempt-ledger.jsonl             # hash-chained START/TERMINAL events
-  attempt-<UTC>-<pid>/
+artifacts/gate7-v2-onnx-attempts/
+  attempt-ledger.jsonl             # GENESIS + START; no TERMINAL
+  attempt-20260827T131736Z-1784/
     manifest.json
     runs.csv                       # 15 child summaries
     requests.jsonl                # 45,000 request rows
@@ -845,22 +900,20 @@ artifacts/gate7-onnx-attempts/
     outcome-latency.jsonl         # whole run + 4 outcomes per child
     traces/seed-20261001.jsonl    # one retained trace per seed
     ...
-    gate7-preterminal-adjudication.json # immutable, terminal-bound audit
-    gate7-adjudication.json        # later independent offline audit
+    gate7-preterminal-adjudication.json # immutable INVALID preterminal audit
+    # no gate7-adjudication.json: ordinary audit never ran
 ```
 
-Formal attempts are serialized by an interprocess lock. Before results exist,
-the producer appends a `START` event with the attempt ID, UTC start, Git HEAD,
-output directory, and predecessor-list hash. The manifest binds its exact ledger
-prefix as well as the clean start/end Git HEAD, historical baseline,
+Formal attempts are serialized by an interprocess lock. V2 first created a
+`PROTOCOL_GENESIS` and then appended `START` with the attempt ID, UTC start,
+Git HEAD, output directory, and predecessor-list hash. The manifest binds its
+exact ledger prefix as well as the clean start/end Git HEAD, historical baseline,
 source/container/lock/contract hashes, model/tokenizer identity, exact config,
 planned/actual order, child/storage identities, run summaries, and every
-artifact's row count, byte count, and SHA-256. While retaining the root lock,
-the producer invokes the independent auditor, saves an immutable preterminal
-report, and appends a `TERMINAL` event binding the exact manifest, report,
-verdict, and auditor identity. Historical eligibility uses that bound verdict,
-so a later auditor revision cannot retroactively free another attempt.
-Claimability requires the whole
+artifact's row count, byte count, and SHA-256. The intended valid path was to
+invoke the independent auditor, save an immutable preterminal report, and append
+`TERMINAL` binding the exact manifest, report, verdict, and auditor identity.
+That last step did not succeed in v2. Claimability requires the whole
 retained attempt root—not a copied attempt directory—because the auditor checks
 the ledger and every declared predecessor. Each child and the supervisor bind
 to the same source snapshot before and after execution. The auditor does not
@@ -871,10 +924,12 @@ monotonic loop boundaries, resource/CPU/I/O summaries and cadence, the retained
 trace from calibration source files, process/storage isolation, structural
 counters, and each paired gate boolean.
 
-The first-valid-attempt guarantee is scoped to this one complete, continuously
-retained checkout root. It cannot establish global uniqueness across separately
-created clones or after deleting the entire root; that stronger claim needs a
-lecturer-issued token or protected external append-only ledger.
+The first-valid-attempt guarantee is scoped to one complete, continuously
+retained checkout root. V2 has an unmatched `START`, so this root is fail-stopped
+and must never be reused. It cannot establish global uniqueness across
+separately created clones or after deleting the entire root; that stronger
+claim would need a lecturer-issued token or protected external append-only
+ledger.
 
 If any post-registration step fails before manifest publication, the incomplete
 attempt retains `attempt-failure.json`, every trace already created, and all
@@ -884,30 +939,80 @@ attempt is invalid, never silently retried, and cannot be numerically
 adjudicated; a retry uses a new attempt ID and reruns the entire five-seed,
 three-policy matrix.
 
-If the manifest was already published but the independent preterminal audit,
-post-audit integrity check, or `TERMINAL` append fails, the producer does not
-rewrite that manifest into a cleaner failure. Its unmatched `START` is a
-deliberate fail-stop and blocks every later formal attempt until an external
-forensic resolution versions the protocol.
+V2 reached exactly that post-manifest failure state. Its independent
+preterminal report is `INVALID`, `claimable=false`, with seven errors:
 
-Use:
+1. The retained dependency attestation uses the runtime's absolute Python
+   executable, while the frozen auditor requires the lexical
+   `.venv/bin/python` identity.
+2. All five warm-up files exist and their hashes match, but the manifest
+   identities include an extra `rows` key. The exact-shape validator rejects
+   the five identities and reports them as missing or not byte-bound.
+3. Run `cca0d14de5ac69d49e0c` has a maximum resource-sampling gap of
+   202,142,875 ns, 2,142,875 ns above the frozen 200,000,000 ns maximum.
 
-```bash
-# Fast orchestration test; fake embedding, therefore always pending.
-scripts/run_onnx_integration_benchmark.sh smoke artifacts/gate7-onnx-smoke
+The wrapper then exited 4 with `formal preterminal adjudication is malformed`.
+Terminalization also compared two differently shaped auditor identities: the
+manifest source entry is `{bytes, sha256}`, while the report identity is
+`{path, bytes, sha256}`. Their content hash and byte count agree, but the object
+equality check fails. The canonical ledger therefore remains exactly
+`PROTOCOL_GENESIS` plus `START`; no `TERMINAL` or parent-bootstrap completion
+receipt exists.
 
-# Confirmatory matrix; requires clean committed source and several CPU hours.
-scripts/run_onnx_integration_benchmark.sh full
-```
+The retained manifest is 695,528 bytes, SHA-256
+`7574127cce8f1c72e87a1528dc6709947860178f43667a92add155e89e1f1cf8`.
+The retained preterminal report is 293,720 bytes, SHA-256
+`e3e8df2787049d3b1ea4e622e7666502b715ae572431b4f8d4e4b213c12dd39b`.
+The canonical two-row ledger SHA-256 is
+`84eee7963f4e5c27f8d962e31ddcdcec9779b1cd463a8952841946ffc8557f0c`.
+There is no ordinary `gate7-adjudication.json`, and the ordinary auditor must
+not be run now. It cannot reconstruct the missing live parent attestation or
+retroactively terminalize the chain.
 
-The fake three-policy smoke bundle audits as `PENDING` with zero errors and
-warnings. A separate pinned-model development smoke confirmed the exact model
-hash, CPU provider, 768-dimensional output, real adapter call, evidence schema,
-and zero structural failures. These development runs are not numerical Gate 7
-evidence. At roughly 0.45 seconds per request in the observed real-model smoke,
-the frozen 45,000-request matrix is expected to take multiple hours on this Mac.
-Until that clean full run exists and the auditor returns `PASS` or `FAIL`, the
-prospective result is still pending and no full-path overhead claim is allowed.
+#### Descriptive v2 results and the counterfactual boundary
+
+Because v2 is invalid, these measurements are not a formal Gate 7 verdict.
+They are still useful forensic observations because the independent
+preterminal auditor reconstructed every child and paired comparison:
+
+| Seed | Checks passed | CARMA minus LRU p95 total latency | Descriptive result |
+| ---: | ---: | ---: | --- |
+| 20261001 | 4/5 | +26,230,125 ns | Fails the +500,000 ns absolute-delta limit |
+| 20261002 | 5/5 | -117,612,083 ns | Passes all five |
+| 20261003 | 5/5 | -8,314,250 ns | Passes all five |
+| 20261004 | 5/5 | -4,185,208 ns | Passes all five |
+| 20261005 | 5/5 | -825,167 ns | Passes all five |
+
+The total is 24/25 checks. Since the frozen rule requires all five checks in
+all five seeds, the counterfactual numerical result—if these exact bytes had
+been structurally admissible—would be **FAIL**, never **PASS**. The actual v2
+status remains **INVALID**, because evidence integrity is evaluated before the
+numerical gate.
+
+The separate semantic guardrail is also **FAIL**. Across 25,405 hits, 25,400
+are within the same QQP component, three are direct-negative hits, and two are
+unlabeled cross-component hits. Per-run statuses are three `FAIL`, two
+`PENDING_INDETERMINATE`, and ten `PASS_OBSERVED`. There are zero stale
+candidates, unrecognized response IDs, source-response mismatches, and capacity
+excesses. Semantic disagreement does not invalidate otherwise consistent
+storage evidence, but it does prohibit a semantic-safety claim.
+
+The curated forensic tables, script, chart contract, and figures are under
+`artifacts/samples/analysis/gate7-v2-invalid/`. The compact checksum-sealed
+ledger/manifest/preterminal snapshot is under
+`artifacts/samples/verification/gate7-v2-invalid/`. Those copies support review;
+the ignored original formal root remains authoritative.
+
+#### V2 cannot be repaired or reused
+
+Do not edit the v2 manifest, preterminal report, ledger, or any formal attempt
+byte. Do not append a terminal row, selectively rerun seed 20261001, reuse the
+14 favorable children, or resume inside the same root. A future formal Gate 7
+attempt requires a new experiment/schema version, a new prospective contract,
+a new formal root and ledger genesis, a new reviewed clean source commit and
+annotated tag, and the entire fresh randomized five-seed by three-policy
+matrix. Both identity-shape defects and the cadence decision must be fixed
+before new outcomes are observed.
 
 ## 16. MOSS recorded-response replay
 
@@ -920,9 +1025,10 @@ conversations and 823,634 actual turns, then retains the lowest stable-hash
 2,048-turn sample. The frozen 200-request longest-quartile trace contains
 557,243 context, prompt, and answer tokens.
 
-All 200 requests are unique by design, so every request is an expected miss and
-the exact recorded answer is replayed. There are no live model calls and no
-false hits. Two runs produce byte-identical manifests, pool, requests, and CSV.
+The replay uses an exact-key LRU cache. All 200 requests are unique by design,
+so every request is an expected miss and the exact recorded answer is
+delivered. There are no live model calls, cache hits, or false hits. Two runs
+produce byte-identical manifests, pool, requests, and CSV.
 
 The source exposed two real data anomalies before any result was produced:
 
@@ -934,7 +1040,9 @@ JSON and treats contiguous `turn_1..turn_k` keys as authoritative while
 retaining declared and actual counts. The manifest records both anomalies.
 
 MOSS is a recorded-response and expected-miss negative control. It is not a
-natural-language CARMA-vs-baseline semantic-hit comparison.
+natural-language CARMA-vs-baseline semantic-hit comparison and does not measure
+valid end-to-end long-prompt CARMA overhead. The lecturer's novel-long
+performance criterion is therefore only partially covered.
 
 ## 17. QQP semantic-safety result
 
@@ -956,20 +1064,39 @@ FN = 4968
 precision = 0.97574893
 recall = 0.12101911
 one-sided 95% Wilson precision lower = 0.96420782
+false-hit rate = 0.00219951
+one-sided 95% Wilson false-hit-rate upper = 0.00326719
 ```
 
-This misses both the 0.99 point-precision and 0.98 lower-bound criteria. No
-answer threshold was selected. All 56,963 component-disjoint test pairs are
+The calibration-selection rule requires the one-sided 95% Wilson precision
+lower bound itself to reach 0.99, so this row does not qualify and no other
+grid point qualifies. No answer threshold was selected. The separate
+downstream Gate 2 targets---held-out point precision at least 0.99, Wilson
+lower bound at least 0.98, and the CARMA false-hit-rate delta bound---were
+therefore never evaluated. All 56,963 component-disjoint test pairs are
 recorded as not evaluated. There is no held-out precision or false-hit claim.
 
-The code did compute held-out cosine similarities transiently in the same pass
-before the calibration abort, but it did not classify, aggregate, inspect, or
-write held-out outcomes. Threshold selection read calibration scores only.
-This is still recorded as a protocol deviation because “computationally
-untouched” would be inaccurate.
+The historical v1 evaluator did compute held-out cosine similarities
+transiently in the same pass before the calibration abort, but it did not
+classify, aggregate, inspect, or write held-out outcomes. Threshold selection
+read calibration scores only. This remains recorded as a historical protocol
+deviation because “computationally untouched” would be inaccurate.
 
-Gate 2 therefore fails at the calibration prerequisite. It is not acceptable
-to lower the precision rule after observing this result.
+The separately versioned Gate 2 v2 evaluator fixes that boundary. Its first
+pass reads only the split field for held-out rows and does not dereference their
+labels, endpoint IDs, concepts, embeddings, or cosine similarities. A second
+held-out pass is permitted only after calibration selects a qualifying
+threshold. Calibration again selected `null`, so the second pass never ran and
+zero held-out endpoints or similarities were evaluated. The retained v2
+evidence is:
+
+- `docs/project/evidence/qqp-v2-calibration-thresholds.csv`;
+- `docs/project/evidence/qqp-v2-threshold-selection.json`;
+- `docs/project/evidence/qqp-v2-result.json`.
+
+Gate 2 v2 therefore remains **FAIL / no qualifying threshold**. It is not
+acceptable to lower the precision rule after observing this result, and the
+0.97 operating point in Gate 7 v2 is explicitly unqualified by Gate 2.
 
 ## 18. Historical protocol deviations
 
@@ -1081,20 +1208,36 @@ the narrow packaging allowlist implemented in
 `benchmarks/carma/analyze_results.py` and documented in
 `docs/project/reproducibility.md`.
 
-Allowed packaging changes are limited to selected report documents, analysis
-outputs, the sample README, and additions under selected evidence paths. Code,
-tests, locks, workflows, experiment contracts, raw experiment bundles, and the
-root README are not allowed in `P`.
+For the Gate 7 v2 publication, `S` is exactly
+`557c6ac0578cb6b77c5ae51595b49abdc0407e10`. The one permitted non-merge direct
+child `P` may modify only `handoff.md`, the selected report documents named in
+`docs/project/reproducibility.md`, `artifacts/samples/README.md`, and files below
+`artifacts/samples/analysis/**`; it may add only the permitted checksum, QQP,
+and verification evidence paths. Code, tests, locks, workflows, experiment
+contracts, raw formal experiment bundles, and the root `README.md` are not
+allowed in `P`.
 
 Why this exists: a report needs generated evidence that cannot exist before the
 source has been run, but allowing arbitrary post-verification edits would make
 “tested commit” meaningless.
 
-For each handoff/publication refresh, `handoff.md` belongs in the new source
-commit `S`; the exact host/container gate is run from that clean commit. The
-curated publication evidence is then added in exactly one permitted child `P`
-under a dated directory in `artifacts/samples/verification/`, with its own
-checksum manifest. At published `HEAD`, the analyzer must report
+This boundary leaves two source-sealed wording defects that must be called out
+instead of silently editing them after verification. The root `README.md`
+still describes the older prospective Gate 7 wrapper and must **not** be used
+to launch or interpret a formal run; Sections 15 and 25 of this handoff are the
+authoritative v2/future-v3 instructions. Also,
+`docs/project/baseline-justification.md` calls the MOSS replay “SCALM-style
+token-aware replay”; the actual implementation is the exact-key LRU, all-miss
+negative control described in Section 16 and the report. The baseline file's
+policy list is accurate, while the root README, report, and this handoff state
+explicitly that LRU remains the factory default. Correcting those two sealed
+files would require a new exact-source verification generation, not an extra
+packaging edit.
+
+The exact host/container gate is run from the clean source commit. Curated
+publication evidence and the allowed report/handoff updates are then added in
+exactly one permitted child `P`, with checksum manifests for the evidence
+copies. At published `HEAD`, the analyzer must report
 `verified_packaging_descendant` for Gates 1 and 8. Discover the exact pair with:
 
 ```bash
@@ -1246,6 +1389,22 @@ The published compact bundle is under `artifacts/samples/`. Verify it with:
 (cd artifacts/samples && shasum -a 256 -c SHA256SUMS)
 ```
 
+That root manifest seals the original 73-file bundle. Later analysis and
+publication groups use colocated nested `SHA256SUMS` files; the root README is
+restored byte-for-byte for its historical checksum and its wording should not
+be read as a recursive inventory of all later descendants.
+
+The report-only package index covers every current sample file except itself,
+including the root and all nested manifests:
+
+```bash
+(cd artifacts/samples/verification/publication-package-20260827 && \
+  shasum -a 256 -c SHA256SUMS)
+```
+
+This is byte inventory only; it does not promote a pending, failed, or invalid
+result.
+
 Also verify the current publication-refresh sub-manifest:
 
 ```bash
@@ -1316,8 +1475,11 @@ Do not claim any of the following from the current evidence:
 - that held-out QQP precision is known;
 - that CARMA materially beats LFU on the frozen scan-return phase;
 - that Gate 7 formally passes;
-- that the system timings include ONNX embedding generation;
-- that integration artifacts retain per-request latency samples;
+- that the historical integration timings include ONNX embedding generation;
+- that the historical integration artifacts retain per-request latency samples;
+- that the v2 full-path measurements are claimable, terminalized, or
+  replace the original `PENDING` Gate 7 row;
+- that an after-the-fact ordinary v2 audit could repair the missing terminal;
 - that MOSS demonstrates semantic CARMA hit-rate superiority;
 - that synthetic vectors establish natural-language generalization;
 - that clustering and quota effects are separately identified;
@@ -1334,14 +1496,27 @@ Safe claims are narrower:
 - Under the frozen controlled synthetic category-shift workload, CARMA improves
   VHR over the stronger paired LRU/LFU baseline by 4.885 points with a positive
   paired CI and Holm-corrected significance.
-- Stationary VHR and safe-token non-regression gates pass.
+- Stationary VHR and synthetic weighted-savings-proxy gates pass.
 - The QQP calibration prerequisite and scan-return improvement gate fail.
 - Real post-embedding SQLite/FAISS measurements are favorable diagnostics, but
   the formal overhead gate remains pending.
+- Gate 7 v2 completed 15 isolated real-text ONNX children and retained 45,000
+  detailed requests, but the attempt is `INVALID` and nonclaimable. Its
+  descriptive systems reconstruction is 24/25 checks and counterfactual
+  `FAIL`; its separate semantic guardrail is `FAIL`.
 - Exact-source host and paired network-isolated container verification pass for
   the attested source/package relationship.
 
 ## 25. Recommended next work
+
+The lecturer's exceptional adopted-upstream-PR route remains unmet. The clean
+port is now public and ready for review as [zilliztech/GPTCache PR #696](https://github.com/zilliztech/GPTCache/pull/696),
+based on upstream `dev` commit
+`74926813b988266cb783499a660cd582de4299b4`. Its two commits are signed, the
+live DCO check passes, and GitHub reports the PR mergeable. No upstream
+maintainer has reviewed, merged, or otherwise adopted it. Adoption is an
+external decision and must not be inferred from an open PR or local test
+quality.
 
 ### 25.1 Highest-value research rerun
 
@@ -1353,14 +1528,19 @@ threshold changes.
 
 ### 25.2 Complete Gate 7 properly
 
-The protocol, real GPTCache/ONNX runner, retained evidence, counterbalanced
-order, and independent all-seeds adjudicator are implemented. The remaining
-work is execution, not experimental design: commit a reviewed clean source
-identity, run the full 15-child wrapper into a fresh ignored artifact root, keep
-any failed partial attempt, and report the auditor's result without selectively
-rerunning a favorable policy. A Linux replication remains valuable after the
-same frozen Mac-host run, but it must use a separately identified machine block
-rather than being pooled post hoc.
+V2 cannot be completed in place. Its unmatched `START`, invalid preterminal
+report, and missing parent-bootstrap completion are permanent historical facts.
+The next attempt must first define a new versioned protocol that fixes the
+lexical/resolved Python identity rule, gives producer and auditor one exact
+warm-up identity schema, normalizes the auditor source-identity shape across
+manifest/report/terminalization, and prospectively decides whether the 200 ms
+resource-cadence bound or the sampler implementation should change.
+
+Only then create a new formal root and ledger genesis, freeze a new contract,
+commit and remotely annotate a new clean source tag, and rerun all 15 children.
+Do not copy v2 results, reuse its 14 passing seed/check combinations, or rerun
+only seed 20261001. A Linux replication remains valuable after a valid new Mac
+host run, but it needs its own machine identity and cannot be pooled post hoc.
 
 ### 25.3 Semantic safety
 
@@ -1461,6 +1641,23 @@ container equality machine-dependent.
 Because the audit represents preregistered claims, not task completion. Two
 hypotheses failed and one gate is pending; hiding them would be worse science.
 
+**Why is Gate 7 v2 invalid if all 15 children exited zero?**  Child completion
+proves that measurements were produced, not that the frozen evidence contract
+closed. The preterminal auditor found seven integrity errors, and an auditor
+identity shape mismatch prevented `TERMINAL`. Without that terminal record and
+parent-bootstrap receipt, the attempt is nonclaimable by construction.
+
+**Can we call the v2 numerical result a fail?**  Only as a clearly labeled
+counterfactual: 24/25 checks pass and seed 20261001 fails the p95 absolute
+delta, so structurally valid copies of these exact numbers would fail the
+all-seeds rule. The historical attempt's actual status is `INVALID`, not
+`FAIL`, and never `PASS`.
+
+**Can we fix the schema bugs and rerun only seed 20261001?**  No. That would
+condition the repair on observed results and violate the frozen matrix. The
+next attempt needs a new version, contract, root, ledger, source tag, and all
+15 newly executed children.
+
 **Why is the report package a different commit from the verified source?**
 Generated evidence can only exist after the source runs. A single restricted
 child allows packaging while preventing arbitrary untested changes.
@@ -1475,7 +1672,9 @@ isolation. Its role is causal/control evidence, not external-validity proof.
 
 **Why include MOSS if every request misses?**  It validates pinned natural data,
 long-prompt/token accounting, deterministic sampling, recorded response replay,
-and expected-miss behavior without an API. It is explicitly a negative control.
+and expected-miss behavior without an API. It is explicitly an exact-key LRU
+negative control, not a CARMA comparison or a complete long-prompt overhead
+measurement.
 
 ## 28. Publication and collaboration state
 
@@ -1483,6 +1682,14 @@ The project is published as a **private** GitHub repository because this is
 coursework. The upstream GPTCache remote remains available as `origin`;
 the personal submission repository should use a separate remote such as
 `submission` so nobody accidentally pushes to `zilliztech/GPTCache`.
+
+The upstream contribution is intentionally separate: public fork
+<https://github.com/MatanGoldfarB/GPTCache>, branch
+`feat/carma-online-policy`, and draft
+[zilliztech/GPTCache PR #696](https://github.com/zilliztech/GPTCache/pull/696).
+It contains only the upstream-native production, documentation/example, and
+test patch. No private course report, benchmark corpus, Gate evidence, Talya
+reference, or local path was pushed to that fork.
 
 Expected remote layout:
 
@@ -1522,6 +1729,28 @@ network-isolated `linux/amd64` container then passed 8 upstream tests, 2
 SQLite/FAISS tests (1 deselected), 227 project tests (2 platform skips), and
 the deterministic CI benchmark.
 
+The later exact-source gate for the current v2 source
+`557c6ac0578cb6b77c5ae51595b49abdc0407e10` supersedes those counts for the
+final source/package relationship. One 527-file Git archive with SHA-256
+`51aea800e364c1d52bed566f48c4c49c1836d0d6a0b40b3bb8203867c14b58b4`
+fed its host and container executions. Its host and both byte-matched,
+network-isolated `linux/amd64` containers each passed 8 upstream tests, 2
+SQLite/FAISS tests (1 deselected), and 453 project tests (4 platform skips).
+The 32-file topology is retained under
+`artifacts/samples/verification/publication-20260827-v2-source/`. This validates
+the source implementation; it does not convert the separate Gate 7 v2 formal
+attempt from `INVALID` into a claimable result.
+
+An independent full synthetic replay was then executed from the then-current
+clean report-only packaging
+commit `defba4aa78b24cb7115352ed2d58177d227b60ba`. Across 5,180,400
+policy-request evaluations, `aggregate.csv`, `runs.csv`, `validation.csv`, and
+`validation_runs.csv` were byte-for-byte identical to the historical published
+tables. The checksummed compact record is under
+`artifacts/samples/verification/final-source-synthetic-replay/`; the temporary
+4.1 GB request log was not committed. This confirms deterministic summary
+reproduction on the final source without rewriting the frozen experiment.
+
 After publication, verify rather than assume:
 
 ```bash
@@ -1540,19 +1769,33 @@ the requested one.
 - [x] Published `HEAD` is the direct packaging child of the exact verified
   source commit.
 - [x] Post-packaging analyzer reports `verified_packaging_descendant`.
-- [x] Gates 1/3/5/6/8 pass, 2/4 fail, and 7 is pending in the current audit.
-- [x] Prospective Gate 7 contract, real-text trace, GPTCache/ONNX runner,
-  independent auditor, and wrapper are implemented and tested.
+- [x] Gates 1/3/5/6/8 pass, 2/4 fail, and the original Gate 7 is `PENDING` in
+  the current eight-gate audit.
+- [x] Gate 7 v1 is preserved as `INVALID` without selective repair.
+- [x] Gate 7 v2 contract, real-text trace, GPTCache/ONNX runner, sealed
+  bootstrap, independent auditor, and wrapper are implemented and tested.
 - [x] Fake-embedding and pinned-real-ONNX development smoke paths complete
   structurally; the fake bundle independently audits as pending with no errors.
-- [ ] The prospective five-seed, 15-child full ONNX bundle has completed and
-  received a claimable independent `PASS` or `FAIL` verdict.
+- [x] The v2 five-seed, 15-child full ONNX matrix completed: all children exited
+  zero and 45,000 request rows were retained.
+- [x] V2 is recorded accurately as `INVALID`, nonclaimable: seven preterminal
+  errors, wrapper exit 4, canonical ledger `GENESIS + START`, no `TERMINAL`, and
+  no ordinary adjudication.
+- [x] Descriptive v2 evidence is labeled 24/25 checks and counterfactual
+  `FAIL`, never `PASS`; semantic status is separately `FAIL`.
+- [ ] A future, newly versioned full ONNX attempt has produced a claimable
+  independent `PASS` or `FAIL`. V2 cannot satisfy this item and may not be
+  repaired or reused.
 - [x] Curated checksum manifests verify every listed file.
 - [x] `docs/project/report.pdf` is present, 8--12 pages, and visually checked.
 - [x] GitHub repository is private and both `main` and feature branch resolve
   to the expected final commit.
 - [x] Talya (`talya189`) has active personal-repository `write` access; true
   owner/admin control would require an organization-owned repository.
+- [x] Public upstream fork and signed CARMA branch exist; PR #696 targets
+  upstream `dev`, is ready for review, mergeable, and has a green DCO check.
+- [ ] An upstream maintainer has adopted the contribution. An open PR does not
+  satisfy this lecturer condition.
 - [x] No API key, credential, raw model weight, oversized raw source archive,
   or unlicensed data was committed.
 - [x] Any future modification is treated as a new source/evidence generation.

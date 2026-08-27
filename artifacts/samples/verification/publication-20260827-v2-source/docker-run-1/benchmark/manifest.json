@@ -1,0 +1,60 @@
+{
+  "config": {
+    "admission_margin": 1.05,
+    "capacity": 50,
+    "cell_threshold": 0.88,
+    "cells_per_topic": 4,
+    "centroid_alpha": 0.05,
+    "cluster_similarity_threshold": 0.7,
+    "concepts_per_cell": 32,
+    "demand_half_life": 128.0,
+    "entry_hit_weight": 0.25,
+    "ghost_support_threshold": 1.5,
+    "hit_threshold": 0.97,
+    "measure_latency": false,
+    "policies": [
+      "LRU",
+      "LFU",
+      "CARMA",
+      "CARMA_NO_CLUSTER"
+    ],
+    "quota_strength": 0.5,
+    "request_count": null,
+    "seed": 20260825,
+    "topics": 6,
+    "verify_determinism": true,
+    "workloads": [
+      "stationary",
+      "phase_shift",
+      "pollution_scan",
+      "novel"
+    ]
+  },
+  "determinism_scope": "all request fields except latency_ns and summary timing fields",
+  "run_ids": [
+    "d76bc9330993dc35b9ae",
+    "55710f78c7dcb5bd3a6c",
+    "b3997a7b659212522f4b",
+    "2d11cb798039d787a975",
+    "10b53ecd9f35eb3cddbe",
+    "d2b4800184b4a8189a1a",
+    "6e948dfec20c2e2e1274",
+    "1c4350b27a5663315674",
+    "98fc9598322448cbaf8f",
+    "3ac047de3c71c9d33752",
+    "d1cb6cb9445d621ef97e",
+    "95eeac1c8fa429829498",
+    "30f61f424e0b782b41db",
+    "52128b655632750a751f",
+    "1b4833220c3a18d3bbb9",
+    "ca5ec4a8d7b926c8d47d"
+  ],
+  "schema_version": "carma-benchmark-v2",
+  "timing_is_measured": false,
+  "trace_hashes": {
+    "novel": "c792eb90f50c8f876174c6dad2c39b25a25434493d4fab93833e19630e146d5b",
+    "phase_shift": "33b33e7cb8ce53bf09995fbae11c1a36cc68359a81219347756f4ebffdee6a8e",
+    "pollution_scan": "20f6ff91585d15e59208b644ddd1e61770dee4f944ef62867b19cc6dc62457f1",
+    "stationary": "1312c8e2eae38b177ef6debaf6162befd3b528299ae3ce7e5fc62cd153ec4802"
+  }
+}

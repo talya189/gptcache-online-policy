@@ -1,0 +1,399 @@
+{
+  "classification": {
+    "audit_phase": "preterminal",
+    "claimable": false,
+    "formal_status": "INVALID",
+    "ledger_terminal_present": false,
+    "ordinary_terminal_report_present": false,
+    "preterminal_error_count": 7,
+    "wrapper_observation": {
+      "basis": "contemporaneous formal-run process output; the wrapper observation is contextual and is not encoded in the three copied evidence files",
+      "exit_code": 4,
+      "message": "formal preterminal adjudication is malformed"
+    }
+  },
+  "descriptive_latency_distributions": {
+    "curated_rows": 6006,
+    "curated_table": "latency-quantile-ecdf.csv",
+    "curated_table_sha256": "cc8dbbd56ffc41b507c2a4427798ff6601632bca63a8c3bca1934d1cad7f53c5",
+    "equal_seed_count": 5,
+    "formal_use": "descriptive_only_because_attempt_invalid_and_nonclaimable",
+    "metrics": [
+      "request_total_ns",
+      "post_embedding_total_ns"
+    ],
+    "policies": [
+      "CARMA",
+      "LRU",
+      "LFU"
+    ],
+    "pooled_count_per_policy": 15000,
+    "pooling_method": "equal_seed_empirical_mixture",
+    "quantile_grid": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "points_per_policy_metric": 1001,
+      "step": 0.001
+    },
+    "quantile_method": "Hyndman-Fan_Type_7_linear_h=(n-1)*p",
+    "quantiles_ms": {
+      "post_embedding_total_ns": {
+        "CARMA": {
+          "maximum": 47.538291,
+          "p50": 1.765876,
+          "p95": 4.8566742,
+          "p99": 5.55513068,
+          "p99_9": 17.717748959
+        },
+        "LFU": {
+          "maximum": 33.856499,
+          "p50": 1.7661035,
+          "p95": 4.6941444,
+          "p99": 5.28338151,
+          "p99_9": 11.958088082
+        },
+        "LRU": {
+          "maximum": 40.751626,
+          "p50": 1.8136045,
+          "p95": 4.8621396,
+          "p99": 6.26835749,
+          "p99_9": 13.9828955
+        }
+      },
+      "request_total_ns": {
+        "CARMA": {
+          "maximum": 1244.290875,
+          "p50": 430.1275625,
+          "p95": 445.2608146,
+          "p99": 474.06164717,
+          "p99_9": 759.369035667
+        },
+        "LFU": {
+          "maximum": 640.109958,
+          "p50": 431.3014585,
+          "p95": 453.65945835,
+          "p99": 468.5023775,
+          "p99_9": 526.098325042
+        },
+        "LRU": {
+          "maximum": 990.6055,
+          "p50": 431.6200835,
+          "p95": 480.9534729,
+          "p99": 558.28732366,
+          "p99_9": 764.313756333
+        }
+      }
+    },
+    "rows_per_seed_policy": 3000,
+    "source_relative_path": "artifacts/gate7-v2-onnx-attempts/attempt-20260827T131736Z-1784/requests.jsonl",
+    "source_rows": 45000,
+    "source_sha256": "b23fe24164c7b11a7c164deff1b1f1e9571e41e39231bc04e269625f1eed6358"
+  },
+  "descriptive_systems_checks": {
+    "failed": 1,
+    "failed_cells": [
+      {
+        "check": "p95_delta",
+        "observed_value": 26230125,
+        "seed": 20261001
+      }
+    ],
+    "formal_use": "descriptive_only_because_attempt_invalid",
+    "frozen_bounds": {
+      "p95_delta_ns_max": 500000,
+      "p95_ratio_max": 1.25,
+      "rss_delta_bytes_max": 67108864,
+      "rss_ratio_max": 1.2,
+      "throughput_ratio_min": 0.9
+    },
+    "passed": 24,
+    "seed_adjudication": {
+      "20261001": {
+        "carma_run_id": "1eb31986a8ec7c2ecc4c",
+        "checks": {
+          "p95_delta": false,
+          "p95_ratio": true,
+          "rss_delta": true,
+          "rss_ratio": true,
+          "throughput_ratio": true
+        },
+        "lru_run_id": "32eb53b19c4b994eab23",
+        "paired_values": {
+          "p95_delta_ns": 26230125,
+          "p95_ratio": 1.0590561419051763,
+          "rss_delta_bytes": -22364160,
+          "rss_ratio": 0.9451256281407036,
+          "throughput_ratio": 0.9790225102539238
+        },
+        "passes": false
+      },
+      "20261002": {
+        "carma_run_id": "53afa2c0435d11d7048b",
+        "checks": {
+          "p95_delta": true,
+          "p95_ratio": true,
+          "rss_delta": true,
+          "rss_ratio": true,
+          "throughput_ratio": true
+        },
+        "lru_run_id": "83ab7e8b2d21736622cf",
+        "paired_values": {
+          "p95_delta_ns": -117612083,
+          "p95_ratio": 0.7878497542456729,
+          "rss_delta_bytes": 4915200,
+          "rss_ratio": 1.0119985601727792,
+          "throughput_ratio": 1.0655692929619227
+        },
+        "passes": true
+      },
+      "20261003": {
+        "carma_run_id": "103792d36bd5092eb346",
+        "checks": {
+          "p95_delta": true,
+          "p95_ratio": true,
+          "rss_delta": true,
+          "rss_ratio": true,
+          "throughput_ratio": true
+        },
+        "lru_run_id": "cca0d14de5ac69d49e0c",
+        "paired_values": {
+          "p95_delta_ns": -8314250,
+          "p95_ratio": 0.9812090022093065,
+          "rss_delta_bytes": 7585792,
+          "rss_ratio": 1.0185772178309191,
+          "throughput_ratio": 1.0070709729183547
+        },
+        "passes": true
+      },
+      "20261004": {
+        "carma_run_id": "b4535f1c1fe021970a42",
+        "checks": {
+          "p95_delta": true,
+          "p95_ratio": true,
+          "rss_delta": true,
+          "rss_ratio": true,
+          "throughput_ratio": true
+        },
+        "lru_run_id": "38f210c51afc8e0ba402",
+        "paired_values": {
+          "p95_delta_ns": -4185208,
+          "p95_ratio": 0.9904575419100403,
+          "rss_delta_bytes": 5193728,
+          "rss_ratio": 1.0126360266273369,
+          "throughput_ratio": 1.00545505538356
+        },
+        "passes": true
+      },
+      "20261005": {
+        "carma_run_id": "c596e00592e263aa24e4",
+        "checks": {
+          "p95_delta": true,
+          "p95_ratio": true,
+          "rss_delta": true,
+          "rss_ratio": true,
+          "throughput_ratio": true
+        },
+        "lru_run_id": "7ae2730c73be96b784f3",
+        "paired_values": {
+          "p95_delta_ns": -825167,
+          "p95_ratio": 0.9981008929462739,
+          "rss_delta_bytes": 1818624,
+          "rss_ratio": 1.0043906491040702,
+          "throughput_ratio": 1.0028585840091953
+        },
+        "passes": true
+      }
+    },
+    "total": 25
+  },
+  "evidence_profile": {
+    "actual_onnx": true,
+    "complete_five_seed_blocks": true,
+    "config": {
+      "admission_margin": 1.05,
+      "capacity": 100,
+      "cell_threshold": 0.97,
+      "centroid_alpha": 0.05,
+      "demand_half_life": 500.0,
+      "entry_hit_weight": 0.25,
+      "fake_embedding": false,
+      "ghost_support_threshold": 1.5,
+      "hit_threshold": 0.97,
+      "max_length": 512,
+      "mode": "full",
+      "onnx_inter_threads": 1,
+      "onnx_intra_threads": 1,
+      "quota_strength": 1.0,
+      "requests": 3000,
+      "resource_interval_ms": 100,
+      "topic_threshold": 0.7,
+      "warmup_requests": 20
+    },
+    "embedding_in_request_path": true,
+    "ledger_canonical_chain_valid": true,
+    "ledger_events": [
+      "PROTOCOL_GENESIS",
+      "START"
+    ],
+    "ledger_rows": 2,
+    "policies": [
+      "LRU",
+      "LFU",
+      "CARMA"
+    ],
+    "policy_orders": {
+      "20261001": [
+        "CARMA",
+        "LFU",
+        "LRU"
+      ],
+      "20261002": [
+        "LFU",
+        "LRU",
+        "CARMA"
+      ],
+      "20261003": [
+        "LRU",
+        "CARMA",
+        "LFU"
+      ],
+      "20261004": [
+        "LRU",
+        "LFU",
+        "CARMA"
+      ],
+      "20261005": [
+        "CARMA",
+        "LRU",
+        "LFU"
+      ]
+    },
+    "primary_artifact_rows": {
+      "outcome-latency.jsonl": 75,
+      "requests.jsonl": 45000,
+      "resources.jsonl": 189270,
+      "runs.csv": 15
+    },
+    "request_count": 45000,
+    "run_count": 15,
+    "seeds": [
+      20261001,
+      20261002,
+      20261003,
+      20261004,
+      20261005
+    ],
+    "source_hashes": {
+      "attempt-ledger.jsonl": "84eee7963f4e5c27f8d962e31ddcdcec9779b1cd463a8952841946ffc8557f0c",
+      "gate7-preterminal-adjudication.json": "e3e8df2787049d3b1ea4e622e7666502b715ae572431b4f8d4e4b213c12dd39b",
+      "manifest.json": "7574127cce8f1c72e87a1528dc6709947860178f43667a92add155e89e1f1cf8"
+    }
+  },
+  "identity": {
+    "attempt_id": "20260827T131743602373Z-557c6ac0578c",
+    "source_commit": "557c6ac0578cb6b77c5ae51595b49abdc0407e10",
+    "source_tag": "gate7c-onnx-v2-formal-source"
+  },
+  "invalidity_diagnostics": {
+    "dependency_python_path": {
+      "observed": "/Users/matangoldfarb/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+      "required_literal": ".venv/bin/python"
+    },
+    "preterminal_auditor_identity": {
+      "bytes": 338686,
+      "path": "benchmarks/carma/gate7_v2_audit.py",
+      "sha256": "c540236a40b4b5be9a852e5e864379ba0355b874a44759d2ae41bebfacf68753"
+    },
+    "preterminal_errors": [
+      {
+        "code": "dependency_attestation",
+        "message": "formal CPython/virtual-environment identity is malformed"
+      },
+      {
+        "code": "warmup_artifacts",
+        "context": {
+          "seed": 20261001
+        },
+        "message": "warm-up artifact is missing or not byte-bound"
+      },
+      {
+        "code": "warmup_artifacts",
+        "context": {
+          "seed": 20261002
+        },
+        "message": "warm-up artifact is missing or not byte-bound"
+      },
+      {
+        "code": "warmup_artifacts",
+        "context": {
+          "seed": 20261003
+        },
+        "message": "warm-up artifact is missing or not byte-bound"
+      },
+      {
+        "code": "warmup_artifacts",
+        "context": {
+          "seed": 20261004
+        },
+        "message": "warm-up artifact is missing or not byte-bound"
+      },
+      {
+        "code": "warmup_artifacts",
+        "context": {
+          "seed": 20261005
+        },
+        "message": "warm-up artifact is missing or not byte-bound"
+      },
+      {
+        "code": "resource_cadence",
+        "context": {
+          "maximum_allowed_gap_ns": 200000000,
+          "maximum_observed_gap_ns": 202142875,
+          "run_id": "cca0d14de5ac69d49e0c"
+        },
+        "message": "external sampling has a gap larger than two frozen intervals"
+      }
+    ],
+    "producer_auditor_identity": {
+      "bytes": 338686,
+      "sha256": "c540236a40b4b5be9a852e5e864379ba0355b874a44759d2ae41bebfacf68753"
+    },
+    "producer_auditor_identity_equal": false,
+    "resource_cadence": {
+      "maximum_allowed_gap_ns": 200000000,
+      "maximum_observed_gap_ns": 202142875,
+      "run_id": "cca0d14de5ac69d49e0c"
+    },
+    "warmup_declaration_extra_keys": {
+      "warmups/seed-20261001.json": [
+        "rows"
+      ],
+      "warmups/seed-20261002.json": [
+        "rows"
+      ],
+      "warmups/seed-20261003.json": [
+        "rows"
+      ],
+      "warmups/seed-20261004.json": [
+        "rows"
+      ],
+      "warmups/seed-20261005.json": [
+        "rows"
+      ]
+    }
+  },
+  "schema_version": "carma-gate7-v2-invalid-curated-analysis-v1",
+  "semantic_guardrail": {
+    "cross_concept_hits": 5,
+    "direct_negative_hits": 3,
+    "hits": 25405,
+    "run_status_counts": {
+      "FAIL": 3,
+      "PASS_OBSERVED": 10,
+      "PENDING_INDETERMINATE": 2
+    },
+    "same_concept_hits": 25400,
+    "status": "FAIL",
+    "unlabeled_cross_concept_hits": 2
+  }
+}

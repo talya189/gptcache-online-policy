@@ -1,8 +1,7 @@
 # Curated project evidence
 
 This directory is the compact, checksum-sealed evidence bundle referenced by
-the final report. The root `SHA256SUMS` seals the original curated bundle;
-each later exact-source publication refresh has its own nested manifest.
+the final report. `SHA256SUMS` covers every file below except itself.
 
 - `full/` contains the five untouched files from the preregistered synthetic
   run at commit `28129f0b9785232827e741c0e2ff2bb96cc19423`.
@@ -16,21 +15,11 @@ each later exact-source publication refresh has its own nested manifest.
   texts, model weights, and the embedding array are excluded. No threshold met
   the preregistered calibration precision rule, so held-out metrics were not
   produced.
-- `analysis/` contains the ten deterministic historical final outputs: four
-  figures in PNG and SVG form, `summary.csv`, and `gate-audit.json`.
+- `analysis/` contains the ten deterministic final outputs: four figures in
+  PNG and SVG form, `summary.csv`, and `gate-audit.json`.
 - `verification/host/` and `verification/container/` preserve the relative
   topology of the clean-host and two fresh-container evidence for source commit
   `cfc7167e7604247432f980ed8fb54bc896364fe9`.
-- `verification/publication-20260826/` contains the first publication host and
-  paired-container topology for source commit
-  `fd09291a0f2deb71199b14478b15ef9947ceab5f`, plus the analyzer audit bound
-  directly to that source. Its nested `SHA256SUMS` seals all 32 evidence files
-  in that refresh.
-- `verification/publication-20260826-ci-refresh/` supersedes that first
-  publication record after correcting the unavailable hosted Python 3.8.20
-  runtime to 3.8.18. It contains host/container evidence and the analyzer audit
-  for exact source commit `9ee91f1ec6b10d1c2831a15fb80e5032353e3af4`;
-  its nested `SHA256SUMS` seals all 32 evidence files in the refresh.
 
 The final audit passes gates 1, 3, 5, 6, and 8; fails the preregistered gates 2
 and 4; and leaves gate 7 pending because its frozen cross-seed adjudication rule
