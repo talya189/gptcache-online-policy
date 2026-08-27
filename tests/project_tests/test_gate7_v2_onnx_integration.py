@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import sys
+import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -113,18 +114,10 @@ def _local_asset_fixture(tmp_path, monkeypatch):
     monkeypatch.setattr(
         gate7_runner, "PINNED_MODEL_SHA256", model_files["model.onnx"]
     )
-    import huggingface_hub
-
-    monkeypatch.setattr(
-        huggingface_hub,
-        "hf_hub_download",
-        lambda **_kwargs: str(model_path),
-    )
-    monkeypatch.setattr(
-        huggingface_hub,
-        "snapshot_download",
-        lambda **_kwargs: str(tokenizer_path),
-    )
+    huggingface_hub = types.ModuleType("huggingface_hub")
+    huggingface_hub.hf_hub_download = lambda **_kwargs: str(model_path)
+    huggingface_hub.snapshot_download = lambda **_kwargs: str(tokenizer_path)
+    monkeypatch.setitem(sys.modules, "huggingface_hub", huggingface_hub)
     return {
         "model_path": model_path,
         "tokenizer_path": tokenizer_path,
