@@ -36,6 +36,16 @@ def test_docker_context_parent_exceptions_remain_tight():
         assert examples_parent < examples_reexclude < examples_benchmark
         assert examples_benchmark < examples_contents
 
+        docs_parent = active_patterns.index("!docs/")
+        docs_reexclude = active_patterns.index("docs/**")
+        project_parent = active_patterns.index("!docs/project/")
+        project_reexclude = active_patterns.index("docs/project/**")
+        gate7_contract = active_patterns.index(
+            "!docs/project/gate7-remediation-contract.md"
+        )
+        assert docs_parent < docs_reexclude < project_parent
+        assert project_parent < project_reexclude < gate7_contract
+
         assets_parent = active_patterns.index("!assets/")
         assets_reexclude = active_patterns.index("assets/**")
         cache_parent = active_patterns.index("!assets/tiktoken-cache/")

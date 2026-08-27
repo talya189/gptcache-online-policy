@@ -3,6 +3,7 @@
 import csv
 import hashlib
 import json
+import sys
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -164,6 +165,16 @@ def test_default_contract_bytes_match_both_frozen_verifiers():
 def test_policy_schedule_rejects_duplicate_seeds():
     with pytest.raises(ValueError, match="seeds must be unique"):
         policy_schedule((20261001, 20261001))
+
+
+def test_fake_environment_allows_optional_benchmark_stack_to_be_absent(monkeypatch):
+    monkeypatch.setitem(sys.modules, "onnxruntime", None)
+    monkeypatch.setitem(sys.modules, "transformers", None)
+    environment = gate7_runner._environment()
+    assert environment["onnxruntime"] is None
+    assert environment["onnxruntime_available"] is False
+    assert environment["transformers"] is None
+    assert environment["transformers_available"] is False
 
 
 def test_formal_attempt_lock_rejects_concurrent_holder(tmp_path, monkeypatch):

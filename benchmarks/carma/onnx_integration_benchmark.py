@@ -1041,9 +1041,20 @@ def _validate_sources_are_tracked_at_head(
 def _environment() -> Dict[str, Any]:
     import cachetools
     import faiss
-    import onnxruntime
     import sqlalchemy
-    import transformers
+
+    try:
+        import onnxruntime
+    except ModuleNotFoundError:
+        # The normal project/CI environment intentionally omits the optional
+        # benchmark stack. Fake-embedding smoke tests must still exercise the
+        # complete orchestration path there; formal real-ONNX mode fails much
+        # earlier while resolving its pinned model/runtime assets.
+        onnxruntime = None
+    try:
+        import transformers
+    except ModuleNotFoundError:
+        transformers = None
 
     try:
         load_average: Optional[Tuple[float, float, float]] = tuple(os.getloadavg())
@@ -1110,8 +1121,14 @@ def _environment() -> Dict[str, Any]:
         "sqlalchemy": sqlalchemy.__version__,
         "cachetools": cachetools.__version__,
         "psutil": psutil.__version__,
-        "onnxruntime": onnxruntime.__version__,
-        "transformers": transformers.__version__,
+        "onnxruntime": (
+            onnxruntime.__version__ if onnxruntime is not None else None
+        ),
+        "onnxruntime_available": onnxruntime is not None,
+        "transformers": (
+            transformers.__version__ if transformers is not None else None
+        ),
+        "transformers_available": transformers is not None,
     }
 
 

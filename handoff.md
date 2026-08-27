@@ -1510,6 +1510,18 @@ for `ubuntu-22.04`. The project workflow therefore pins the available Python
 interpreter patch version; the Python 3.8 compatibility claim and hashed
 dependency lock remain the same.
 
+The first hosted run after the Gate 7 implementation then exposed two
+packaging-only gaps that the richer local benchmark environment had hidden:
+the fake-embedding smoke manifest imported optional `onnxruntime` and
+`transformers` packages even when neither was needed, and the allowlisted
+container context omitted the newly frozen Gate 7 contract. The final code
+records those optional versions as unavailable in fake mode while real-ONNX
+mode still requires them during asset resolution, and explicitly copies only
+`docs/project/gate7-remediation-contract.md` into the pinned image. A fresh
+network-isolated `linux/amd64` container then passed 8 upstream tests, 2
+SQLite/FAISS tests (1 deselected), 227 project tests (2 platform skips), and
+the deterministic CI benchmark.
+
 After publication, verify rather than assume:
 
 ```bash
