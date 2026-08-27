@@ -972,7 +972,7 @@ def test_formal_entrypoint_requires_direct_bash_wrapper_argv(monkeypatch):
     monkeypatch.setattr(gate7_runner, "_git_bytes", lambda *_args: wrapper_bytes)
 
     attestation = gate7_runner._formal_entrypoint_attestation()
-    assert attestation["parent_executable"] == "/bin/bash"
+    assert attestation["parent_executable"] == str(Path("/bin/bash").resolve())
     assert attestation["parent_cmdline"] == parent_argv
 
     parent_argv[:] = [
