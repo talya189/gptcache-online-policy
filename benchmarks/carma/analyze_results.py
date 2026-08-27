@@ -24,7 +24,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FULL_SCHEMA = "carma-full-experiment-v2"
 RUN_SCHEMA = "carma-benchmark-v2"
 INTEGRATION_SCHEMA = "carma-sqlite-faiss-v1"
-QQP_SCHEMA = "carma-qqp-v1"
+QQP_V1_SCHEMA = "carma-qqp-v1"
+QQP_V2_SCHEMA = "carma-qqp-v2"
+QQP_SCHEMAS = (QQP_V1_SCHEMA, QQP_V2_SCHEMA)
 MOSS_SCHEMA = "carma-moss-recorded-response-v2"
 HOST_VERIFICATION_SCHEMA = "carma-host-verification-v1"
 CONTAINER_REPRODUCIBILITY_SCHEMA = "carma-container-reproducibility-v1"
@@ -63,6 +65,23 @@ QQP_CALIBRATION_FIELDS = (
     "recall",
     "false_positive_rate",
     "wilson_precision_lower_one_sided_95",
+)
+QQP_V2_CALIBRATION_FIELDS = QQP_CALIBRATION_FIELDS + (
+    "false_hit_rate",
+    "false_hit_rate_definition",
+    "wilson_false_hit_rate_upper_one_sided_95",
+)
+QQP_V2_SELECTION_RULE = (
+    "lowest threshold in the frozen 0.80..0.99 step-0.01 grid whose "
+    "one-sided 95% Wilson precision lower bound is at least 0.99"
+)
+QQP_V2_INPUT_NAMES = (
+    "prepared_pairs",
+    "prepared_manifest",
+    "prepared_texts",
+    "embedding_text_ids",
+    "embedding_matrix",
+    "embedding_manifest",
 )
 MOSS_REVISION = "42e216d3e3fb331c18d5fa6e7cb4f1c53eef24a4"
 MOSS_ARCHIVE_SHA256 = (
@@ -1064,24 +1083,25 @@ def _load_qqp(path: Optional[Path]) -> Dict[str, Any]:
             "report": _pending_report(result_path, "QQP result is absent"),
         }
     result = _read_json(result_path)
-    if result.get("schema_version") != QQP_SCHEMA:
+    schema = result.get("schema_version")
+    if schema not in QQP_SCHEMAS:
         return {
             "result": None,
             "report": {
                 "status": "stale",
                 "path": str(result_path.resolve()),
-                "observed_schema": result.get("schema_version"),
-                "required_schema": QQP_SCHEMA,
+                "observed_schema": schema,
+                "supported_schemas": list(QQP_SCHEMAS),
             },
         }
     _validate_qqp_result(result)
-    provenance = _qqp_provenance(result_path)
+    provenance = _qqp_provenance(result_path, result)
     return {
         "result": result,
         "report": {
             "status": "verified",
             "path": str(result_path.resolve()),
-            "schema_version": QQP_SCHEMA,
+            "schema_version": schema,
             "sha256": sha256_file(result_path),
             "result_status": result.get("status"),
             "provenance": provenance,
@@ -1090,6 +1110,17 @@ def _load_qqp(path: Optional[Path]) -> Dict[str, Any]:
 
 
 def _validate_qqp_result(result: Dict[str, Any]) -> None:
+    schema = result.get("schema_version")
+    if schema == QQP_V1_SCHEMA:
+        _validate_qqp_v1_result(result)
+        return
+    if schema == QQP_V2_SCHEMA:
+        _validate_qqp_v2_result(result)
+        return
+    raise AnalysisError("QQP result has an unsupported schema")
+
+
+def _validate_qqp_v1_result(result: Dict[str, Any]) -> None:
     status = result.get("status")
     if status == "no_threshold_met_precision_gate":
         expected_fields = {
@@ -1146,6 +1177,157 @@ def _validate_qqp_result(result: Dict[str, Any]) -> None:
         pair_key = "%s_pairs" % split
         if _integer(result.get(pair_key), pair_key) != tp + fp + tn + fn:
             raise AnalysisError("QQP %s pair count does not reconcile" % split)
+
+
+def _validate_qqp_v2_result(result: Dict[str, Any]) -> None:
+    common_fields = {
+        "schema_version",
+        "selection_rule",
+        "selected_threshold",
+        "calibration",
+        "calibration_pairs",
+        "heldout_rows_discovered_by_split_only_scan",
+        "selection_uses_heldout",
+        "selection_transcript",
+        "calibration_thresholds",
+        "inputs",
+        "status",
+        "heldout_endpoints_resolved",
+        "heldout_similarities_computed",
+        "heldout_similarity_count",
+    }
+    status = result.get("status")
+    if status == "ok":
+        raise AnalysisError(
+            "QQP v2 selected-threshold results are unsupported until the "
+            "analyzer independently recomputes held-out similarities"
+        )
+    if status != "no_threshold_met_precision_gate":
+        raise AnalysisError("QQP v2 result has an unknown status")
+    expected_fields = common_fields | {"test_pairs_not_evaluated"}
+    if set(result) != expected_fields:
+        raise AnalysisError("QQP v2 result has unexpected fields")
+    if result.get("selection_rule") != QQP_V2_SELECTION_RULE:
+        raise AnalysisError("QQP v2 selection rule mismatch")
+    if result.get("selection_uses_heldout") is not False:
+        raise AnalysisError("QQP v2 selection used held-out data")
+
+    calibration_pairs = _integer(
+        result.get("calibration_pairs"), "QQP v2 calibration pairs"
+    )
+    heldout_rows = _integer(
+        result.get("heldout_rows_discovered_by_split_only_scan"),
+        "QQP v2 held-out rows",
+    )
+    if calibration_pairs <= 0 or heldout_rows <= 0:
+        raise AnalysisError("QQP v2 pair counts must be positive")
+    inputs = result.get("inputs")
+    if not isinstance(inputs, dict) or set(inputs) != set(QQP_V2_INPUT_NAMES):
+        raise AnalysisError("QQP v2 input identities are invalid")
+    for name in QQP_V2_INPUT_NAMES:
+        if not isinstance(inputs.get(name), dict):
+            raise AnalysisError("QQP v2 lacks required input identity %s" % name)
+    _validate_qqp_identity_shape(
+        result.get("selection_transcript"), "QQP v2 selection transcript"
+    )
+    _validate_qqp_identity_shape(
+        result.get("calibration_thresholds"), "QQP v2 calibration thresholds"
+    )
+
+    if result.get("selected_threshold") is not None:
+        raise AnalysisError("failed QQP v2 result unexpectedly selects a threshold")
+    if result.get("calibration") is not None:
+        raise AnalysisError("failed QQP v2 result contains calibration metrics")
+    if (
+        result.get("heldout_endpoints_resolved") is not False
+        or result.get("heldout_similarities_computed") is not False
+        or _integer(
+            result.get("heldout_similarity_count"),
+            "QQP v2 held-out similarity count",
+        )
+        != 0
+    ):
+        raise AnalysisError("failed QQP v2 result evaluated held-out endpoints")
+    if _integer(
+        result.get("test_pairs_not_evaluated"),
+        "QQP v2 test pairs not evaluated",
+    ) != heldout_rows:
+        raise AnalysisError("QQP v2 unevaluated pair count does not reconcile")
+
+
+def _validate_qqp_identity_shape(value: Any, label: str) -> Dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != {"path", "bytes", "sha256"}:
+        raise AnalysisError("%s identity is invalid" % label)
+    path = value.get("path")
+    if not isinstance(path, str) or not path:
+        raise AnalysisError("%s identity has an invalid path" % label)
+    size = _integer(value.get("bytes"), "%s bytes" % label)
+    if size < 0:
+        raise AnalysisError("%s identity has a negative byte count" % label)
+    return {"path": path, "bytes": size, "sha256": _hash_value(value, label)}
+
+
+def _validate_qqp_v2_metrics(
+    value: Any, expected_pairs: int, label: str
+) -> Dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != set(QQP_V2_CALIBRATION_FIELDS):
+        raise AnalysisError("%s fields are invalid" % label)
+    threshold = _number(value.get("threshold"), "%s threshold" % label)
+    tp = _integer(value.get("true_positive"), "%s true positives" % label)
+    fp = _integer(value.get("false_positive"), "%s false positives" % label)
+    tn = _integer(value.get("true_negative"), "%s true negatives" % label)
+    fn = _integer(value.get("false_negative"), "%s false negatives" % label)
+    if min(tp, fp, tn, fn) < 0 or tp + fp + tn + fn != expected_pairs:
+        raise AnalysisError("%s confusion counts do not reconcile" % label)
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+    false_positive_rate = fp / (fp + tn) if fp + tn else 0.0
+    wilson_precision = _wilson_lower(tp, tp + fp)
+    false_hit_rate = fp / expected_pairs if expected_pairs else 0.0
+    wilson_false_hit_upper = (
+        1.0 - _wilson_lower(expected_pairs - fp, expected_pairs)
+        if expected_pairs
+        else 0.0
+    )
+    expected_metrics = (
+        ("precision", precision),
+        ("recall", recall),
+        ("false_positive_rate", false_positive_rate),
+        ("wilson_precision_lower_one_sided_95", wilson_precision),
+        ("false_hit_rate", false_hit_rate),
+        ("wilson_false_hit_rate_upper_one_sided_95", wilson_false_hit_upper),
+    )
+    if any(
+        not _close(_number(value.get(name), "%s %s" % (label, name)), expected)
+        for name, expected in expected_metrics
+    ):
+        raise AnalysisError("%s metric does not reconcile" % label)
+    if value.get("false_hit_rate_definition") != "FP / (TP + FP + TN + FN)":
+        raise AnalysisError("%s false-hit-rate definition is invalid" % label)
+    return {
+        "threshold": threshold,
+        "true_positive": tp,
+        "false_positive": fp,
+        "true_negative": tn,
+        "false_negative": fn,
+        **{name: expected for name, expected in expected_metrics},
+        "false_hit_rate_definition": "FP / (TP + FP + TN + FN)",
+    }
+
+
+def _validate_qqp_quantiles(value: Any, label: str) -> None:
+    expected_fields = {"p00", "p10", "p50", "p90", "p99", "p100"}
+    if not isinstance(value, dict) or set(value) != expected_fields:
+        raise AnalysisError("%s fields are invalid" % label)
+    values = [_number(value[name], "%s %s" % (label, name)) for name in expected_fields]
+    if any(not -1.0 <= item <= 1.0 for item in values):
+        raise AnalysisError("%s contains a value outside cosine range" % label)
+    ordered = [
+        _number(value[name], "%s %s" % (label, name))
+        for name in ("p00", "p10", "p50", "p90", "p99", "p100")
+    ]
+    if ordered != sorted(ordered):
+        raise AnalysisError("%s is not monotonic" % label)
 
 
 def _validate_qqp_calibration_grid(
@@ -1230,7 +1412,610 @@ def _validate_qqp_calibration_grid(
     }
 
 
-def _qqp_provenance(result_path: Path) -> Dict[str, Any]:
+def _validate_qqp_v2_calibration_grid(
+    path: Path,
+    expected_pairs: int,
+    result: Dict[str, Any],
+    independently_recomputed: Optional[Sequence[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    if not path.is_file():
+        raise AnalysisError("QQP v2 calibration threshold grid is missing")
+    rows, fields = _read_csv(path)
+    _require_exact_fields(
+        fields, QQP_V2_CALIBRATION_FIELDS, "QQP v2 calibration grid"
+    )
+    if len(rows) != 20:
+        raise AnalysisError("QQP v2 calibration grid must contain 20 thresholds")
+    normalized = []
+    for index, row in enumerate(rows):
+        metrics = _validate_qqp_v2_metrics(
+            row, expected_pairs, "QQP v2 calibration grid row"
+        )
+        if not _close(metrics["threshold"], (80 + index) / 100.0):
+            raise AnalysisError(
+                "QQP v2 calibration threshold grid is not 0.80..0.99"
+            )
+        normalized.append(metrics)
+
+    if independently_recomputed is not None:
+        if len(independently_recomputed) != len(normalized) or any(
+            not _qqp_v2_metrics_match(observed, expected)
+            for observed, expected in zip(normalized, independently_recomputed)
+        ):
+            raise AnalysisError(
+                "QQP v2 calibration grid differs from independently "
+                "recomputed similarities"
+            )
+
+    qualifying = [
+        row
+        for row in normalized
+        if row["wilson_precision_lower_one_sided_95"] >= 0.99
+    ]
+    if result.get("status") == "no_threshold_met_precision_gate":
+        if qualifying:
+            raise AnalysisError(
+                "failed QQP v2 result contradicts its calibration threshold grid"
+            )
+    else:
+        if not qualifying or not _close(
+            result.get("selected_threshold"), qualifying[0]["threshold"]
+        ):
+            raise AnalysisError(
+                "QQP v2 selected threshold is not the first qualifier"
+            )
+        selected_metrics = _validate_qqp_v2_metrics(
+            result.get("calibration"), expected_pairs, "QQP v2 calibration"
+        )
+        if not _qqp_v2_metrics_match(selected_metrics, qualifying[0]):
+            raise AnalysisError(
+                "QQP v2 selected calibration metrics do not match the grid"
+            )
+    best = max(
+        normalized,
+        key=lambda row: (
+            row["wilson_precision_lower_one_sided_95"],
+            -row["threshold"],
+        ),
+    )
+    return {
+        "path": str(path.resolve()),
+        "sha256": sha256_file(path),
+        "rows": len(normalized),
+        "qualifying_thresholds": len(qualifying),
+        "best_wilson_row": best,
+    }
+
+
+def _qqp_v2_metrics_match(left: Dict[str, Any], right: Dict[str, Any]) -> bool:
+    for field in QQP_V2_CALIBRATION_FIELDS:
+        if field == "false_hit_rate_definition":
+            if left.get(field) != right.get(field):
+                return False
+        elif not _close(left.get(field), right.get(field)):
+            return False
+    return True
+
+
+def _qqp_v2_metrics_from_scores(
+    scored_labels: Sequence[Tuple[float, int]], threshold: float
+) -> Dict[str, Any]:
+    true_positive = sum(
+        1 for score, label in scored_labels if score >= threshold and label == 1
+    )
+    false_positive = sum(
+        1 for score, label in scored_labels if score >= threshold and label == 0
+    )
+    false_negative = sum(
+        1 for score, label in scored_labels if score < threshold and label == 1
+    )
+    true_negative = sum(
+        1 for score, label in scored_labels if score < threshold and label == 0
+    )
+    predicted_positive = true_positive + false_positive
+    positives = true_positive + false_negative
+    negatives = false_positive + true_negative
+    trials = len(scored_labels)
+    return {
+        "threshold": threshold,
+        "true_positive": true_positive,
+        "false_positive": false_positive,
+        "true_negative": true_negative,
+        "false_negative": false_negative,
+        "precision": (
+            true_positive / predicted_positive if predicted_positive else 0.0
+        ),
+        "recall": true_positive / positives if positives else 0.0,
+        "false_positive_rate": false_positive / negatives if negatives else 0.0,
+        "wilson_precision_lower_one_sided_95": _wilson_lower(
+            true_positive, predicted_positive
+        ),
+        "false_hit_rate": false_positive / trials if trials else 0.0,
+        "false_hit_rate_definition": "FP / (TP + FP + TN + FN)",
+        "wilson_false_hit_rate_upper_one_sided_95": (
+            1.0 - _wilson_lower(trials - false_positive, trials)
+            if trials
+            else 0.0
+        ),
+    }
+
+
+def _recompute_qqp_v2_calibration(
+    pair_path: Path, text_ids_path: Path, matrix_path: Path
+) -> Dict[str, Any]:
+    """Independently regenerate the frozen calibration-only threshold grid."""
+
+    try:
+        import numpy as np
+
+        text_ids = json.loads(text_ids_path.read_text(encoding="utf-8"))
+        matrix = np.load(matrix_path, mmap_mode="r", allow_pickle=False)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        raise AnalysisError("QQP v2 embedding inputs are unreadable") from exc
+    if not isinstance(text_ids, list) or not all(
+        isinstance(value, str) and value for value in text_ids
+    ):
+        raise AnalysisError("QQP v2 embedding text IDs are invalid")
+    if len(set(text_ids)) != len(text_ids):
+        raise AnalysisError("QQP v2 embedding text IDs are not unique")
+    if (
+        not isinstance(matrix, np.ndarray)
+        or matrix.ndim != 2
+        or matrix.dtype != np.dtype("float32")
+        or matrix.shape != (len(text_ids), 768)
+    ):
+        raise AnalysisError("QQP v2 embedding matrix shape or dtype is invalid")
+
+    for begin in range(0, matrix.shape[0], 4096):
+        chunk = np.asarray(matrix[begin : begin + 4096], dtype=np.float64)
+        norms = np.linalg.norm(chunk, axis=1)
+        if not np.all(np.isfinite(chunk)) or not np.all(np.isfinite(norms)):
+            raise AnalysisError("QQP v2 embedding matrix contains non-finite values")
+        if np.any(np.abs(norms - 1.0) > 1e-4):
+            raise AnalysisError("QQP v2 embedding matrix is not row-normalized")
+
+    row_by_id = {text_id: index for index, text_id in enumerate(text_ids)}
+    calibration: List[Tuple[float, int]] = []
+    heldout_rows = 0
+    try:
+        with pair_path.open("r", encoding="utf-8") as source:
+            for line_number, line in enumerate(source, 1):
+                if not line.strip():
+                    continue
+                pair = json.loads(line)
+                if not isinstance(pair, dict):
+                    raise AnalysisError(
+                        "QQP v2 prepared pair row %d is not an object"
+                        % line_number
+                    )
+                split = pair.get("split")
+                if split == "test":
+                    # The frozen failed outcome must be reproducible without
+                    # dereferencing any held-out label or endpoint.
+                    heldout_rows += 1
+                    continue
+                if split != "calibration" or pair.get("label") not in (0, 1):
+                    raise AnalysisError(
+                        "QQP v2 calibration row %d has an invalid split or label"
+                        % line_number
+                    )
+                left_id = pair.get("text_a_id")
+                right_id = pair.get("text_b_id")
+                if left_id not in row_by_id or right_id not in row_by_id:
+                    raise AnalysisError(
+                        "QQP v2 calibration row %d lacks an embedding"
+                        % line_number
+                    )
+                score = float(
+                    np.dot(matrix[row_by_id[left_id]], matrix[row_by_id[right_id]])
+                )
+                if not math.isfinite(score) or not -1.00001 <= score <= 1.00001:
+                    raise AnalysisError(
+                        "QQP v2 calibration row %d has an invalid cosine score"
+                        % line_number
+                    )
+                calibration.append((score, int(pair["label"])))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise AnalysisError("invalid QQP v2 prepared pairs artifact") from exc
+    if not calibration or heldout_rows <= 0:
+        raise AnalysisError("QQP v2 split lacks calibration or held-out rows")
+    return {
+        "calibration_pairs": len(calibration),
+        "heldout_rows": heldout_rows,
+        "threshold_rows": [
+            _qqp_v2_metrics_from_scores(calibration, step / 100.0)
+            for step in range(80, 100)
+        ],
+        "matrix_shape": [int(matrix.shape[0]), int(matrix.shape[1])],
+        "matrix_dtype": str(matrix.dtype),
+        "all_rows_normalized": True,
+    }
+
+
+def _verify_qqp_v2_identity(
+    value: Any,
+    label: str,
+    relative_root: Path,
+    expected_logical_path: Optional[str] = None,
+    allow_renamed_sibling: bool = False,
+) -> Tuple[Path, Dict[str, Any]]:
+    identity = _validate_qqp_identity_shape(value, label)
+    if (
+        expected_logical_path is not None
+        and identity["path"] != expected_logical_path
+    ):
+        raise AnalysisError("%s path is invalid" % label)
+    logical = Path(identity["path"])
+    root = Path(relative_root).resolve()
+    candidate_path = logical if logical.is_absolute() else root / logical
+    if candidate_path.is_symlink():
+        raise AnalysisError("%s file must not be a symlink" % label)
+    candidate = candidate_path.resolve()
+    if not logical.is_absolute() and root not in (candidate, *candidate.parents):
+        raise AnalysisError("%s path escapes its evidence root" % label)
+    if not candidate.is_file() and allow_renamed_sibling:
+        if logical.is_absolute() or logical.parent != Path("."):
+            raise AnalysisError("%s renamed fallback is not a sibling path" % label)
+        matches = []
+        for sibling in root.iterdir():
+            resolved_sibling = sibling.resolve()
+            if (
+                not sibling.is_symlink()
+                and sibling.is_file()
+                and root in (resolved_sibling, *resolved_sibling.parents)
+                and sibling.stat().st_size == identity["bytes"]
+                and sha256_file(sibling) == identity["sha256"]
+            ):
+                matches.append(resolved_sibling)
+        if len(matches) != 1:
+            raise AnalysisError(
+                "%s file is missing or its retained rename is ambiguous" % label
+            )
+        candidate = matches[0]
+    if not candidate.is_file():
+        raise AnalysisError("%s file is missing" % label)
+    if candidate.stat().st_size != identity["bytes"]:
+        raise AnalysisError("%s byte count mismatch" % label)
+    observed = sha256_file(candidate)
+    if observed != identity["sha256"]:
+        raise AnalysisError("%s SHA-256 mismatch" % label)
+    return candidate, {
+        "path": str(candidate),
+        "logical_path": identity["path"],
+        "bytes": identity["bytes"],
+        "sha256": observed,
+    }
+
+
+def _qqp_v2_pair_counts(path: Path) -> Dict[str, int]:
+    counts = {
+        "calibration_negative": 0,
+        "calibration_positive": 0,
+        "test_negative": 0,
+        "test_positive": 0,
+    }
+    try:
+        with path.open("r", encoding="utf-8") as source:
+            for line_number, line in enumerate(source, 1):
+                if not line.strip():
+                    continue
+                value = json.loads(line)
+                if not isinstance(value, dict):
+                    raise AnalysisError(
+                        "QQP v2 prepared pair row %d is not an object"
+                        % line_number
+                    )
+                split = value.get("split")
+                label = value.get("label")
+                key = "%s_%s" % (
+                    split,
+                    "positive" if label == 1 else "negative",
+                )
+                if split not in ("calibration", "test") or label not in (0, 1):
+                    raise AnalysisError(
+                        "QQP v2 prepared pair row %d has an invalid split or label"
+                        % line_number
+                    )
+                counts[key] += 1
+    except (OSError, json.JSONDecodeError) as exc:
+        raise AnalysisError("invalid QQP v2 prepared pairs artifact") from exc
+    return counts
+
+
+def _validate_qqp_v2_stage_manifests(
+    paths: Dict[str, Path], identities: Dict[str, Dict[str, Any]]
+) -> Dict[str, Any]:
+    prepared_path = paths.get("prepared_manifest")
+    embeddings_path = paths.get("embedding_manifest")
+    report: Dict[str, Any] = {
+        "status": "partial",
+        "note": "optional preparation or embedding manifest was not supplied",
+    }
+    prepared = _read_json(prepared_path) if prepared_path is not None else None
+    embeddings = _read_json(embeddings_path) if embeddings_path is not None else None
+    if prepared is not None:
+        if prepared.get("schema_version") != QQP_V1_SCHEMA:
+            raise AnalysisError("QQP v2 prepared manifest schema mismatch")
+        if prepared.get("archive_sha256") != QQP_ARCHIVE_SHA256:
+            raise AnalysisError("QQP v2 archive provenance mismatch")
+        if prepared.get("pairs_sha256") != identities["prepared_pairs"]["sha256"]:
+            raise AnalysisError("QQP v2 prepared pairs manifest link mismatch")
+        if "prepared_texts" in identities and prepared.get(
+            "texts_sha256"
+        ) != identities["prepared_texts"]["sha256"]:
+            raise AnalysisError("QQP v2 prepared texts manifest link mismatch")
+    if embeddings is not None:
+        if embeddings.get("schema_version") != QQP_V1_SCHEMA:
+            raise AnalysisError("QQP v2 embedding manifest schema mismatch")
+        if embeddings.get("tokenizer_revision") != QQP_TOKENIZER_REVISION:
+            raise AnalysisError("QQP v2 tokenizer revision mismatch")
+        if embeddings.get("model_revision") != QQP_MODEL_REVISION:
+            raise AnalysisError("QQP v2 model revision mismatch")
+        if embeddings.get("tokenizer_repository") != (
+            "GPTCache/paraphrase-albert-small-v2"
+        ):
+            raise AnalysisError("QQP v2 tokenizer repository mismatch")
+        if embeddings.get("model_repository") != (
+            "GPTCache/paraphrase-albert-onnx"
+        ):
+            raise AnalysisError("QQP v2 model repository mismatch")
+        if (
+            embeddings.get("dimension") != 768
+            or embeddings.get("dtype") != "float32"
+            or embeddings.get("max_length") != 512
+            or embeddings.get("normalized") is not True
+        ):
+            raise AnalysisError("QQP v2 embedding configuration mismatch")
+        if embeddings.get("embeddings_sha256") != identities[
+            "embedding_matrix"
+        ]["sha256"]:
+            raise AnalysisError("QQP v2 embedding matrix manifest link mismatch")
+        try:
+            text_ids = json.loads(
+                paths["embedding_text_ids"].read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError) as exc:
+            raise AnalysisError("invalid QQP v2 embedding text IDs") from exc
+        if not isinstance(text_ids, list) or not all(
+            isinstance(value, str) and value for value in text_ids
+        ):
+            raise AnalysisError("QQP v2 embedding text IDs are invalid")
+        if len(set(text_ids)) != len(text_ids):
+            raise AnalysisError("QQP v2 embedding text IDs are not unique")
+        semantic_hash = hashlib.sha256(
+            "\n".join(text_ids).encode("utf-8")
+        ).hexdigest()
+        if embeddings.get("text_ids_sha256") != semantic_hash:
+            raise AnalysisError("QQP v2 embedding text-ID manifest link mismatch")
+        if _integer(embeddings.get("rows"), "QQP v2 embedding rows") != len(
+            text_ids
+        ):
+            raise AnalysisError("QQP v2 embedding text-ID row count mismatch")
+        if prepared is not None and _integer(
+            prepared.get("unique_questions_kept"),
+            "QQP v2 prepared question count",
+        ) != len(text_ids):
+            raise AnalysisError(
+                "QQP v2 embedding rows do not match prepared questions"
+            )
+    if prepared is not None and embeddings is not None:
+        report = {
+            "status": "verified",
+            "prepared_manifest_sha256": identities["prepared_manifest"]["sha256"],
+            "embeddings_manifest_sha256": identities["embedding_manifest"][
+                "sha256"
+            ],
+            "archive_sha256": prepared["archive_sha256"],
+            "tokenizer_revision": embeddings["tokenizer_revision"],
+            "model_revision": embeddings["model_revision"],
+        }
+    return report
+
+
+def _validate_qqp_v2_selection(
+    selection: Dict[str, Any], result: Dict[str, Any]
+) -> None:
+    expected_fields = {
+        "schema_version",
+        "kind",
+        "status",
+        "selection_rule",
+        "threshold_grid",
+        "minimum_wilson_precision_lower",
+        "selected_threshold",
+        "selected_calibration_metrics",
+        "calibration_pairs",
+        "calibration_endpoints_resolved",
+        "calibration_similarities_computed",
+        "heldout_rows_discovered_by_split_only_scan",
+        "heldout_row_fields_read_before_selection",
+        "heldout_endpoints_resolved",
+        "heldout_similarities_computed",
+        "heldout_similarity_count",
+        "selection_uses_heldout",
+        "embedding_matrix_scope",
+        "selection_embedding_access_scope",
+        "calibration_thresholds",
+        "inputs",
+    }
+    if set(selection) != expected_fields:
+        raise AnalysisError("QQP v2 selection transcript has unexpected fields")
+    if (
+        selection.get("schema_version") != QQP_V2_SCHEMA
+        or selection.get("kind") != "qqp_threshold_selection_transcript"
+        or selection.get("selection_rule") != QQP_V2_SELECTION_RULE
+        or not _close(selection.get("minimum_wilson_precision_lower"), 0.99)
+    ):
+        raise AnalysisError("QQP v2 selection transcript contract mismatch")
+    grid = selection.get("threshold_grid")
+    if not isinstance(grid, list) or len(grid) != 20 or any(
+        not _close(value, (80 + index) / 100.0)
+        for index, value in enumerate(grid)
+    ):
+        raise AnalysisError("QQP v2 selection transcript threshold grid mismatch")
+    if (
+        selection.get("calibration_endpoints_resolved") is not True
+        or _integer(
+            selection.get("calibration_similarities_computed"),
+            "QQP v2 calibration similarity count",
+        )
+        != result["calibration_pairs"]
+        or selection.get("heldout_row_fields_read_before_selection") != ["split"]
+        or selection.get("heldout_endpoints_resolved") is not False
+        or selection.get("heldout_similarities_computed") is not False
+        or _integer(
+            selection.get("heldout_similarity_count"),
+            "QQP v2 selection held-out similarity count",
+        )
+        != 0
+        or selection.get("selection_uses_heldout") is not False
+        or selection.get("embedding_matrix_scope")
+        != "precomputed full prepared-text corpus"
+        or selection.get("selection_embedding_access_scope")
+        != "calibration pair endpoints only"
+    ):
+        raise AnalysisError("QQP v2 selection transcript leakage controls mismatch")
+    for field in (
+        "selection_rule",
+        "selected_threshold",
+        "calibration_pairs",
+        "heldout_rows_discovered_by_split_only_scan",
+        "calibration_thresholds",
+        "inputs",
+    ):
+        if selection.get(field) != result.get(field):
+            raise AnalysisError(
+                "QQP v2 selection transcript disagrees on %s" % field
+            )
+    if result.get("status") == "no_threshold_met_precision_gate":
+        if (
+            selection.get("status") != "no_threshold_selected"
+            or selection.get("selected_calibration_metrics") is not None
+        ):
+            raise AnalysisError("QQP v2 failed selection transcript is inconsistent")
+    elif (
+        selection.get("status") != "selected"
+        or not isinstance(selection.get("selected_calibration_metrics"), dict)
+        or not _qqp_v2_metrics_match(
+            _validate_qqp_v2_metrics(
+                selection["selected_calibration_metrics"],
+                result["calibration_pairs"],
+                "QQP v2 selected transcript metrics",
+            ),
+            _validate_qqp_v2_metrics(
+                result["calibration"],
+                result["calibration_pairs"],
+                "QQP v2 calibration",
+            ),
+        )
+    ):
+        raise AnalysisError("QQP v2 selected transcript is inconsistent")
+
+
+def _qqp_v2_provenance(
+    result_path: Path, result: Dict[str, Any]
+) -> Dict[str, Any]:
+    evaluation_root = result_path.resolve().parent
+    selection_path, selection_identity = _verify_qqp_v2_identity(
+        result.get("selection_transcript"),
+        "QQP v2 selection transcript",
+        evaluation_root,
+        expected_logical_path="threshold-selection.json",
+        allow_renamed_sibling=True,
+    )
+    threshold_path, threshold_identity = _verify_qqp_v2_identity(
+        result.get("calibration_thresholds"),
+        "QQP v2 calibration thresholds",
+        evaluation_root,
+        expected_logical_path="calibration-thresholds.csv",
+        allow_renamed_sibling=True,
+    )
+    selection = _read_json(selection_path)
+    _validate_qqp_v2_selection(selection, result)
+
+    input_paths: Dict[str, Path] = {}
+    input_identities: Dict[str, Dict[str, Any]] = {}
+    for name in QQP_V2_INPUT_NAMES:
+        value = result["inputs"].get(name)
+        input_path, identity = _verify_qqp_v2_identity(
+            value,
+            "QQP v2 input %s" % name,
+            PROJECT_ROOT,
+        )
+        input_paths[name] = input_path
+        input_identities[name] = identity
+
+    recomputed = _recompute_qqp_v2_calibration(
+        input_paths["prepared_pairs"],
+        input_paths["embedding_text_ids"],
+        input_paths["embedding_matrix"],
+    )
+    if (
+        recomputed["calibration_pairs"] != result["calibration_pairs"]
+        or recomputed["heldout_rows"]
+        != result["heldout_rows_discovered_by_split_only_scan"]
+    ):
+        raise AnalysisError("QQP v2 independently recomputed split counts differ")
+
+    pair_counts = _qqp_v2_pair_counts(input_paths["prepared_pairs"])
+    calibration_pairs = pair_counts["calibration_negative"] + pair_counts[
+        "calibration_positive"
+    ]
+    test_pairs = pair_counts["test_negative"] + pair_counts["test_positive"]
+    if calibration_pairs != result["calibration_pairs"]:
+        raise AnalysisError("QQP v2 calibration pair count disagrees with input")
+    result_test_pairs = (
+        result["test_pairs_not_evaluated"]
+        if result["status"] == "no_threshold_met_precision_gate"
+        else result["test_pairs"]
+    )
+    if test_pairs != result_test_pairs:
+        raise AnalysisError("QQP v2 held-out pair count disagrees with input")
+
+    prepared_manifest_path = input_paths.get("prepared_manifest")
+    if prepared_manifest_path is not None:
+        prepared = _read_json(prepared_manifest_path)
+        if prepared.get("counts") != pair_counts:
+            raise AnalysisError("QQP v2 prepared manifest split counts mismatch")
+    stage_manifests = _validate_qqp_v2_stage_manifests(
+        input_paths, input_identities
+    )
+    calibration_grid = _validate_qqp_v2_calibration_grid(
+        threshold_path,
+        calibration_pairs,
+        result,
+        independently_recomputed=recomputed["threshold_rows"],
+    )
+    return {
+        "status": "verified_calibration_recomputed",
+        "note": (
+            "the analyzer independently loaded the float32 embedding matrix, "
+            "scored calibration endpoints only, regenerated all 20 threshold "
+            "rows, and hash-linked the pre-heldout transcript and inputs"
+        ),
+        "selection_transcript": selection_identity,
+        "calibration_thresholds": threshold_identity,
+        "inputs": input_identities,
+        "pair_counts": pair_counts,
+        "stage_manifests": stage_manifests,
+        "calibration_grid": calibration_grid,
+        "independent_recomputation": {
+            key: value
+            for key, value in recomputed.items()
+            if key != "threshold_rows"
+        },
+    }
+
+
+def _qqp_provenance(
+    result_path: Path, result: Dict[str, Any]
+) -> Dict[str, Any]:
+    if result.get("schema_version") == QQP_V2_SCHEMA:
+        return _qqp_v2_provenance(result_path, result)
+    return _qqp_v1_provenance(result_path)
+
+
+def _qqp_v1_provenance(result_path: Path) -> Dict[str, Any]:
     root = result_path.parent.parent
     prepared_manifest = root / "prepared" / "manifest.json"
     embeddings_manifest = root / "embeddings" / "manifest.json"
@@ -1243,11 +2028,11 @@ def _qqp_provenance(result_path: Path) -> Dict[str, Any]:
     prepared = _read_json(prepared_manifest)
     embeddings = _read_json(embeddings_manifest)
     result = _read_json(result_path)
-    if prepared.get("schema_version") != QQP_SCHEMA:
+    if prepared.get("schema_version") != QQP_V1_SCHEMA:
         raise AnalysisError("QQP prepared manifest schema mismatch")
     if prepared.get("archive_sha256") != QQP_ARCHIVE_SHA256:
         raise AnalysisError("QQP archive provenance mismatch")
-    if embeddings.get("schema_version") != QQP_SCHEMA:
+    if embeddings.get("schema_version") != QQP_V1_SCHEMA:
         raise AnalysisError("QQP embedding manifest schema mismatch")
     if embeddings.get("tokenizer_revision") != QQP_TOKENIZER_REVISION:
         raise AnalysisError("QQP tokenizer revision mismatch")

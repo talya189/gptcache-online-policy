@@ -40,7 +40,9 @@ COPY gptcache_server ./gptcache_server
 COPY benchmarks ./benchmarks
 COPY docs/project/gate7-remediation-contract.md ./docs/project/gate7-remediation-contract.md
 COPY docs/project/gate7-v2-remediation-contract.md ./docs/project/gate7-v2-remediation-contract.md
+COPY docs/project/gate7-v3-remediation-contract.md ./docs/project/gate7-v3-remediation-contract.md
 COPY docs/project/evidence ./docs/project/evidence
+COPY artifacts/samples/verification/gate7-v2-invalid ./artifacts/samples/verification/gate7-v2-invalid
 COPY examples/benchmark ./examples/benchmark
 COPY tests ./tests
 COPY scripts ./scripts

@@ -110,7 +110,11 @@ expected_project_tests=(
   tests/project_tests/test_gate7_v2_audit.py
   tests/project_tests/test_gate7_v2_isolated_bootstrap.py
   tests/project_tests/test_gate7_v2_onnx_integration.py
+  tests/project_tests/test_gate7_v2_preservation.py
   tests/project_tests/test_gate7_v2_trace.py
+  tests/project_tests/test_gate7_v3_audit.py
+  tests/project_tests/test_gate7_v3_isolated_bootstrap.py
+  tests/project_tests/test_gate7_v3_onnx_integration.py
   tests/project_tests/test_moss_benchmark.py
   tests/project_tests/test_qqp_v2.py
   tests/project_tests/test_qqp_wrapper.py
