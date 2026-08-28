@@ -26,7 +26,7 @@
 \hypersetup{colorlinks=true,linkcolor=carma,urlcolor=carma,citecolor=carma}
 \urlstyle{tt}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{3.5pt}
+\setlength{\parskip}{2.5pt}
 \setlist{nosep,leftmargin=1.4em}
 \renewcommand{\arraystretch}{1.10}
 \pagestyle{fancy}
@@ -89,13 +89,16 @@
   ``token-saving'' result is a deterministic weighted-savings proxy, not a
   measurement of real model tokens.
 
-  The formal full-path Gate~7 v2 attempt completed all \textbf{15/15} fresh
-  children and retained \textbf{45,000} real-text ONNX requests, but its result
-  is \textbf{INVALID and nonclaimable}. The preterminal auditor found seven
-  evidence-contract errors, and terminalization then failed; the ledger retains
-  only its canonical genesis and start events. Descriptively, 24/25 numerical
-  checks pass, but seed 20261001 exceeds the CARMA--LRU p95-delta limit, so even
-  counterfactually valid evidence would have produced a numerical fail.
+  The latest completed full-path Gate~7 attempt, formal v3, ran all
+  \textbf{15/15} fresh children and retained \textbf{45,000} real-text ONNX
+  requests, but it is \textbf{INVALID and nonclaimable}. The producer added a
+  publication field to the manifest's contract object, so the independent
+  bootstrap correctly rejected the mismatch with the immutable START and did
+  not append TERMINAL. Under v3's own rule, the preserved preterminal result is
+  systems \textbf{FAIL} and semantic \textbf{FAIL}. A prospective v4 contract
+  now uses untouched seeds and traces, exact cross-process identities, and six
+  complementary CARMA--LRU bounds; no v4 result is claimed before that complete
+  matrix is run once and terminalized.
 
   Two other preregistered gates \textbf{failed}. CARMA returned 30,000/30,000
   valid scan-return hits, but LFU already returned 29,998/30,000, leaving only
@@ -168,10 +171,10 @@ compatible GPTCache integration, failure-safe cleanup, restart reconstruction,
 tests, and a reproducible evaluation pipeline. The historical eight-gate audit
 records Gates 1, 3, 5, 6, and 8 as pass, Gates 2 and 4 as fail, and its original
 precomputed-vector Gate 7 as pending. Later real-text ONNX attempts do not
-rewrite that history: formal v1 is invalid, and the complete-matrix formal v2
-attempt is also invalid and nonclaimable. The internal audit is therefore
-mixed (five pass, two fail, one pending); no valid formal Gate 7 pass is
-claimed.
+rewrite that history: formal v1, v2, and v3 are immutable invalid attempts,
+while formal v4 is a prospective protocol with no result yet. The historical
+audit is therefore mixed (five pass, two fail, one pending); no valid formal
+Gate 7 pass is claimed.
 
 \section{Extension design}
 
@@ -494,22 +497,21 @@ therefore shows the
 cross-seed distribution of p95 summaries, not a reconstructable per-request
 CDF. This is an artifact-granularity limitation despite collecting the frozen
 mean, p50, p95, and p99 metrics in process. The later v2 attempt does retain
-per-request samples; Figure~\ref{fig:gate7-v2-latency} shows them only as an
-explicitly invalid, descriptive supplement.
+per-request samples, but its invalid ledger permits diagnostic use only.
 
-\subsection{Formal full-path ONNX v2: complete matrix, invalid evidence}
+\subsection{Formal full-path ONNX lineage and prospective v4}
 
-Gate 7 has three distinct generations and none is a formal pass
+Gate 7 now has one historical diagnostic and four formal protocol versions
 (Table~\ref{tab:gate7-lineage}). The historical integration study used real
-SQLite/FAISS but precomputed synthetic vectors, so it remains diagnostic and
-pending. Formal v1 used real text and ONNX, but stopped after its first child
-when its original protocol treated a labeled-negative semantic return as
-structural corruption; that attempt remains invalid. Formal v2 prospectively
-separated systems validity from semantic safety and ran the complete matrix,
-but failed its own evidence and terminalization contract.
+SQLite/FAISS but precomputed synthetic vectors. Formal v1 stopped after one
+child because it conflated a semantic failure with structural corruption.
+Formal v2 and v3 each completed the 5-by-3 matrix, but neither produced a
+claimable terminal ledger. V4 is a new, prospectively frozen experiment; it
+does not repair or reinterpret any earlier result.
 
 \begin{table}[ht]
 \centering
+\small
 \begin{tabularx}{\linewidth}{@{}p{0.16\linewidth}p{0.30\linewidth}p{0.15\linewidth}X@{}}
 \toprule
 Generation & Measured path & Status & Claim boundary \\
@@ -520,6 +522,11 @@ Formal v1 & Real QQP text, ONNX, one completed CARMA child & \invalidmark &
 Incomplete matrix and structurally conflated semantic failure. \\
 Formal v2 & Real QQP text, ONNX, all 15 fresh children & \invalidmark &
 Complete data, but seven preterminal errors and no terminal ledger event. \\
+Formal v3 & Real QQP text, ONNX, all 15 fresh children & \invalidmark &
+Complete data; own systems and semantic rules fail; contract mismatch leaves
+START unmatched. \\
+Formal v4 & Fresh QQP text traces, ONNX, 15 planned children & \pendingmark &
+Prospective six-check protocol; no execution or result at source freeze. \\
 \bottomrule
 \end{tabularx}
 \caption{Gate 7 lineage. Each generation is preserved under its own protocol;
@@ -527,64 +534,55 @@ later evidence does not repair or reinterpret an earlier attempt.}
 \label{tab:gate7-lineage}
 \end{table}
 
-The v2 runner measured the complete \code{gptcache.adapter.adapter.adapt} path:
-real calibration text, checksum-pinned 768-dimensional ALBERT ONNX embedding,
-similarity, SQLite, FAISS, eviction, recorded miss response, and response
-return. LRU, LFU, and CARMA used an identical 3,000-request trace for each of
-five seeds, capacity 100, fresh child processes and storage, and the frozen
-counterbalanced order. All 15 children exited zero and produced 45,000 request
-rows with mutually exclusive stage timings plus external resource samples.
+Both complete attempts measure the full
+\code{gptcache.adapter.adapter.adapt} path: real text, checksum-pinned
+768-dimensional ALBERT ONNX embedding, similarity, SQLite, FAISS, policy and
+cleanup work, recorded miss response, and response return. LRU, LFU, and CARMA
+receive the same 3,000-request trace at capacity 100 in fresh child processes
+and storage, under a documented randomized order. Each attempt therefore has
+45,000 request rows with mutually exclusive stage timings and external
+resource samples.
 
-The retained attempt is under
-\path{artifacts/gate7-v2-onnx-attempts/}, in
-\path{attempt-20260827T131736Z-1784}. Its immutable preterminal report uses
-schema \code{carma-gate7-adjudication-v2}. It records phase
-\code{preterminal}, status \code{invalid}, \code{claimable=false}, and seven
-errors:
-one dependency-attestation error conflates lexical and resolved Python
-identities; each of five warm-up declarations includes an extra \code{rows}
-field instead of exactly \{\code{sha256}, \code{bytes}\}; and seed 20261003
-LRU has a 202,142,875-ns resource-sampling gap, 2,142,875 ns beyond the frozen
-200,000,000-ns limit. Terminalization then rejected the manifest's auditor
-identity \{\code{bytes}, \code{sha256}\} because the preterminal report records
-\{\code{path}, \code{bytes}, \code{sha256}\}. The wrapper exited 4. The root
-ledger therefore contains only canonical \code{PROTOCOL\_GENESIS} and
-\code{START} rows---no \code{TERMINAL}---and no ordinary
-\code{gate7-adjudication.json} exists.
+V2 remains useful only as a diagnostic. Its immutable preterminal report found
+seven contract errors and its bootstrap rejected an auditor-identity shape
+mismatch, leaving START unmatched. It also fails one of its 25 numerical
+checks: on seed 20261001 the full-request p95 CARMA--LRU delta is 26,230,125 ns
+against 500,000 ns. ONNX embedding dominates total latency, so marginal p95s
+of two independent full-path samples can differ materially even when the
+post-embedding policy path is close; this observation motivates, but does not
+retroactively validate, the v4 estimands.
 
-The numerical reconstruction is descriptive only. Twenty-four of 25 frozen
-per-seed systems checks pass. The sole failure is seed 20261001 p95 latency
-delta: CARMA is 470,385,875 ns versus LRU's 444,155,750 ns, a 26,230,125-ns
-increase against a 500,000-ns maximum. Seeds 20261002--20261005 pass all five
-checks. Because the rule requires every check for every seed, a counterfactual
-structurally valid version of these same measurements would numerically
-\emph{fail}, not pass.
+V3 retained another complete 45,000-row matrix in its local attempt root. Its
+producer placed an extra publication flag inside the manifest contract although
+START used the exact three-key identity. The bootstrap correctly refused
+terminalization; the original ledger, manifest, and preterminal report remain
+untouched. Under v3's own rule,
+seed 20261001 exceeds the full-request p95 marginal-delta bound by reporting
++1,307,374 ns, so systems status is \failmark{}. Separately, 25,400 hits are
+same-component, three are direct-negative, and two are unlabeled
+cross-component; semantic status is \failmark{}. Operational status remains
+\invalidmark{} because no TERMINAL exists.
 
-Figure~\ref{fig:gate7-v2-latency} pools exactly 3,000 requests from each of
-five seeds for each policy. The left panel shows full-request latency on a
-linear axis; the right isolates the post-embedding path on a labeled log axis.
-The much smaller post-embedding scale makes clear that ONNX embedding dominates
-full-path latency, while the policy curves still have different tails. These
-curves are useful for diagnosing where overhead occurs, but the invalid ledger
-means they cannot rank policies formally. The exact 5-by-5 frozen-check matrix
-remains available as a supplementary figure in the curated analysis package.
+V4 was designed only after observing v3. It uses experiment
+\code{gate7e-onnx-v4}, fresh seeds 20261101--20261105 and newly generated
+traces. Every seed must satisfy all six CARMA--LRU checks: full-request p95
+ratio at most 1.25; post-embedding marginal p95 delta at most 500,000 ns;
+request-ID-paired policy-exclusive p95 delta at most 500,000 ns; throughput
+ratio at least 0.90; peak-RSS ratio at most 1.20; and peak-RSS delta at most
+67,108,864 bytes. All 15 children must also be structurally valid. Gate 2 and
+the semantic guardrail remain separate rather than being folded into a systems
+performance verdict.
 
-\begin{figure}[ht]
-\centering
-  \includegraphics[width=\linewidth]{artifacts/samples/analysis/gate7-v2-invalid/gate7-v2-latency-distributions.pdf}
-\caption{Descriptive Gate 7 v2 full-request and post-embedding latency
-distributions for 45,000 preserved requests. Curves are quantile-derived ECDF
-approximations from an equal-seed pool. The source attempt is \textbf{INVALID}
-and nonclaimable; the figure is not a Gate 7 verdict.}
-\label{fig:gate7-v2-latency}
-\end{figure}
+As post-hoc design evidence, the hash-bound raw v3 request file (45,000 rows,
+SHA-256
+\code{e9d418e63e1c86ac}\allowbreak\code{dacdeaf7c9d26c73}\allowbreak\code{47bae63b8f935fb4}\allowbreak\code{61463c91b16d6dff})
+was recomputed with the v4 estimands. All 30 seed-check pairs would pass; the
+worst ratio/delta values are 1.00308 full-path, 251,418 ns post-embedding,
+425,709 ns paired policy-exclusive, 0.99807 throughput, 1.00273 RSS ratio, and
+1,130,496 bytes RSS delta. This retrospective calculation is neither a v3
+reclassification nor a v4 result. Only the untouched v4 matrix can test the
+prospectively frozen rule.
 
-Semantic safety is reported on a separate axis. Across 25,405 cache hits,
-25,400 are same-component, three are direct-negative, and two are unlabeled
-cross-component; no hit is component-derived-negative or unresolved. The 15
-run statuses are three \code{FAIL}, two \code{PENDING\_INDETERMINATE}, and ten
-\code{PASS\_OBSERVED}. Thus the aggregate semantic guardrail is \failmark{},
-independently of the invalid systems evidence and independently of Gate 2.
 \FloatBarrier
 
 \subsection{Pinned MOSS exact-key recorded-response replay}
@@ -642,15 +640,15 @@ held-out evaluation was not run. \\
 6 & \passmark & Synthetic weighted-savings-proxy delta CI lower bound meets
 every workload limit. \\
 7 & \pendingmark & The historical precomputed-vector study is diagnostic only;
-formal ONNX v1 and v2 are separately \textbf{INVALID}, not replacements for
-this row. \\
+formal ONNX v1--v3 are separately \textbf{INVALID}, and prospective v4 has no
+result, so none replaces this row. \\
 8 & \passmark & Two fresh network-isolated \code{linux/amd64} runs produced
 byte-identical benchmark artifacts and normalized logs. \\
 \bottomrule
 \end{tabularx}
 \caption{Historical success-gate table. Gates 2 and 4 remain failed; the
 original Gate 7 remains pending, while Table~\ref{tab:gate7-lineage} records
-the later formal v1 and v2 invalid attempts without rewriting this audit.}
+the later formal versions without rewriting this audit.}
 \end{table}
 
 \section{Discussion, protocol audit, and limitations}
@@ -663,9 +661,10 @@ protects scan performance. The ablations do not separately identify a benefit
 from clustering or quotas, so they cannot support a causal quota-coverage
 claim. The implementation cost is measurable in policy-only latency. All
 historical precomputed-vector seeds stay inside their diagnostic limits, but
-formal v2 has one descriptive p95-delta failure and is structurally invalid.
-The evidence therefore supports an adaptive-policy contribution driven most
-clearly by decay and admission, not a formal Gate 7 performance pass.
+formal v1--v3 are operationally invalid and v3 also fails its own systems and
+semantic rules. V4 is prospective, not evidence yet. The evidence therefore
+supports an adaptive-policy contribution driven most clearly by decay and
+admission, not a formal Gate 7 performance pass.
 
 The scan gate explains why raw perfection is not enough. CARMA achieves 100\%
 return VHR, but the correct comparator is the stronger paired baseline, not
@@ -712,10 +711,11 @@ The clean host and both containers used the same 527-file Git archive,
 SHA-256:
 \newline\code{51aea800e364c1d52bed566f48c4c49c1836d0d6a0b40b3bb8203867c14b58b4}.
 The report and curated evidence are the only changes in its single permitted
-direct packaging child. Gate 7 v2 is separately bound to that clean source,
-but it inherits no pass from the host/container reproducibility gate: its
-complete data and seven preterminal findings remain frozen under an unmatched
-\code{START}, and neither manifest nor ledger may be repaired in place.
+direct packaging child. Gate 7 v1--v3 are separately bound to their clean
+sources, but inherit no pass from the host/container reproducibility gate.
+Their evidence and unmatched START records remain frozen and may not be
+repaired in place. V4 therefore has a new contract, experiment ID, formal root,
+ledger schema, fresh seeds/traces, and source tag.
 
 \subsection{External validity}
 
@@ -724,9 +724,9 @@ QQP calibration probes pairwise semantic matching; its component-disjoint
 held-out split was not evaluated, and neither represents conversational
 distribution shift. MOSS is an exact-key recorded-response negative control
 rather than a CARMA semantic-policy or long-prompt overhead comparison.
-Historical system timing
-excludes embedding; v2 includes real ONNX embedding but is invalid evidence.
-Both use one Apple-arm64 machine, five seeds, capacity 100, and SQLite/FAISS.
+Historical system timing excludes embedding; formal v1--v3 include real ONNX
+embedding but are invalid evidence, while v4 is not yet run. These studies use
+one Apple-arm64 machine, five seeds, capacity 100, and SQLite/FAISS.
 Restart loses adaptive counters. These boundaries limit generalization but
 make each retained claim traceable.
 
@@ -741,20 +741,18 @@ synthetic CSV summaries byte-for-byte. The central hypothesis is only partly
 supported: CARMA is compelling
 under category shift and passes stationary VHR non-regression, but semantic
 safety fails at QQP calibration and its preregistered scan advantage over the
-strongest baseline fails. The full-path Gate 7 v2 matrix is complete, yet the
-attempt is invalid and nonclaimable; its descriptive measurements also contain
-one decisive p95-delta failure.
+strongest baseline fails. Full-path Gate 7 v1--v3 are invalid and
+nonclaimable; v3's preserved report also records systems and semantic failure.
 
-The next formal run must use a \emph{new} protocol version, contract,
-experiment ID, formal root, ledger, and annotated source tag, followed by a
-fresh complete 5$\times$3 matrix. V2 must never be repaired or selectively
-rerun. Before that new registration, identities should be canonicalized;
-lexical and resolved Python executables must be separate fields; the warm-up
-artifact schema and auditor must agree exactly; the resource sampler needs a
-deadline-aware cadence margin; and lifecycle tests must cover preterminal
-identity transfer, bootstrap completion, terminal append, and ordinary audit.
-Performance work should optimize CARMA p95 first, because seed 20261001 misses
-the absolute latency-delta bound by 25.73 ms even though its ratio passes.
+The prospective v4 implementation closes the observed lifecycle gaps without
+altering old evidence: canonical identities, separate lexical/resolved Python
+fields, exact artifact schemas, deadline-aware resource sampling, independent
+bootstrap completion, and adversarial terminal/auditor tests. Its estimands
+separate full-path proportional slowdown from post-embedding marginal and
+request-paired policy-exclusive overhead. The remaining formal action is one
+clean, source-tagged 5$\times$3 execution. No seed or policy may be selectively
+rerun; only a canonical TERMINAL plus independent ordinary audit can produce a
+v4 PASS or FAIL. Until then the exact result is \pendingmark{}.
 Public PR \href{https://github.com/zilliztech/GPTCache/pull/696}{zilliztech/GPTCache\#696}
 targets \code{dev}; it is mergeable and DCO-passing, but no maintainer has
 reviewed or adopted it. The exceptional adopted-PR route therefore remains an
@@ -762,39 +760,44 @@ unmet external criterion.
 
 \section*{Lecturer-criterion audit}
 
+\begingroup
+\small
 \begin{tabularx}{\linewidth}{@{}p{0.18\linewidth}p{0.15\linewidth}X@{}}
 \toprule
 Criterion & Status & Evidence \\
 \midrule
 Correctness (40\%) & Implementation \passmark; semantic \failmark & The
-exact-source host verifier passed 8 upstream plus 2 SQLite/FAISS tests
-(1 optional deselected) and 453 project tests (4 skipped); real integration
-integrity failures are zero. QQP calibration selected no qualifying threshold,
+prospective v4 host verifier passed 8 upstream plus 2 SQLite/FAISS tests
+(1 optional deselected), 996 project tests, dependency integrity, and the
+deterministic CI benchmark. QQP calibration selected no qualifying threshold,
 so semantic reuse safety is not established. \\
 Reproducibility (30\%) & \passmark & Exact pins and one source archive produced
 matching host plus two fresh network-isolated container benchmark artifacts;
 evidence is checksum-linked; a final-source replay reproduced all four
 synthetic summaries byte-for-byte. \\
 Performance (15\%) & Mixed & Gates 3, 5, 6 pass; Gates 2 and 4 fail; each
-historical system seed meets its diagnostics, while formal Gate 7 v1 and v2
-are invalid and v2 descriptively fails one of 25 systems checks. \\
+historical system seed meets its diagnostics; formal Gate 7 v1--v3 are
+invalid, v3 fails its own systems/semantic rules, and v4 is prospective. \\
 Clarity (15\%) & Complete with caveat & Baseline rationale, policy/protocol
 docs, labeled figures, limitations, and this report are complete; the sealed
-README's old formal-run command is superseded by the handoff. \\
+README and handoff expose the versioned v4 command and claim boundary. \\
 \bottomrule
 \end{tabularx}
+\endgroup
 
 \section*{Appendix: Artifact map}
 
 Code and tests are under \path{gptcache/manager/} and \path{tests/}; experiments
 and wrappers are under \path{benchmarks/carma/} and \path{scripts/}; course docs
 are under \path{docs/project/}; and curated checksummed evidence is under
-\path{artifacts/samples/}. The authoritative v2 root under
-\path{artifacts/gate7-v2-onnx-attempts/} is local and ignored, not shipped in a
-fresh clone. Environment/CI definitions are \path{Dockerfile.project},
+\path{artifacts/samples/}. Authoritative v2/v3 roots are local and ignored;
+their compact immutable preservation records are tracked. The prospective v4
+root is \path{artifacts/gate7-v4-onnx-attempts/} and contains no attempt at
+source freeze. Environment/CI definitions are \path{Dockerfile.project},
 \path{requirements-*.lock}, and \path{.github/workflows/carma-ci.yml}.
 
 \begingroup
+\small
 \setlength{\parskip}{0pt}
 \setlength{\itemsep}{0pt}
 \setlength{\parsep}{0pt}

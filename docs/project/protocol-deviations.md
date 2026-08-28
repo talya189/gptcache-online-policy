@@ -187,6 +187,62 @@ a failed prerequisite before loading or scoring held-out pairs. Only after a
 threshold is frozen should a separate one-shot path compute held-out
 similarities and metrics. The completed QQP artifacts are retained unchanged.
 
+### 7. Gate 7 v4 changes the absolute-latency estimand after observing v3
+
+Prior commitment and v3 result: Gate 7 v3 compared separate full-request p95
+values and required both a CARMA/LRU p95 ratio at most `1.25` and a directional
+CARMA-minus-LRU absolute delta at most `500,000 ns`. V3 completed all 15 policy
+children and 45,000 requests. Its immutable, structurally clean preterminal
+report records systems `FAIL`: seed `20261001` has a full-request p95 delta of
+`1,307,374 ns`. Its semantic guardrail is separately `FAIL`. A manifest-contract
+shape defect prevented `TERMINAL`, so the operational v3 result is permanently
+`INVALID`, not a terminal `FAIL` or `PASS`.
+
+Post-v3 design decision: v3 showed that the absolute full-request p95 delta
+combines CARMA overhead with dominant common ONNX timing variation. V4 therefore
+retains the user-visible full-request p95 ratio bound, moves the inherited
+`500,000 ns` absolute-scale bound to the complete post-embedding cache path, and
+adds a second `500,000 ns` bound on the nearest-rank p95 of exact request-paired
+`CARMA.policy_exclusive_ns - LRU.policy_exclusive_ns` differences. It also
+retains throughput and RSS guardrails. The six per-seed v4 checks are:
+
+1. full-request p95 ratio `<= 1.25`;
+2. marginal post-embedding p95 delta `<= 500,000 ns`;
+3. request-paired policy-exclusive delta p95 `<= 500,000 ns`;
+4. service-throughput ratio `>= 0.90`;
+5. peak-RSS ratio `<= 1.20`; and
+6. peak-RSS delta `<= 67,108,864 bytes`.
+
+Scientific boundary: this is a post-v3 metric change, not a repair of the v3
+contract. A read-only retrospective recomputation from the preserved raw v3
+rows would pass all 30 v4 systems checks. The largest marginal post-embedding
+p95 delta is `251,418 ns`, and the largest request-paired policy-exclusive p95
+delta is `425,709 ns`. Those favorable post-hoc values may explain the design,
+but cannot establish either a v3 or v4 `PASS`. V3 remains operationally
+`INVALID`, its v3-rule preterminal systems result remains `FAIL`, and its
+semantic result remains `FAIL`.
+
+Prospective safeguard: v4 is a new protocol/schema/root/tag using previously
+unexecuted seeds `20261101`--`20261105` and fresh, frozen traces. Every one of
+the 30 new seed-check booleans must pass; the old full-request absolute delta is
+diagnostic only. The governing contract is
+`docs/project/gate7-v4-remediation-contract.md`, SHA-256
+`acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808`.
+No formal v4 policy matrix has run, so v4 remains `PENDING` and has no numerical
+result. Its future evidence must be a new 15-child clean-process matrix. If the
+complete structurally valid matrix violates even one bound, it must terminalize
+`FAIL`; interruption, incompleteness, or evidence-integrity failure after START
+is `INVALID`, not `PENDING`.
+
+Retrospective provenance: the ignored authoritative source is
+`artifacts/gate7-v3-onnx-attempts/attempt-20260827T222332Z-36292/requests.jsonl`,
+45,000 rows, SHA-256
+`e9d418e63e1c86acdacdeaf7c9d26c7347bae63b8f935fb461463c91b16d6dff`.
+That identity is bound by the tracked v3 manifest. The compact Git preservation
+snapshot does not include the 128.7 MB raw request file, so the retrospective
+calculation must not be represented as independently reconstructable from the
+compact snapshot alone.
+
 ## Interpretation boundary
 
 This ledger changes no selected configuration, threshold, seed, success gate,

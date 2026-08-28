@@ -38,6 +38,15 @@ The short version is:
   `557c6ac0578cb6b77c5ae51595b49abdc0407e10`.
 - Gate 7 v2 formal tag: `gate7c-onnx-v2-formal-source`, annotated tag object
   `550e33a38ae59c992f25fc20023f5717c5fdd1ce`.
+- Gate 7 v3 formal source commit:
+  `05543e34c9a51e43d67ba483559d573bc3021dd0`.
+- Gate 7 v3 formal tag: `gate7d-onnx-v3-formal-source`.
+- Gate 7 v4 prospective contract SHA-256:
+  `acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808`.
+- Gate 7 v4 pre-freeze host verification: 8 upstream tests, 2 SQLite/FAISS
+  tests (1 optional deselected), 996 project tests, dependency integrity, and
+  the deterministic CI benchmark all pass. This validates the candidate source
+  only; it is not a formal Gate 7 result.
 - Published/private GitHub repository:
   <https://github.com/MatanGoldfarB/gptcache-online-policy>.
 - Public upstream fork/branch:
@@ -48,11 +57,15 @@ The short version is:
 - Result: the implementation and reproducibility work are complete, but the
   research hypothesis is only partly supported. Gates 1, 3, 5, 6, and 8 pass;
   Gates 2 and 4 fail. The original precomputed-vector Gate 7 entry remains
-  `PENDING`. The later `gate7b-onnx-v1` and `gate7c-onnx-v2` attempts are
-  separately preserved as `INVALID` and nonclaimable; v2 completed all 15
-  children, but did not terminalize. The original frozen eight-gate audit is
-  therefore still `FAIL` under `fail > pending > pass`, while v2 supplies a
-  separate invalid evidence record, not a replacement verdict.
+  `PENDING`. The later `gate7b-onnx-v1`, `gate7c-onnx-v2`, and
+  `gate7d-onnx-v3` attempts are separately preserved as immutable `INVALID`,
+  nonclaimable histories. V3 completed all 15 children, but its contract-shape
+  defect prevented `TERMINAL`; its immutable preterminal systems result is
+  `FAIL` and its semantic guardrail is separately `FAIL`. Prospective
+  `gate7e-onnx-v4` has not run, so its status is `PENDING` and it has no
+  numerical result. The original frozen eight-gate audit is therefore still
+  `FAIL` under `fail > pending > pass`; none of the later generations replaces
+  that historical verdict.
 
 Do not turn that last sentence into “the project failed.” The correct reading
 is that the engineering deliverable is complete and several claims pass, while
@@ -627,7 +640,7 @@ baseline would overstate the contribution.
 | 4 | Scan-return VHR gain >= 5 pp, CI above zero, Holm p <= .05 | **FAIL**, claimable negative result |
 | 5 | Stationary VHR lower CI no worse than -1 pp | **PASS**, claimable |
 | 6 | Safe-token lower CI no worse than -0.5 pp in each primary workload | **PASS**, claimable |
-| 7 | Latency/throughput/RSS within frozen limits | **PENDING**, diagnostic only in the original eight-gate audit; later ONNX v1/v2 attempts are separate **INVALID**, nonclaimable generations |
+| 7 | Latency/throughput/RSS within frozen limits | **PENDING**, diagnostic only in the original eight-gate audit; ONNX v1/v2/v3 are separate immutable **INVALID** histories, while prospective v4 is **PENDING** and not yet run |
 | 8 | Two clean Docker runs have identical non-timing logs and trace hashes | **PASS**, claimable |
 
 The machine-readable authority is
@@ -746,7 +759,7 @@ The artifacts retain only each process’s mean and quantiles, not individual
 request latencies. The figure therefore shows the cross-seed distribution of
 p95 summaries, not a reconstructable request-level CDF.
 
-### Gate 7 follow-up history: v1 and v2 are both invalid
+### Gate 7 follow-up history: v1, v2, and v3 are invalid; v4 is pending
 
 Do not confuse either ONNX follow-up with the historical run above. The old
 precomputed-vector Gate 7 entry stays `PENDING` forever under its original
@@ -1003,16 +1016,112 @@ ledger/manifest/preterminal snapshot is under
 `artifacts/samples/verification/gate7-v2-invalid/`. Those copies support review;
 the ignored original formal root remains authoritative.
 
-#### V2 cannot be repaired or reused
+#### V3 is complete but operationally invalid
 
-Do not edit the v2 manifest, preterminal report, ledger, or any formal attempt
-byte. Do not append a terminal row, selectively rerun seed 20261001, reuse the
-14 favorable children, or resume inside the same root. A future formal Gate 7
-attempt requires a new experiment/schema version, a new prospective contract,
-a new formal root and ledger genesis, a new reviewed clean source commit and
-annotated tag, and the entire fresh randomized five-seed by three-policy
-matrix. Both identity-shape defects and the cadence decision must be fixed
-before new outcomes are observed.
+`gate7d-onnx-v3` is another separate frozen history. It completed all 15 clean
+policy children and all 45,000 real-text ONNX requests. Its immutable
+preterminal audit has zero structural errors and records:
+
+- systems `FAIL` under the five-check v3 rule, because seed `20261001` has
+  `CARMA - LRU = 1,307,374 ns` for marginal full-request p95 against the
+  `500,000 ns` maximum; and
+- semantic guardrail `FAIL`, with three direct-negative hits and two unlabeled
+  cross-component hits.
+
+Those analytical statuses did not become an operational terminal result. The
+v3 manifest's `contract` object contains an extra
+`publication_identity_unchanged` key, while its START object has exactly
+`path`, `sha256`, and `bytes`. The terminal-intent boundary rejected the unequal
+objects. The v3 ledger therefore contains exactly `PROTOCOL_GENESIS` and
+`START`, with no `TERMINAL` and no ordinary `gate7-adjudication.json`.
+Consequently, v3 is operationally `INVALID` and nonclaimable; its preterminal
+systems `FAIL` and semantic `FAIL` remain visible but cannot be promoted to a
+terminal verdict.
+
+The tracked checksum-sealed v3 snapshot is
+`artifacts/samples/verification/gate7-v3-invalid/`. Its exact source commit is
+`05543e34c9a51e43d67ba483559d573bc3021dd0`, attempt ID is
+`20260827T222339037448Z-05543e34c9a5`, and attempt directory is
+`attempt-20260827T222332Z-36292`. The ledger, manifest, and preterminal-report
+SHA-256 values are respectively
+`aa232ea1a818d01ed7ae7338fb33e44f19124a571f1d3c29a221d688af07888a`,
+`ed38aefec5fa02528f9948729144bf6df5afa5d5f5b95f06be443b707089272b`, and
+`2ffbe237323ce38bfde39202993b6d12c9abb7a4d77c03f4b0c5137987ebaf00`.
+
+#### V4 is a prospective, not-yet-run successor
+
+`gate7e-onnx-v4` was designed after v3 completed. It is governed by
+`docs/project/gate7-v4-remediation-contract.md`, SHA-256
+`acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808`,
+and uses a new formal root, ledger schema, source tag, untouched seeds
+`20261101`--`20261105`, and fresh frozen trace/semantic-index pairs. No formal
+v4 policy matrix has run. V4 is therefore `PENDING`; there is no v4 `PASS`,
+`FAIL`, or `INVALID` attempt to report.
+
+For every new seed, all six CARMA-versus-LRU conditions must hold:
+
+1. `p95(CARMA request_total_ns) / p95(LRU request_total_ns) <= 1.25`;
+2. the difference between the two marginal post-embedding p95 values is at
+   most `500,000 ns`;
+3. the nearest-rank p95 of exact request-paired
+   `CARMA.policy_exclusive_ns - LRU.policy_exclusive_ns` is at most
+   `500,000 ns`;
+4. the service-throughput ratio is at least `0.90`;
+5. the sampled peak-RSS ratio is at most `1.20`; and
+6. the sampled peak-RSS delta is at most `67,108,864 bytes`.
+
+All 30 seed-check booleans must pass. The inherited full-request absolute p95
+delta is retained as a diagnostic only. LFU remains a mandatory identically
+executed diagnostic policy. Every seed-policy run uses a clean process, ONNX
+session, SQLite store, FAISS index, and policy object, in the frozen
+counterbalanced order. START, manifest, preterminal report, and terminal intent
+must carry the same exact three-key contract object: `path`, `sha256`, and
+`bytes`; `contract_unchanged` belongs only under `publication_integrity`. A
+complete structurally valid matrix that violates any numerical bound is `FAIL`
+and must still terminalize; incomplete or corrupted formal evidence after START
+is `INVALID`. `PENDING` describes the not-yet-started v4 protocol, not a
+favorable substitute for a failed or interrupted formal run.
+
+Gate 2 remains independently `FAIL / no qualifying threshold`; the v4 answer
+threshold `0.97` is an unqualified controlled systems operating point. The
+per-hit semantic guardrail is also reported independently. A future v4 systems
+`PASS` could coexist with semantic `FAIL`; neither status can reverse Gate 2.
+
+#### Retrospective v3-under-v4 calculation is post-hoc design evidence only
+
+A read-only calculation over the preserved v3 raw rows shows that v3 would
+retrospectively satisfy all 30 v4 systems checks. Across its five seeds, the
+worst full-request p95 ratio is `1.00307675`, the largest marginal
+post-embedding p95 delta is `251,418 ns`, the largest request-paired
+policy-exclusive p95 delta is `425,709 ns`, the minimum throughput ratio is
+`0.99807083`, the worst RSS ratio is `1.00273105`, and the largest RSS delta is
+`1,130,496 bytes`.
+
+These favorable values were computed after observing v3 and after changing the
+estimands. They explain why the full-request absolute delta was misaligned with
+the policy-overhead question, but they cannot repair v3, establish v4, or be
+called confirmatory evidence. V3 remains operationally `INVALID`, its own
+preterminal systems result remains `FAIL`, and its semantic guardrail remains
+`FAIL`. V4 still needs the untouched new seeds and fresh traces.
+
+The retrospective source is the ignored authoritative raw file
+`artifacts/gate7-v3-onnx-attempts/attempt-20260827T222332Z-36292/requests.jsonl`,
+45,000 rows, SHA-256
+`e9d418e63e1c86acdacdeaf7c9d26c7347bae63b8f935fb461463c91b16d6dff`.
+That identity is bound by the tracked v3 manifest. The compact Git snapshot
+does not ship the 128.7 MB raw file, so a colleague with only a fresh clone can
+verify the binding and the preserved adjudication, but cannot independently
+recompute the paired retrospective values without the authoritative raw bundle.
+
+#### V1, v2, and v3 cannot be repaired or reused
+
+Do not edit any v1-v3 manifest, preterminal report, ledger, or formal attempt
+byte. Do not append a missing terminal row, selectively rerun a failed seed,
+reuse favorable children, or resume inside an old root. V4 is the new
+prospective experiment/schema/root/tag and requires the entire fresh
+five-seed-by-three-policy matrix. If its frozen source, contract, trace, or rule
+must change after any formal observation, create another protocol version; do
+not reinterpret an earlier generation.
 
 ## 16. MOSS recorded-response replay
 
@@ -1221,18 +1330,22 @@ Why this exists: a report needs generated evidence that cannot exist before the
 source has been run, but allowing arbitrary post-verification edits would make
 “tested commit” meaningless.
 
-This boundary leaves two source-sealed wording defects that must be called out
-instead of silently editing them after verification. The root `README.md`
-still describes the older prospective Gate 7 wrapper and must **not** be used
-to launch or interpret a formal run; Sections 15 and 25 of this handoff are the
-authoritative v2/future-v3 instructions. Also,
-`docs/project/baseline-justification.md` calls the MOSS replay “SCALM-style
-token-aware replay”; the actual implementation is the exact-key LRU, all-miss
-negative control described in Section 16 and the report. The baseline file's
-policy list is accurate, while the root README, report, and this handoff state
-explicitly that LRU remains the factory default. Correcting those two sealed
-files would require a new exact-source verification generation, not an extra
-packaging edit.
+This paragraph describes the historical v2 packaging boundary only. The
+post-v3 documentation now preserves v1, v2, and v3 as immutable `INVALID`
+histories and describes v4 prospectively; it does not authorize a formal v4
+run from the old v2 source/package pair. The source-sealed v2 wording defect in
+`docs/project/baseline-justification.md` also remains historical: it calls the
+MOSS replay “SCALM-style token-aware replay,” while the actual implementation
+is the exact-key LRU, all-miss negative control described in Section 16. LRU
+remains the factory default. The old v2 packaging evidence cannot validate v3
+or v4, and correcting a sealed source file would require a new exact-source
+verification generation rather than an extra packaging edit.
+
+V3 has its own source identity and preserved invalid evidence, described in
+Section 15. V4 must establish a fresh clean source identity, annotated source
+tag, host/container evidence, formal root, and ledger before execution. None of
+those future v4 artifacts can be inferred from the historical v2 publication
+relationship, and no v4 result exists yet.
 
 The exact host/container gate is run from the clean source commit. Curated
 publication evidence and the allowed report/handoff updates are then added in
@@ -1480,6 +1593,11 @@ Do not claim any of the following from the current evidence:
 - that the v2 full-path measurements are claimable, terminalized, or
   replace the original `PENDING` Gate 7 row;
 - that an after-the-fact ordinary v2 audit could repair the missing terminal;
+- that v3 is terminalized or claimable merely because its preterminal systems
+  and semantic evaluators reached analytical `FAIL`;
+- that the retrospective 30/30 v3-under-v4 calculation repairs or reclassifies
+  v3, or establishes a v4 result;
+- that v4 has run, passed, failed, or produced formal evidence;
 - that MOSS demonstrates semantic CARMA hit-rate superiority;
 - that synthetic vectors establish natural-language generalization;
 - that clustering and quota effects are separately identified;
@@ -1504,6 +1622,12 @@ Safe claims are narrower:
   detailed requests, but the attempt is `INVALID` and nonclaimable. Its
   descriptive systems reconstruction is 24/25 checks and counterfactual
   `FAIL`; its separate semantic guardrail is `FAIL`.
+- Gate 7 v3 also completed all 15 children and 45,000 requests, but it is
+  operationally `INVALID` because its ledger lacks `TERMINAL`; under its own
+  frozen rules its preterminal systems status is `FAIL`, and its separate
+  semantic status is `FAIL`.
+- Gate 7 v4 is a frozen prospective successor on untouched seeds and fresh
+  traces. It is not yet run and therefore remains `PENDING`.
 - Exact-source host and paired network-isolated container verification pass for
   the attested source/package relationship.
 
@@ -1528,26 +1652,38 @@ threshold changes.
 
 ### 25.2 Complete Gate 7 properly
 
-V2 cannot be completed in place. Its unmatched `START`, invalid preterminal
-report, and missing parent-bootstrap completion are permanent historical facts.
-The next attempt must first define a new versioned protocol that fixes the
-lexical/resolved Python identity rule, gives producer and auditor one exact
-warm-up identity schema, normalizes the auditor source-identity shape across
-manifest/report/terminalization, and prospectively decides whether the 200 ms
-resource-cadence bound or the sampler implementation should change.
+V1, v2, and v3 cannot be completed in place. Their stopped ledgers, preserved
+artifacts, and missing terminal records are permanent historical facts. V3's
+own preterminal systems `FAIL` and semantic `FAIL` also remain unchanged.
 
-Only then create a new formal root and ledger genesis, freeze a new contract,
-commit and remotely annotate a new clean source tag, and rerun all 15 children.
-Do not copy v2 results, reuse its 14 passing seed/check combinations, or rerun
-only seed 20261001. A Linux replication remains valuable after a valid new Mac
-host run, but it needs its own machine identity and cannot be pooled post hoc.
+The prospective v4 successor is now defined in
+`docs/project/gate7-v4-remediation-contract.md`, SHA-256
+`acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808`.
+It moves the `500,000 ns` absolute overhead bound to marginal post-embedding
+p95, adds a `500,000 ns` nearest-rank p95 bound on exact request-paired
+policy-exclusive deltas, and retains full-request p95 ratio, throughput, RSS
+ratio, and RSS-delta guards. All six checks must pass for each of untouched
+seeds `20261101`--`20261105` on fresh frozen traces. The inherited
+full-request absolute p95 delta is diagnostic only.
+
+V4 still needs a fresh exact-source commit and annotated tag, asset preflight,
+formal root and genesis, and the complete 15-child clean-process matrix. It
+must not copy v1-v3 results, reuse favorable children, or selectively rerun a
+seed. A complete structurally valid numerical failure must terminalize as
+`FAIL`; incomplete or corrupted formal evidence is `INVALID`. A Linux
+replication remains valuable after a valid new Mac host run, but it needs its
+own machine identity and cannot be pooled post hoc. If any frozen v4 rule or
+input must change after formal observation, define v5 rather than revising v4.
 
 ### 25.3 Semantic safety
 
 The existing embedding/threshold family did not meet the QQP precision
-prerequisite. Any next attempt should preregister a new embedding, evaluator,
-or calibration method and use a new component-disjoint split identity. Never
-reuse the held-out set for iterative tuning.
+prerequisite. Any future semantic-safety experiment should preregister a new
+embedding, evaluator, or calibration method and use a new component-disjoint
+split identity. V4 deliberately leaves Gate 2 as the existing independent
+`FAIL / no qualifying threshold`; its threshold is only an unqualified
+controlled systems operating point. Never reuse the held-out set for iterative
+tuning.
 
 ### 25.4 Policy engineering
 
@@ -1653,10 +1789,28 @@ delta, so structurally valid copies of these exact numbers would fail the
 all-seeds rule. The historical attempt's actual status is `INVALID`, not
 `FAIL`, and never `PASS`.
 
-**Can we fix the schema bugs and rerun only seed 20261001?**  No. That would
-condition the repair on observed results and violate the frozen matrix. The
-next attempt needs a new version, contract, root, ledger, source tag, and all
-15 newly executed children.
+**Why is Gate 7 v3 invalid if its preterminal audit has no structural errors?**
+The preterminal report did reach systems `FAIL` under v3's own five checks and
+semantic `FAIL`, but the manifest and START contract objects had different
+shapes. Terminal intent therefore rejected publication, leaving no `TERMINAL`
+and no ordinary adjudication. Analytical failure inside an unterminated formal
+attempt does not make the attempt operationally claimable; v3 remains
+`INVALID`.
+
+**Does the retrospective v3-under-v4 30/30 calculation mean v3 or v4 passes?**
+No. It was calculated only after v3 exposed an estimand mismatch and after the
+v4 checks were designed. It is post-hoc design evidence, not a reclassification
+of v3 and not a v4 result. V3 remains operationally `INVALID`, with its own
+preterminal systems `FAIL` and semantic `FAIL`.
+
+**Has Gate 7 v4 run?**  No. V4 is frozen prospectively on untouched seeds
+`20261101`--`20261105` and fresh traces, but no formal 15-child matrix exists.
+Its status is `PENDING`, not `PASS`, `FAIL`, or `INVALID`.
+
+**Can we fix an old schema bug or reuse favorable children?**  No. That would
+condition repair on observed results and violate the frozen matrix. V4 needs
+its own formal root, ledger, source tag, fresh traces, and all 15 newly executed
+children. If v4 itself must change after formal observation, define v5.
 
 **Why is the report package a different commit from the verified source?**
 Generated evidence can only exist after the source runs. A single restricted
@@ -1717,21 +1871,21 @@ for `ubuntu-22.04`. The project workflow therefore pins the available Python
 interpreter patch version; the Python 3.8 compatibility claim and hashed
 dependency lock remain the same.
 
-The first hosted run after the Gate 7 implementation then exposed two
-packaging-only gaps that the richer local benchmark environment had hidden:
-the fake-embedding smoke manifest imported optional `onnxruntime` and
+The first hosted run after the original Gate 7 v1 implementation then exposed
+two packaging-only gaps that the richer local benchmark environment had
+hidden: the fake-embedding smoke manifest imported optional `onnxruntime` and
 `transformers` packages even when neither was needed, and the allowlisted
-container context omitted the newly frozen Gate 7 contract. The final code
-records those optional versions as unavailable in fake mode while real-ONNX
-mode still requires them during asset resolution, and explicitly copies only
-`docs/project/gate7-remediation-contract.md` into the pinned image. A fresh
-network-isolated `linux/amd64` container then passed 8 upstream tests, 2
-SQLite/FAISS tests (1 deselected), 227 project tests (2 platform skips), and
-the deterministic CI benchmark.
+container context omitted the then-frozen historical v1 contract,
+`docs/project/gate7-remediation-contract.md`. The corrected historical source
+recorded those optional versions as unavailable in fake mode while real-ONNX
+mode still required them during asset resolution. A fresh network-isolated
+`linux/amd64` container then passed 8 upstream tests, 2 SQLite/FAISS tests (1
+deselected), 227 project tests (2 platform skips), and the deterministic CI
+benchmark. These counts describe that generation, not v4.
 
-The later exact-source gate for the current v2 source
+The later exact-source gate for the historical v2 source
 `557c6ac0578cb6b77c5ae51595b49abdc0407e10` supersedes those counts for the
-final source/package relationship. One 527-file Git archive with SHA-256
+v2 source/package relationship. One 527-file Git archive with SHA-256
 `51aea800e364c1d52bed566f48c4c49c1836d0d6a0b40b3bb8203867c14b58b4`
 fed its host and container executions. Its host and both byte-matched,
 network-isolated `linux/amd64` containers each passed 8 upstream tests, 2
@@ -1740,6 +1894,13 @@ The 32-file topology is retained under
 `artifacts/samples/verification/publication-20260827-v2-source/`. This validates
 the source implementation; it does not convert the separate Gate 7 v2 formal
 attempt from `INVALID` into a claimable result.
+
+V3 has a different preserved source identity and remains operationally
+`INVALID`; v4 has no source-validation or formal-run result yet. Before v4 can
+run, its eventual clean source and annotated tag require fresh host/container
+verification and fresh-clone asset preparation under the v4 contract. The old
+v1 and v2 test counts and packaging attestations cannot be inherited as v4
+evidence.
 
 An independent full synthetic replay was then executed from the then-current
 clean report-only packaging
@@ -1763,12 +1924,13 @@ Then confirm in GitHub that the remote branch SHA equals local `HEAD`, the
 repository is private, and the collaborator invitation/permission status is
 the requested one.
 
-## 29. Final handoff checklist
+## 29. Historical handoff and prospective v4 checklist
 
-- [x] `git status` is clean at handoff.
-- [x] Published `HEAD` is the direct packaging child of the exact verified
-  source commit.
-- [x] Post-packaging analyzer reports `verified_packaging_descendant`.
+- [x] At the historical v2 publication checkpoint, `git status` was clean.
+- [x] The historical published v2 `HEAD` was the direct packaging child of its
+  exact verified source commit.
+- [x] The historical v2 post-packaging analyzer reported
+  `verified_packaging_descendant`.
 - [x] Gates 1/3/5/6/8 pass, 2/4 fail, and the original Gate 7 is `PENDING` in
   the current eight-gate audit.
 - [x] Gate 7 v1 is preserved as `INVALID` without selective repair.
@@ -1783,11 +1945,22 @@ the requested one.
   no ordinary adjudication.
 - [x] Descriptive v2 evidence is labeled 24/25 checks and counterfactual
   `FAIL`, never `PASS`; semantic status is separately `FAIL`.
-- [ ] A future, newly versioned full ONNX attempt has produced a claimable
-  independent `PASS` or `FAIL`. V2 cannot satisfy this item and may not be
-  repaired or reused.
+- [x] Gate 7 v3 is preserved as operationally `INVALID`: all 15 children and
+  45,000 rows exist, its own preterminal systems and semantic statuses are both
+  `FAIL`, and its ledger has no `TERMINAL`.
+- [x] The prospective v4 contract is present at SHA-256
+  `acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808`
+  with six exact checks, untouched seeds `20261101`--`20261105`, fresh traces,
+  and all-30 conjunction semantics.
+- [x] The retrospective v3-under-v4 30/30 calculation is labeled post-hoc
+  design evidence only and does not reclassify v3 or establish v4.
+- [ ] The v4 five-seed, 15-child full ONNX matrix has run and produced a
+  terminal claimable `PASS` or `FAIL`. Until then v4 is `PENDING`; v1-v3 cannot
+  satisfy this item and may not be repaired or reused.
 - [x] Curated checksum manifests verify every listed file.
-- [x] `docs/project/report.pdf` is present, 8--12 pages, and visually checked.
+- [x] The historical publication PDF was present, within the 8--12-page limit,
+  and visually checked at that checkpoint; any rebuilt post-v3 PDF requires a
+  fresh visual check before publication.
 - [x] GitHub repository is private and both `main` and feature branch resolve
   to the expected final commit.
 - [x] Talya (`talya189`) has active personal-repository `write` access; true

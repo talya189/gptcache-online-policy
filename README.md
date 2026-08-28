@@ -116,8 +116,8 @@ scripts/run_ci_benchmark.sh artifacts/carma-ci
 scripts/run_full_benchmark.sh smoke artifacts/carma-full-smoke
 scripts/run_integration_benchmark.sh smoke artifacts/carma-integration-smoke
 scripts/run_onnx_integration_benchmark.sh smoke artifacts/gate7-onnx-smoke
-scripts/run_gate7_v3_onnx_integration_benchmark.sh smoke \
-  artifacts/gate7-v3-onnx-smoke
+scripts/run_gate7_v4_onnx_integration_benchmark.sh smoke \
+  artifacts/gate7-v4-onnx-smoke
 ```
 
 The complete commands are:
@@ -138,7 +138,14 @@ CARMA_ONNX_WORKERS=8 CARMA_ONNX_THREADS=1 \
   scripts/run_qqp_validation.sh artifacts/qqp
 scripts/run_moss_benchmark.sh run /path/to/checksum-pinned-moss.zip artifacts/carma-moss
 
-# Gate 7 v3 formal execution is intentionally shown separately below because
+# Prepare the exact ignored inputs and model cache required by Gate 7 v4.
+.venv/bin/python -m benchmarks.carma.qqp prepare \
+  --archive examples/benchmark/similiar_qqp_full.json.gz \
+  --output artifacts/qqp-full/prepared
+.venv/bin/python -m benchmarks.carma.qqp prefetch-gate7-assets
+.venv/bin/python -m benchmarks.carma.gate7_v4_trace_preflight
+
+# Gate 7 v4 formal execution is intentionally shown separately below because
 # it requires a clean, tagged exact-source checkout and a sterile shell.
 ```
 
@@ -146,22 +153,33 @@ The MOSS command is an exact-key, recorded-response, all-miss negative control.
 It does not compare CARMA, LRU, and LFU and must not be presented as the
 lecturer's complete novel-long-prompt policy experiment.
 
-Gate 7 v1 and v2 are frozen **INVALID** attempts. They must not be continued,
-repaired, selectively rerun, or used for a numerical performance claim. V3 is
-a new protocol, source tag, ledger, and attempt root. After the exact v3 source
-commit and annotated tag are published, its only formal entrypoint is:
+Gate 7 v1, v2, and v3 are frozen **INVALID** attempts. They must not be
+continued, repaired, selectively rerun, or used for a numerical performance
+claim. V3 completed all 15 children, but it has no `TERMINAL`; its preserved
+preterminal systems result is **FAIL** and its semantic guardrail is **FAIL**.
+The tracked checksummed snapshot is under
+`artifacts/samples/verification/gate7-v3-invalid/`.
+
+V4 is a new prospective protocol, source tag, ledger, attempt root, and set of
+previously unused seeds (`20261101`--`20261105`). It was designed after v3 and
+does not reclassify any earlier result. Its six per-seed CARMA-versus-LRU checks
+cover full-request p95 ratio, post-embedding p95 delta, request-paired
+policy-exclusive p95 delta, throughput ratio, RSS ratio, and RSS delta. The old
+full-request absolute p95 delta remains a reported diagnostic only. After the
+exact v4 source commit and annotated tag are published, its only formal
+entrypoint is:
 
 ```bash
 /usr/bin/env -i \
-  CARMA_GATE7_WRAPPER_SHELL=gate7d-shell-v1 \
+  CARMA_GATE7_WRAPPER_SHELL=gate7e-shell-v1 \
   HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin \
   LANG=C.UTF-8 LC_ALL=C.UTF-8 LC_CTYPE=C.UTF-8 TZ=UTC TMPDIR=/tmp \
   /usr/bin/caffeinate -dimsu \
-  /bin/bash "$PWD/scripts/run_gate7_v3_onnx_integration_benchmark.sh" full
+  /bin/bash "$PWD/scripts/run_gate7_v4_onnx_integration_benchmark.sh" full
 ```
 
 This runs 15 fresh real-ONNX policy children and can take several hours on
-CPU. The v3 wrapper registers a hash-chained `START`, then retains per-seed
+CPU. The v4 wrapper registers a hash-chained `START`, then retains per-seed
 traces, per-request timings, external resource samples, whole-run and
 four-way outcome latency summaries, run summaries, and a hash-linked
 manifest. A fresh isolated auditor writes the immutable preterminal report;
@@ -177,11 +195,12 @@ identified failure record and all resource evidence accumulated so far. A
 failure after manifest publication leaves an unmatched `START` as a deliberate
 fail-stop and blocks every later formal attempt pending external forensic
 resolution. Claimability requires the complete retained
-`artifacts/gate7-v3-onnx-attempts/` root, not a copied attempt directory alone.
+`artifacts/gate7-v4-onnx-attempts/` root, not a copied attempt directory alone.
 That first-attempt guarantee is deliberately checkout-root scoped; proving one
 global first run across separate clones requires an external immutable run
 authority.
-The auditor exits `0/1/2/3` for pass/fail/pending/invalid; the wrapper treats
+The auditor exits `0/1/2/3` for pass/fail/pending/invalid; a structurally valid
+numerical FAIL still receives a canonical `TERMINAL`. The wrapper treats
 the expected pending status of smoke mode as a successful development check.
 
 Analyze only completed, manifest-endorsed artifacts; the analyzer rejects
@@ -219,13 +238,13 @@ path. That system result is diagnostic rather than a formal Gate 7 pass because
 the frozen contract named an ONNX embedding path and did not specify an
 across-seed aggregation rule.
 
-A separate prospective Gate 7 v3 remediation is now implemented. It enters through
+A prospective Gate 7 v4 remediation is now implemented. It enters through
 GPTCache's real `adapt` path with calibration-only QQP text, pinned ONNX
 embeddings, counterbalanced isolated LRU/LFU/CARMA processes, full per-request
-stage timing, and externally sampled resources. Its conservative rule requires
-all five seeds to satisfy every paired CARMA-versus-LRU bound. Development smoke
-runs do not change the historical status; a claimable result exists only after
-the complete clean-source full bundle passes the independent auditor.
+stage timing, and externally sampled resources. Its conservative six-check
+rule requires all five unseen seeds to pass. Development smoke runs do not
+change historical status; a claimable v4 result exists only after a complete
+clean-source matrix reaches `TERMINAL` and passes independent re-audit.
 
 The QQP v2 analyzer now independently loads the hash-linked float32 matrix,
 recomputes all 7,729 calibration similarities and the frozen 20-threshold

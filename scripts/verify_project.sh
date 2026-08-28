@@ -115,7 +115,12 @@ expected_project_tests=(
   tests/project_tests/test_gate7_v3_audit.py
   tests/project_tests/test_gate7_v3_isolated_bootstrap.py
   tests/project_tests/test_gate7_v3_onnx_integration.py
+  tests/project_tests/test_gate7_v3_preservation.py
+  tests/project_tests/test_gate7_v4_audit.py
+  tests/project_tests/test_gate7_v4_isolated_bootstrap.py
+  tests/project_tests/test_gate7_v4_onnx_integration.py
   tests/project_tests/test_moss_benchmark.py
+  tests/project_tests/test_qqp_gate7_assets.py
   tests/project_tests/test_qqp_v2.py
   tests/project_tests/test_qqp_wrapper.py
   tests/project_tests/test_reproducibility_evidence.py

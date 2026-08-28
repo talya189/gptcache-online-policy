@@ -66,6 +66,12 @@ covered by `deterministic_digest`.
 
 ## Tunable CARMA parameters
 
+The values below are the small deterministic **CI-harness defaults**, chosen
+for bounded test coverage. They are not the published research operating
+point. The research and Gate 7 configuration is `topic=0.70`, `cell=0.97`,
+`demand_half_life=500`, and `quota_strength=1.0` (with the remaining values
+unchanged), as frozen in the experiment and Gate 7 contracts.
+
 ```text
 --cluster-similarity-threshold 0.70
 --cell-threshold 0.88
