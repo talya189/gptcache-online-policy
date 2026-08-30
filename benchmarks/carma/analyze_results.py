@@ -19,7 +19,7 @@ import tempfile
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-ANALYSIS_SCHEMA = "carma-post-analysis-v2"
+ANALYSIS_SCHEMA = "carma-post-analysis-v3"
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FULL_SCHEMA = "carma-full-experiment-v2"
 RUN_SCHEMA = "carma-benchmark-v2"
@@ -48,6 +48,21 @@ CAPACITY_RATE_TICKS_PERCENT = (0, 20, 40, 60, 80)
 MIN_SOURCE_FONT_PT = 12.5
 MIN_REPORT_FONT_PT = 10.0
 PNG_DPI = 220
+GATE_7_PROTOCOL = "gate-7-v2-post-embedding"
+GATE_7_REQUIRED_SEEDS = 5
+GATE_7_CRITERION = (
+    "p95 <= 1.25x LRU and <= +0.5 ms; throughput >= 0.90x; "
+    "peak RSS <= 1.20x and <= +64 MiB"
+)
+GATE_7_AGGREGATION_RULE = (
+    "all five distinct full-mode seeds must pass every per-seed check"
+)
+GATE_7_PROCESS_ISOLATION = (
+    "one fresh child process and TemporaryDirectory per policy"
+)
+GATE_7_TOTAL_TIMING_SCOPE = (
+    "per request: search, scalar lookup, policy hit or full save"
+)
 QQP_ARCHIVE_SHA256 = (
     "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58"
 )
@@ -375,8 +390,9 @@ def analyze_results(
                     "the CARMA false-hit-rate upper-bound criterion."
                 ),
                 (
-                    "Gate 7 requires five fresh-process system seeds but "
-                    "does not freeze an across-seed aggregation rule."
+                    "Gate 7 v2 covers the post-embedding SQLite/FAISS cache "
+                    "path with deterministic precomputed vectors; ONNX "
+                    "embedding generation remains outside its timing claim."
                 ),
                 *(
                     [
@@ -969,6 +985,11 @@ def _load_integrations(paths: Sequence[Path]) -> Dict[str, Any]:
                 "runs": len(part),
                 "resources": resources_report,
                 "git": manifest.get("git"),
+                "precomputed_embeddings": manifest.get(
+                    "precomputed_embeddings"
+                ),
+                "process_isolation": manifest.get("process_isolation"),
+                "timing_scope": manifest.get("timing_scope"),
             }
         )
 
@@ -2707,38 +2728,42 @@ def _build_gate_audit(
 
     system = _system_diagnostics(integration)
     integration_seeds = integration["report"].get("distinct_seeds", [])
-    five_full_seeds = (
-        len(integration_seeds) == 5
-        and integration["report"].get("comparable_across_seeds") is True
-        and all(row.get("mode") == "full" for row in system)
-        and len(system) == 5
-    )
-    conservative_status = (
-        "pass"
-        if five_full_seeds
-        and all(row["all_individual_checks_pass"] for row in system)
-        else "fail"
-        if five_full_seeds
-        else "pending"
-    )
+    gate_7_readiness = _gate_7_protocol_readiness(integration, system)
+    if gate_7_readiness["eligible"]:
+        gate_7_status = (
+            "pass"
+            if all(row["all_individual_checks_pass"] for row in system)
+            else "fail"
+        )
+        gate_7_reason = (
+            "all five seeds satisfy every amended Gate 7 check"
+            if gate_7_status == "pass"
+            else "at least one seed violates an amended Gate 7 check"
+        )
+    else:
+        gate_7_status = "pending"
+        gate_7_reason = "complete amended Gate 7 evidence is unavailable"
     gates["gate_7_system_overhead"] = {
-        "status": "pending",
-        "claimable": False,
-        "criterion": (
-            "p95 <= 1.25x LRU and <= +0.5 ms; throughput >= 0.90x; "
-            "peak RSS <= 1.20x and <= +64 MiB"
+        "status": gate_7_status,
+        "claimable": gate_7_status != "pending",
+        "protocol": GATE_7_PROTOCOL,
+        "protocol_status": "post-report operational amendment",
+        "scope": (
+            "post-embedding GPTCache cache path through SQLite and FAISS; "
+            "deterministic precomputed vectors; embedding generation excluded"
         ),
+        "criterion": GATE_7_CRITERION,
+        "aggregation_rule": GATE_7_AGGREGATION_RULE,
         "diagnostic_by_seed": system,
         "distinct_seed_count": len(integration_seeds),
-        "required_seed_count": 5,
+        "required_seed_count": GATE_7_REQUIRED_SEEDS,
+        "protocol_readiness": gate_7_readiness,
         "conservative_require_every_seed_interpretation": {
-            "status": conservative_status,
+            "status": gate_7_status,
             "claimable_as_frozen_gate": False,
+            "claimable_as_amended_gate": gate_7_status != "pending",
         },
-        "reason": (
-            "the frozen contract requires five seeds and does not define "
-            "how their per-seed p95/resource values adjudicate one gate"
-        ),
+        "reason": gate_7_reason,
     }
     gate_8_status = "pass" if container_verified else "pending"
     gates["gate_8_reproducibility"] = {
@@ -2881,6 +2906,127 @@ def _system_diagnostics(integration: Dict[str, Any]) -> List[Dict[str, Any]]:
             }
         )
     return diagnostics
+
+
+def _gate_7_protocol_readiness(
+    integration: Dict[str, Any], diagnostics: Sequence[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Verify that retained integration artifacts satisfy amended Gate 7 v2.
+
+    Gate 7 v2 deliberately measures the post-embedding cache path. Requiring
+    explicit scope and process-isolation metadata prevents an unrelated or
+    partially described benchmark from being upgraded to a formal verdict.
+    """
+
+    report = integration.get("report", {})
+    manifests = integration.get("manifests", [])
+    seeds = report.get("distinct_seeds", [])
+    inputs = report.get("inputs", [])
+    reasons = []
+
+    if report.get("status") != "verified":
+        reasons.append("integration artifacts are not verified")
+    if (
+        report.get("verified_inputs") != GATE_7_REQUIRED_SEEDS
+        or len(inputs) != GATE_7_REQUIRED_SEEDS
+        or any(item.get("status") != "verified" for item in inputs)
+    ):
+        reasons.append("exactly five supplied integration inputs must be verified")
+    if report.get("comparable_across_seeds") is not True:
+        reasons.append("integration configurations are not comparable across seeds")
+    if len(seeds) != GATE_7_REQUIRED_SEEDS:
+        reasons.append(
+            "expected %d distinct seeds, found %d"
+            % (GATE_7_REQUIRED_SEEDS, len(seeds))
+        )
+    if len(manifests) != GATE_7_REQUIRED_SEEDS:
+        reasons.append(
+            "expected %d verified manifests, found %d"
+            % (GATE_7_REQUIRED_SEEDS, len(manifests))
+        )
+    if len(diagnostics) != GATE_7_REQUIRED_SEEDS:
+        reasons.append(
+            "expected %d paired LRU/CARMA diagnostics, found %d"
+            % (GATE_7_REQUIRED_SEEDS, len(diagnostics))
+        )
+
+    manifest_seeds = []
+    expected_config = {
+        "mode": "full",
+        "workload": "pollution_scan",
+        "requests": 3000,
+        "capacity": 100,
+        "hit_threshold": 0.97,
+    }
+    expected_verification = {
+        "stale_candidates_required": 0,
+        "false_hits_required": 0,
+        "scalar_vector_counts_equal": True,
+        "every_active_embedding_round_trips_through_faiss": True,
+    }
+    for index, manifest in enumerate(manifests):
+        label = "manifest %d" % (index + 1)
+        config = manifest.get("config")
+        if not isinstance(config, dict):
+            reasons.append("%s lacks config metadata" % label)
+            continue
+        manifest_seeds.append(config.get("seed"))
+        for field, expected in expected_config.items():
+            observed = config.get(field)
+            matches = (
+                _close(float(observed), float(expected))
+                if isinstance(expected, float)
+                and isinstance(observed, (int, float))
+                else observed == expected
+            )
+            if not matches:
+                reasons.append(
+                    "%s has %s=%r; expected %r"
+                    % (label, field, observed, expected)
+                )
+        if manifest.get("precomputed_embeddings") is not True:
+            reasons.append("%s does not declare precomputed embeddings" % label)
+        if manifest.get("process_isolation") != GATE_7_PROCESS_ISOLATION:
+            reasons.append("%s does not declare fresh per-policy processes" % label)
+        if manifest.get("top_k") != 1:
+            reasons.append("%s does not declare top_k=1" % label)
+        if manifest.get("identical_trace_verified") is not True:
+            reasons.append("%s did not verify identical policy traces" % label)
+        timing_scope = manifest.get("timing_scope")
+        if not isinstance(timing_scope, dict) or (
+            timing_scope.get("total") != GATE_7_TOTAL_TIMING_SCOPE
+        ):
+            reasons.append("%s has an unrecognized total timing scope" % label)
+        verification = manifest.get("verification")
+        if not isinstance(verification, dict) or any(
+            verification.get(field) != expected
+            for field, expected in expected_verification.items()
+        ):
+            reasons.append(
+                "%s lacks the required storage verification contract" % label
+            )
+
+    if manifest_seeds and (
+        len(set(manifest_seeds)) != len(manifest_seeds)
+        or sorted(manifest_seeds) != sorted(seeds)
+    ):
+        reasons.append("manifest seeds do not match the distinct measured seeds")
+
+    if any(row.get("mode") != "full" for row in diagnostics):
+        reasons.append("all paired diagnostics must use full mode")
+    if any(
+        _integer(row["false_hits"], "Gate 7 false hits") != 0
+        or _integer(row["stale_candidates"], "Gate 7 stale candidates") != 0
+        for row in integration.get("rows", [])
+    ):
+        reasons.append("integration rows contain false hits or stale candidates")
+
+    return {
+        "eligible": not reasons,
+        "protocol": GATE_7_PROTOCOL,
+        "scope_verified": not reasons,
+        "reasons": reasons,
+    }
 
 
 def _render_figures(
@@ -3255,7 +3401,7 @@ def _plot_latency_resources(
         (
             "Precomputed vectors; embedding excluded. Descriptive per-seed "
             "means.\n"
-            "n=%d seed(s), mode=%s; no across-seed Gate 7 rule is frozen."
+            "n=%d seed(s), mode=%s; Gate 7 v2 requires every seed to pass."
         )
         % (len(seeds), "/".join(modes)),
         top=0.78,
@@ -3383,6 +3529,16 @@ def _save_figure(
         svg,
         format="svg",
         metadata={"Date": None, "Creator": ANALYSIS_SCHEMA},
+    )
+    # Matplotlib emits spaces before newlines in SVG path data.  Normalize the
+    # generated text so committed evidence stays clean under `git diff --check`.
+    svg.write_text(
+        "\n".join(
+            line.rstrip()
+            for line in svg.read_text(encoding="utf-8").splitlines()
+        )
+        + "\n",
+        encoding="utf-8",
     )
     figure.savefig(
         png,
@@ -3628,7 +3784,12 @@ def _write_csv(
     path: Path, rows: Sequence[Dict[str, Any]], fields: Sequence[str]
 ) -> None:
     with Path(path).open("w", encoding="utf-8", newline="") as output:
-        writer = csv.DictWriter(output, fieldnames=fields, extrasaction="raise")
+        writer = csv.DictWriter(
+            output,
+            fieldnames=fields,
+            extrasaction="raise",
+            lineterminator="\n",
+        )
         writer.writeheader()
         for row in rows:
             writer.writerow(row)

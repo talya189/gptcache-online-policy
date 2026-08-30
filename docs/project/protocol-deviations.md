@@ -153,6 +153,15 @@ invoke the pinned ONNX model inside the measured request path, freeze how the
 five seeds are aggregated, and publish that rule before results are observed.
 It must not replace or relabel the existing precomputed-vector manifests.
 
+Resolution on 2026-08-30: the current analyzer implements an explicitly
+post-report Gate 7 v2 instead of relabeling the original preregistered claim.
+Gate 7 v2 freezes the measured scope as the post-embedding SQLite/FAISS path,
+accepts only the retained deterministic precomputed-vector manifests, and uses
+the conservative rule that all five distinct full-mode seeds must pass every
+limit. ONNX embedding latency remains excluded. The original pending verdict
+is preserved as historical context; current audits name the amended protocol
+`gate-7-v2-post-embedding`.
+
 ### 6. QQP held-out similarities were computed before the calibration abort
 
 Contract commitment: select an answer threshold using calibration pairs only,

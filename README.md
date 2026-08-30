@@ -159,6 +159,13 @@ configuration, trace, and checksum metadata. Curated sample logs, result
 tables, gate adjudication, and report figures live under
 [`artifacts/samples/`](artifacts/samples/).
 
+To re-adjudicate Gate 7 from the five retained seed artifacts without rerunning
+the long benchmarks:
+
+```bash
+scripts/run_gate7_check.sh
+```
+
 ### Result headline
 
 The selected configuration (`topic=.70`, `cell=.97`, half-life `500`, quota
@@ -167,9 +174,11 @@ percentage points** over the per-seed stronger LRU/LFU baseline (95% paired CI
 `[4.677, 5.088]`, Holm-adjusted `p=0.0234`). It passed stationary and safe
 token-saving gates. Five fresh SQLite/FAISS seeds stayed within the frozen
 per-seed latency, throughput, and RSS limits on a precomputed synthetic-vector
-path. That system result is diagnostic rather than a formal Gate 7 pass because
-the frozen contract named an ONNX embedding path and did not specify an
-across-seed aggregation rule.
+path. The post-report Gate 7 v2 amendment freezes that scope and requires every
+one of the five seeds to pass every limit, so the retained run now produces a
+formal **Gate 7 v2 PASS**. This claim remains post-embedding: ONNX embedding
+generation is explicitly excluded, and the historical PDF correctly preserves
+the original pending verdict under the earlier incomplete protocol.
 
 The preregistered scan-return claim **failed**: CARMA achieved 100% return-phase
 valid hits, but LFU achieved 99.993%, so the stronger-baseline gain was only

@@ -1,0 +1,10 @@
+item,category,status,estimate,ci_low,ci_high,unit,criterion,source,note
+gate_1_correctness,success_gate,pending,,,,,all relevant tests pass and all integrity failures are zero,gate-audit.json,verified clean-host test evidence was not supplied
+gate_2_semantic_safety,success_gate,pending,,,,,"QQP precision >= 0.99, Wilson lower >= 0.98, and CARMA FHR upper delta bound <= 0.001",gate-audit.json,formal FHR adjudication is pending because the frozen contract does not identify its workload scope
+gate_3_phase_shift_vhr,success_gate,pending,,,,,"delta >= 0.02, CI low > 0, Holm p <= 0.05",gate-audit.json,current inferential full artifacts are unavailable
+gate_4_scan_return_vhr,success_gate,pending,,,,,"delta >= 0.05, CI low > 0, Holm p <= 0.05",gate-audit.json,current inferential full artifacts are unavailable
+gate_5_stationary_nonregression,success_gate,pending,,,,,delta CI low >= -0.01,gate-audit.json,current inferential full artifacts are unavailable
+gate_6_token_saving_nonregression,success_gate,pending,,,,,each workload delta CI low >= -0.005,gate-audit.json,current inferential full artifacts are unavailable
+gate_7_system_overhead,success_gate,pass,,,,,p95 <= 1.25x LRU and <= +0.5 ms; throughput >= 0.90x; peak RSS <= 1.20x and <= +64 MiB,gate-audit.json,all five seeds satisfy every amended Gate 7 check
+gate_8_reproducibility,success_gate,pending,,,,,two clean Docker CI runs have identical non-timing logs and all pinned downloads verify without credentials,gate-audit.json,verified paired Docker-run evidence was not supplied
+moss_recorded_response,supplemental_check,pending,,,,,"recorded responses only, zero live model calls and false hits",MOSS runs.csv/manifest.json,

@@ -31,11 +31,16 @@ each later exact-source publication refresh has its own nested manifest.
   runtime to 3.8.18. It contains host/container evidence and the analyzer audit
   for exact source commit `9ee91f1ec6b10d1c2831a15fb80e5032353e3af4`;
   its nested `SHA256SUMS` seals all 32 evidence files in the refresh.
+- `gate7-v2/` is the focused post-report Gate 7 v2 audit generated from the
+  five retained integration seeds. Its top-level status is expected to be
+  pending because the focused command supplies only Gate 7; Gate 7 itself is
+  claimable and passes.
 
-The final audit passes gates 1, 3, 5, 6, and 8; fails the preregistered gates 2
-and 4; and leaves gate 7 pending because its frozen cross-seed adjudication rule
-is undefined. The failed and pending gates are retained as results, not revised
-after observation.
+The current audit passes gates 1, 3, 5, 6, 8, and post-report Gate 7 v2, while
+the preregistered gates 2 and 4 remain failed. Gate 7 v2 explicitly covers the
+post-embedding SQLite/FAISS path and requires all five seeds to pass every
+limit; it does not claim ONNX embedding latency. The historical report retains
+the original Gate 7 pending result under its earlier incomplete protocol.
 
 The ignored working directories under `artifacts/` remain the authoritative
 full local runs. The curated files here were copied byte-for-byte from those

@@ -226,6 +226,32 @@ eviction disabled, and full CARMA.
 8. Two clean Docker CI runs produce identical non-timing logs and trace hashes;
    pinned downloads verify revisions/checksums and require no credentials.
 
+## Post-report Gate 7 v2 operational amendment
+
+Amended: 2026-08-30, after the original report and its results were produced.
+This amendment is therefore not part of the original preregistration. It
+resolves the original Gate 7 protocol gap without changing any measured value
+or numerical limit.
+
+Gate 7 v2 has the following complete execution contract:
+
+- Scope: the post-embedding GPTCache cache path through real SQLite and FAISS,
+  using the deterministic precomputed synthetic vectors. Embedding generation,
+  including ONNX inference, is excluded and must not be claimed by this gate.
+- Workload: `pollution_scan`, full mode, 3,000 requests, capacity 100,
+  threshold 0.97, `top_k=1`.
+- Replication: exactly five distinct seeds. Each policy runs in a fresh child
+  process and temporary storage directory on an identical per-seed trace.
+- Aggregation: every one of the five seeds must satisfy every Gate 7 latency,
+  throughput, and RSS limit. No averaging can hide a failing seed.
+- Adjudication: complete eligible evidence is `PASS` when all checks pass and
+  `FAIL` when any check fails. Missing, stale, incomparable, or scope-ambiguous
+  evidence remains `PENDING`.
+
+The historical report's original Gate 7 result remains correctly described as
+pending under the earlier incomplete contract. Current audits identify their
+verdict as `gate-7-v2-post-embedding` so the amendment is explicit.
+
 ## Output contract
 
 Per-request JSONL includes schema/run/trace IDs, request and phase IDs, concept

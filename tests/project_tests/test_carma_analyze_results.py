@@ -847,13 +847,15 @@ def _full_fixture(root):
     return root
 
 
-def _integration_fixture(root, seed):
+def _integration_fixture(
+    root, seed, *, carma_p95=1100, include_gate_7_metadata=True
+):
     root.mkdir(parents=True)
     rows = []
     values = {
         "LRU": (1000, 10, 100, 100 * 1024 * 1024),
         "LFU": (950, 11, 102, 102 * 1024 * 1024),
-        "CARMA": (1100, 50, 95, 110 * 1024 * 1024),
+        "CARMA": (carma_p95, 50, 95, 110 * 1024 * 1024),
     }
     for policy, (p95, policy_p95, qps, rss) in values.items():
         row = {field: 0 for field in INTEGRATION_FIELDS}
@@ -924,6 +926,27 @@ def _integration_fixture(root, seed):
             }
         },
     }
+    if include_gate_7_metadata:
+        manifest.update(
+            {
+                "precomputed_embeddings": True,
+                "process_isolation": (
+                    "one fresh child process and TemporaryDirectory per policy"
+                ),
+                "top_k": 1,
+                "timing_scope": {
+                    "total": (
+                        "per request: search, scalar lookup, policy hit or full save"
+                    )
+                },
+                "verification": {
+                    "stale_candidates_required": 0,
+                    "false_hits_required": 0,
+                    "scalar_vector_counts_equal": True,
+                    "every_active_embedding_round_trips_through_faiss": True,
+                },
+            }
+        )
     _write_json(root / "manifest.json", manifest)
     return root
 
@@ -1174,13 +1197,21 @@ def test_complete_fixture_preserves_failed_gate_and_renders(tmp_path):
     assert result["gates"]["gate_3_phase_shift_vhr"]["status"] == "pass"
     assert result["gates"]["gate_4_scan_return_vhr"]["status"] == "fail"
     assert result["gates"]["gate_4_scan_return_vhr"]["passes"] is False
-    assert result["gates"]["gate_7_system_overhead"]["status"] == "pending"
+    assert result["gates"]["gate_7_system_overhead"]["status"] == "pass"
+    assert result["gates"]["gate_7_system_overhead"]["claimable"] is True
+    assert result["gates"]["gate_7_system_overhead"]["protocol"] == (
+        "gate-7-v2-post-embedding"
+    )
     diagnostics = result["gates"]["gate_7_system_overhead"]["diagnostic_by_seed"]
     assert len(diagnostics) == 5
     assert all(row["all_individual_checks_pass"] for row in diagnostics)
     assert result["gates"]["gate_7_system_overhead"][
         "conservative_require_every_seed_interpretation"
-    ] == {"status": "pass", "claimable_as_frozen_gate": False}
+    ] == {
+        "status": "pass",
+        "claimable_as_frozen_gate": False,
+        "claimable_as_amended_gate": True,
+    }
     assert result["supplemental_checks"]["moss_recorded_response"]["status"] == "pending"
     for stem in ("vhr-deltas", "scan-return", "capacity-curve", "latency-resources"):
         assert result["figures"][stem]["status"] == "rendered"
@@ -1189,6 +1220,51 @@ def test_complete_fixture_preserves_failed_gate_and_renders(tmp_path):
     scan_svg = (output / "scan-return.svg").read_text(encoding="utf-8")
     assert "Gate 4: +5.0 pp" in scan_svg
     assert "Gate 4: FAIL" in scan_svg
+
+
+def test_gate_7_v2_fails_when_any_complete_seed_violates_a_limit(tmp_path):
+    integrations = [
+        _integration_fixture(
+            tmp_path / ("integration-%s" % seed),
+            seed,
+            carma_p95=1600 if index == 0 else 1100,
+        )
+        for index, seed in enumerate(TEST_SEEDS[:5])
+    ]
+
+    result = analyze_results(
+        tmp_path / "analysis", integration_dirs=integrations
+    )
+
+    gate = result["gates"]["gate_7_system_overhead"]
+    assert gate["status"] == "fail"
+    assert gate["claimable"] is True
+    assert gate["protocol_readiness"]["eligible"] is True
+    assert gate["diagnostic_by_seed"][0]["all_individual_checks_pass"] is False
+
+
+def test_gate_7_v2_stays_pending_without_explicit_scope_metadata(tmp_path):
+    integrations = [
+        _integration_fixture(
+            tmp_path / ("integration-%s" % seed),
+            seed,
+            include_gate_7_metadata=index != 0,
+        )
+        for index, seed in enumerate(TEST_SEEDS[:5])
+    ]
+
+    result = analyze_results(
+        tmp_path / "analysis", integration_dirs=integrations
+    )
+
+    gate = result["gates"]["gate_7_system_overhead"]
+    assert gate["status"] == "pending"
+    assert gate["claimable"] is False
+    assert gate["protocol_readiness"]["eligible"] is False
+    assert any(
+        "precomputed embeddings" in reason
+        for reason in gate["protocol_readiness"]["reasons"]
+    )
 
 
 def test_analysis_outputs_are_byte_deterministic(tmp_path):
@@ -1457,7 +1533,7 @@ def test_packaging_descendant_evidence_is_claimable(tmp_path, monkeypatch):
 def test_verified_host_and_container_evidence_pass_gates_1_and_8(
     tmp_path, monkeypatch
 ):
-    assert ANALYSIS_SCHEMA == "carma-post-analysis-v2"
+    assert ANALYSIS_SCHEMA == "carma-post-analysis-v3"
     head = _bind_analyzer_to_fixture_head(monkeypatch)
     host = _host_verification_fixture(tmp_path / "host")
     container = _container_reproducibility_fixture(tmp_path / "container")

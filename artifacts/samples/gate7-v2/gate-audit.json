@@ -1,0 +1,466 @@
+{
+  "artifacts": {
+    "latency-resources.png": {
+      "bytes": 201742,
+      "sha256": "ca9d43d25dda50972a11572a58fb7799d8f1e3498d8d4e0eade8eb1699c6604d"
+    },
+    "latency-resources.svg": {
+      "bytes": 104473,
+      "sha256": "7820eda4c7f7edadddeba86fe5af98cacca3c2d298585ffd1b2732b7607e2a0c"
+    },
+    "summary.csv": {
+      "bytes": 1692,
+      "sha256": "146fdc60d630fb92e528bed2ca8da3da5ffc7678205692f245397183a337f227"
+    }
+  },
+  "figures": {
+    "capacity-curve": {
+      "files": [],
+      "reason": "current full aggregate results unavailable",
+      "status": "pending"
+    },
+    "latency-resources": {
+      "files": [
+        "latency-resources.svg",
+        "latency-resources.png"
+      ],
+      "observations": 15,
+      "publication_contract": {
+        "minimum_font_at_report_width_pt": 11.015625,
+        "minimum_source_font_pt": 12.5,
+        "rendered_text_labels_checked": 43,
+        "report_width_in": 7.05,
+        "required_minimum_report_font_pt": 10.0,
+        "scale_to_report_width": 0.88125,
+        "source_height_in": 7.6,
+        "source_width_in": 8.0
+      },
+      "sha256": {
+        "latency-resources.png": "ca9d43d25dda50972a11572a58fb7799d8f1e3498d8d4e0eade8eb1699c6604d",
+        "latency-resources.svg": "7820eda4c7f7edadddeba86fe5af98cacca3c2d298585ffd1b2732b7607e2a0c"
+      },
+      "status": "rendered"
+    },
+    "scan-return": {
+      "files": [],
+      "reason": "current full aggregate results unavailable",
+      "status": "pending"
+    },
+    "vhr-deltas": {
+      "files": [],
+      "reason": "current full aggregate results unavailable",
+      "status": "pending"
+    }
+  },
+  "gates": {
+    "gate_1_correctness": {
+      "claimable": false,
+      "criterion": "all relevant tests pass and all integrity failures are zero",
+      "host_verification": {
+        "commit_binding": {
+          "current_git_head": "021f421e80d76ab6cde10e21cff909bda236728d",
+          "evidence_source_commit": null,
+          "reason": "clean-host evidence was not supplied",
+          "status": "not_evaluated"
+        },
+        "path": null,
+        "reason": "clean-host verification unavailable",
+        "status": "pending"
+      },
+      "observed_integrity_failures": [],
+      "reason": "verified clean-host test evidence was not supplied",
+      "status": "pending"
+    },
+    "gate_2_semantic_safety": {
+      "claimable": false,
+      "criterion": "QQP precision >= 0.99, Wilson lower >= 0.98, and CARMA FHR upper delta bound <= 0.001",
+      "qqp": {
+        "reason": "QQP result unavailable",
+        "status": "pending"
+      },
+      "reason": "formal FHR adjudication is pending because the frozen contract does not identify its workload scope",
+      "status": "pending",
+      "synthetic_fhr_by_workload": {
+        "reason": "current full results unavailable",
+        "status": "pending"
+      }
+    },
+    "gate_3_phase_shift_vhr": {
+      "claimable": false,
+      "criterion": "delta >= 0.02, CI low > 0, Holm p <= 0.05",
+      "reason": "current inferential full artifacts are unavailable",
+      "status": "pending"
+    },
+    "gate_4_scan_return_vhr": {
+      "claimable": false,
+      "criterion": "delta >= 0.05, CI low > 0, Holm p <= 0.05",
+      "reason": "current inferential full artifacts are unavailable",
+      "status": "pending"
+    },
+    "gate_5_stationary_nonregression": {
+      "claimable": false,
+      "criterion": "delta CI low >= -0.01",
+      "reason": "current inferential full artifacts are unavailable",
+      "status": "pending"
+    },
+    "gate_6_token_saving_nonregression": {
+      "claimable": false,
+      "criterion": "each workload delta CI low >= -0.005",
+      "reason": "current inferential full artifacts are unavailable",
+      "status": "pending"
+    },
+    "gate_7_system_overhead": {
+      "aggregation_rule": "all five distinct full-mode seeds must pass every per-seed check",
+      "claimable": true,
+      "conservative_require_every_seed_interpretation": {
+        "claimable_as_amended_gate": true,
+        "claimable_as_frozen_gate": false,
+        "status": "pass"
+      },
+      "criterion": "p95 <= 1.25x LRU and <= +0.5 ms; throughput >= 0.90x; peak RSS <= 1.20x and <= +64 MiB",
+      "diagnostic_by_seed": [
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": -234.916,
+          "p95_ratio": 0.9356533968,
+          "rss_delta_bytes": 5013504,
+          "rss_ratio": 1.0434288958,
+          "seed": 20260901,
+          "throughput_ratio": 1.0695750496
+        },
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": -43.25,
+          "p95_ratio": 0.9877610227,
+          "rss_delta_bytes": 3031040,
+          "rss_ratio": 1.0264097074,
+          "seed": 20260902,
+          "throughput_ratio": 1.1048464219
+        },
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": 109.75,
+          "p95_ratio": 1.0317989207,
+          "rss_delta_bytes": 3424256,
+          "rss_ratio": 1.0299341163,
+          "seed": 20260903,
+          "throughput_ratio": 0.9967589775
+        },
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": 54.875,
+          "p95_ratio": 1.0157995145,
+          "rss_delta_bytes": 2588672,
+          "rss_ratio": 1.0225135366,
+          "seed": 20260904,
+          "throughput_ratio": 1.0223872773
+        },
+        {
+          "all_individual_checks_pass": true,
+          "individual_checks": {
+            "p95_delta_us_at_most_500": true,
+            "p95_ratio_at_most_1.25": true,
+            "rss_delta_bytes_at_most_64_mib": true,
+            "rss_ratio_at_most_1.20": true,
+            "throughput_ratio_at_least_0.90": true
+          },
+          "mode": "full",
+          "p95_delta_us": -94.375,
+          "p95_ratio": 0.9725972706,
+          "rss_delta_bytes": 2883584,
+          "rss_ratio": 1.0251392658,
+          "seed": 20260905,
+          "throughput_ratio": 1.0388625938
+        }
+      ],
+      "distinct_seed_count": 5,
+      "protocol": "gate-7-v2-post-embedding",
+      "protocol_readiness": {
+        "eligible": true,
+        "protocol": "gate-7-v2-post-embedding",
+        "reasons": [],
+        "scope_verified": true
+      },
+      "protocol_status": "post-report operational amendment",
+      "reason": "all five seeds satisfy every amended Gate 7 check",
+      "required_seed_count": 5,
+      "scope": "post-embedding GPTCache cache path through SQLite and FAISS; deterministic precomputed vectors; embedding generation excluded",
+      "status": "pass"
+    },
+    "gate_8_reproducibility": {
+      "claimable": false,
+      "container_reproducibility": {
+        "commit_binding": {
+          "current_git_head": "021f421e80d76ab6cde10e21cff909bda236728d",
+          "evidence_source_commit": null,
+          "reason": "paired-container evidence was not supplied",
+          "status": "not_evaluated"
+        },
+        "path": null,
+        "reason": "paired-container evidence unavailable",
+        "status": "pending"
+      },
+      "criterion": "two clean Docker CI runs have identical non-timing logs and all pinned downloads verify without credentials",
+      "partial_provenance": {
+        "full_git": null,
+        "moss": null,
+        "qqp": null
+      },
+      "reason": "verified paired Docker-run evidence was not supplied",
+      "status": "pending"
+    }
+  },
+  "methodology_limits": [
+    "Gate 2 does not freeze which synthetic workload owns the CARMA false-hit-rate upper-bound criterion.",
+    "Gate 7 v2 covers the post-embedding SQLite/FAISS cache path with deterministic precomputed vectors; ONNX embedding generation remains outside its timing claim.",
+    "Gate 1 remains pending unless verified clean-host test evidence is exact-commit-bound to current Git HEAD.",
+    "Gate 8 remains pending unless verified paired-container evidence is exact-commit-bound to current Git HEAD."
+  ],
+  "overall_status": "pending",
+  "renderer": {
+    "backend": "Agg",
+    "library": "matplotlib",
+    "png_dpi": 220,
+    "publication_contract": {
+      "maximum_source_width_in": 8.2,
+      "minimum_report_font_pt": 10.0,
+      "minimum_source_font_pt": 12.5,
+      "nominal_minimum_font_at_report_width_pt": 11.015625,
+      "nominal_scale_to_report_width": 0.88125,
+      "report_text_width_in": 7.05,
+      "source_width_in": 8.0
+    },
+    "svg_hashsalt": "carma-post-analysis-v3",
+    "version": "3.10.8"
+  },
+  "schema_version": "carma-post-analysis-v3",
+  "sources": {
+    "container_reproducibility": {
+      "commit_binding": {
+        "current_git_head": "021f421e80d76ab6cde10e21cff909bda236728d",
+        "evidence_source_commit": null,
+        "reason": "paired-container evidence was not supplied",
+        "status": "not_evaluated"
+      },
+      "path": null,
+      "reason": "paired-container evidence unavailable",
+      "status": "pending"
+    },
+    "full": {
+      "path": null,
+      "reason": "full result directory not supplied",
+      "status": "pending"
+    },
+    "host_verification": {
+      "commit_binding": {
+        "current_git_head": "021f421e80d76ab6cde10e21cff909bda236728d",
+        "evidence_source_commit": null,
+        "reason": "clean-host evidence was not supplied",
+        "status": "not_evaluated"
+      },
+      "path": null,
+      "reason": "clean-host verification unavailable",
+      "status": "pending"
+    },
+    "integration": {
+      "comparable_across_seeds": true,
+      "distinct_seeds": [
+        20260901,
+        20260902,
+        20260903,
+        20260904,
+        20260905
+      ],
+      "inputs": [
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-online-policy-main/artifacts/samples/integration/20260901",
+          "precomputed_embeddings": true,
+          "process_isolation": "one fresh child process and TemporaryDirectory per policy",
+          "resources": {
+            "rows": 369,
+            "sha256": "5b88155523d7d334f1465f7f2e9aa7e55457fa7a12f54da594e4f79e988e2f51"
+          },
+          "runs": 3,
+          "runs_sha256": "23f5bfb71372db060323b113b4d75c350bbd401bbfb0dfdcc9e46470067653ff",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260901,
+          "status": "verified",
+          "timing_scope": {
+            "policy": "eviction put/get exclusive of nested measured cleanup storage",
+            "search": "SSDataManager.search including normalization and FAISS top_k=1",
+            "storage": "measured SQLite and FAISS read/write/add/delete calls; excludes search",
+            "total": "per request: search, scalar lookup, policy hit or full save",
+            "unaccounted": "Python orchestration, normalization, data conversion, and timer overhead",
+            "verification_and_close": "excluded from request latency; lifecycle resource sample retained"
+          }
+        },
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-online-policy-main/artifacts/samples/integration/20260902",
+          "precomputed_embeddings": true,
+          "process_isolation": "one fresh child process and TemporaryDirectory per policy",
+          "resources": {
+            "rows": 369,
+            "sha256": "3665e224b51982d5b4bd8faabb74ea37f823c6d2f1035a8a0da09789cbd63ef1"
+          },
+          "runs": 3,
+          "runs_sha256": "6fa64896c413b1a48b80cdb5f42a98ca58fc2fe9baebcd198365f0cd106e4e42",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260902,
+          "status": "verified",
+          "timing_scope": {
+            "policy": "eviction put/get exclusive of nested measured cleanup storage",
+            "search": "SSDataManager.search including normalization and FAISS top_k=1",
+            "storage": "measured SQLite and FAISS read/write/add/delete calls; excludes search",
+            "total": "per request: search, scalar lookup, policy hit or full save",
+            "unaccounted": "Python orchestration, normalization, data conversion, and timer overhead",
+            "verification_and_close": "excluded from request latency; lifecycle resource sample retained"
+          }
+        },
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-online-policy-main/artifacts/samples/integration/20260903",
+          "precomputed_embeddings": true,
+          "process_isolation": "one fresh child process and TemporaryDirectory per policy",
+          "resources": {
+            "rows": 369,
+            "sha256": "087c99544511ce98af560b2b99152eab93bf1c713381e2ab667d4cd828a14f34"
+          },
+          "runs": 3,
+          "runs_sha256": "2b11010908d9ba83d38d833290d12fcb43adfdecff90ce7c45d01ac16320be18",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260903,
+          "status": "verified",
+          "timing_scope": {
+            "policy": "eviction put/get exclusive of nested measured cleanup storage",
+            "search": "SSDataManager.search including normalization and FAISS top_k=1",
+            "storage": "measured SQLite and FAISS read/write/add/delete calls; excludes search",
+            "total": "per request: search, scalar lookup, policy hit or full save",
+            "unaccounted": "Python orchestration, normalization, data conversion, and timer overhead",
+            "verification_and_close": "excluded from request latency; lifecycle resource sample retained"
+          }
+        },
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-online-policy-main/artifacts/samples/integration/20260904",
+          "precomputed_embeddings": true,
+          "process_isolation": "one fresh child process and TemporaryDirectory per policy",
+          "resources": {
+            "rows": 369,
+            "sha256": "44f46c53da30a30364f81a22d13a5492701211ea6be92032db44d815f87bd655"
+          },
+          "runs": 3,
+          "runs_sha256": "f167199e85568f6652d6d23cc2d5f5ea862f269d9ed34ce532d73c62663be869",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260904,
+          "status": "verified",
+          "timing_scope": {
+            "policy": "eviction put/get exclusive of nested measured cleanup storage",
+            "search": "SSDataManager.search including normalization and FAISS top_k=1",
+            "storage": "measured SQLite and FAISS read/write/add/delete calls; excludes search",
+            "total": "per request: search, scalar lookup, policy hit or full save",
+            "unaccounted": "Python orchestration, normalization, data conversion, and timer overhead",
+            "verification_and_close": "excluded from request latency; lifecycle resource sample retained"
+          }
+        },
+        {
+          "git": {
+            "head_commit": "3ebaf36a2b88723f2a57d7ddc90d690923288095",
+            "worktree_dirty": false
+          },
+          "mode": "full",
+          "path": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-online-policy-main/artifacts/samples/integration/20260905",
+          "precomputed_embeddings": true,
+          "process_isolation": "one fresh child process and TemporaryDirectory per policy",
+          "resources": {
+            "rows": 369,
+            "sha256": "74343346e6ab557787bc393df4de6bab0dba9a6d30d89363a49075787470e0ca"
+          },
+          "runs": 3,
+          "runs_sha256": "7608f115092283bb3896c37ffa36738af416e4e8da03c1226ac90ef2cd7d2ca9",
+          "schema_version": "carma-sqlite-faiss-v1",
+          "seed": 20260905,
+          "status": "verified",
+          "timing_scope": {
+            "policy": "eviction put/get exclusive of nested measured cleanup storage",
+            "search": "SSDataManager.search including normalization and FAISS top_k=1",
+            "storage": "measured SQLite and FAISS read/write/add/delete calls; excludes search",
+            "total": "per request: search, scalar lookup, policy hit or full save",
+            "unaccounted": "Python orchestration, normalization, data conversion, and timer overhead",
+            "verification_and_close": "excluded from request latency; lifecycle resource sample retained"
+          }
+        }
+      ],
+      "status": "verified",
+      "verified_inputs": 5
+    },
+    "moss": {
+      "path": null,
+      "reason": "MOSS result directory not supplied",
+      "status": "pending"
+    },
+    "qqp": {
+      "path": null,
+      "reason": "QQP result not supplied",
+      "status": "pending"
+    }
+  },
+  "status_precedence": "fail > pending > pass",
+  "supplemental_checks": {
+    "moss_recorded_response": {
+      "criterion": "recorded responses only, zero live model calls and false hits",
+      "failures": [],
+      "source_provenance": null,
+      "status": "pending"
+    }
+  }
+}

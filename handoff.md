@@ -38,9 +38,11 @@ The short version is:
   <https://github.com/MatanGoldfarB/gptcache-online-policy>.
 - Result: the implementation and reproducibility work are complete, but the
   research hypothesis is only partly supported. Gates 1, 3, 5, 6, and 8 pass;
-  Gates 2 and 4 fail; Gate 7 is pending. The overall frozen audit is therefore
-  `FAIL` under `fail > pending > pass`, even though the phase-shift result is
-  strong and statistically supported.
+  Gates 2 and 4 fail; the original report records Gate 7 as pending. The
+  post-report Gate 7 v2 amendment now passes for the explicitly post-embedding
+  SQLite/FAISS scope. The overall audit remains `FAIL` because Gates 2 and 4
+  are failed, even though the phase-shift result is strong and statistically
+  supported.
 
 Do not turn that last sentence into “the project failed.” The correct reading
 is that the engineering deliverable is complete and several claims pass, while
@@ -595,13 +597,15 @@ baseline would overstate the contribution.
 | 4 | Scan-return VHR gain >= 5 pp, CI above zero, Holm p <= .05 | **FAIL**, claimable negative result |
 | 5 | Stationary VHR lower CI no worse than -1 pp | **PASS**, claimable |
 | 6 | Safe-token lower CI no worse than -0.5 pp in each primary workload | **PASS**, claimable |
-| 7 | Latency/throughput/RSS within frozen limits | **PENDING**, diagnostic only |
+| 7 | Latency/throughput/RSS within amended post-embedding limits | **PASS** under Gate 7 v2; all five seeds pass every limit |
 | 8 | Two clean Docker runs have identical non-timing logs and trace hashes | **PASS**, claimable |
 
-The machine-readable authority is
-`artifacts/samples/analysis/gate-audit.json`. Prose must agree with it. The
-overall status is fail because the audit precedence is fail, then pending,
-then pass; passing most gates cannot erase a failed preregistered hypothesis.
+The original machine-readable authority is
+`artifacts/samples/analysis/gate-audit.json`; it correctly preserves the
+historical pending Gate 7 verdict. The amended Gate 7 v2 authority is
+`artifacts/samples/gate7-v2/gate-audit.json`, where Gate 7 itself is claimable
+and passes. The overall project status remains fail because Gates 2 and 4 are
+failed; passing Gate 7 v2 cannot erase a failed preregistered hypothesis.
 
 ## 13. Main synthetic results
 
@@ -695,17 +699,19 @@ mix of hits, admissions, and physical cleanup. The worst per-seed throughput
 ratio is 0.997x LRU; the worst peak-RSS ratio is 1.043x, +4.8 MiB. Mean one-core
 CPU utilization is 96.9% for CARMA versus 94.1% for LRU.
 
-### Why Gate 7 is still pending
+### Why Gate 7 was pending, and how v2 resolves it
 
 The frozen protocol specified the `paraphrase-albert-onnx` embedding on CPU,
 but the executed integration runs replay precomputed 2,982-dimensional
 synthetic vectors. The measured “total” starts at cache search, so embedding
-generation is excluded. The contract also did not freeze a rule for combining
-five seeds into one Gate 7 decision.
+generation is excluded. The original contract also did not freeze a rule for
+combining five seeds into one Gate 7 decision.
 
-Every seed meets the numerical diagnostic thresholds, but the formal gate
-cannot be promoted to pass. These are real post-embedding cache-path and
-storage measurements, not full ONNX request-path measurements.
+The post-report Gate 7 v2 amendment freezes the scope as this post-embedding
+SQLite/FAISS path and uses the most conservative aggregation rule: all five
+distinct full-mode seeds must pass every limit. Every retained seed does, so
+Gate 7 v2 passes. This does not promote the original preregistered gate or turn
+the measurements into full ONNX request-path evidence.
 
 The artifacts retain only each process’s mean and quantiles, not individual
 request latencies. The figure therefore shows the cross-seed distribution of
@@ -788,7 +794,9 @@ were discovered after the full synthetic/integration/QQP execution:
 4. Secondary controls and the request-count scale sweep were not completed.
    Capacity sweeps and component ablations were completed.
 5. Integration timing used precomputed vectors, not the specified ONNX
-   embedding; Gate 7 is diagnostic/pending.
+   embedding; the original report therefore left Gate 7 pending. The later
+   Gate 7 v2 amendment accepts only the explicitly post-embedding scope and
+   does not erase this historical deviation.
 6. QQP held-out cosine similarities were computed before the calibration
    abort, although no held-out decision metric was produced.
 
@@ -1117,7 +1125,8 @@ Do not claim any of the following from the current evidence:
 - that all eight gates pass;
 - that held-out QQP precision is known;
 - that CARMA materially beats LFU on the frozen scan-return phase;
-- that Gate 7 formally passes;
+- that the original preregistered Gate 7 passed, or that Gate 7 v2 covers more
+  than the post-embedding SQLite/FAISS path;
 - that the system timings include ONNX embedding generation;
 - that integration artifacts retain per-request latency samples;
 - that MOSS demonstrates semantic CARMA hit-rate superiority;
@@ -1138,8 +1147,8 @@ Safe claims are narrower:
   paired CI and Holm-corrected significance.
 - Stationary VHR and safe-token non-regression gates pass.
 - The QQP calibration prerequisite and scan-return improvement gate fail.
-- Real post-embedding SQLite/FAISS measurements are favorable diagnostics, but
-  the formal overhead gate remains pending.
+- Real post-embedding SQLite/FAISS measurements pass the amended Gate 7 v2
+  conservative all-five-seeds rule; ONNX embedding latency remains excluded.
 - Exact-source host and paired network-isolated container verification pass for
   the attested source/package relationship.
 
@@ -1153,12 +1162,12 @@ A better preregistered workload could enlarge the hot set or interleave
 recurrent cold items, while preserving fair pairing and preventing post-hoc
 threshold changes.
 
-### 25.2 Complete Gate 7 properly
+### 25.2 Extend Gate 7 to an ONNX end-to-end supplement
 
-Freeze an across-seed aggregation rule first. Then run the pinned ONNX embedding
-inside the measured request path on Linux, retain per-request latency and
-resource samples, and evaluate the full gate without replacing the historical
-precomputed-vector run.
+Run the pinned ONNX embedding inside the measured request path on Linux, retain
+per-request latency and resource samples, and evaluate it as a separately named
+supplement without replacing the historical precomputed-vector run or the
+post-embedding Gate 7 v2 verdict.
 
 ### 25.3 Semantic safety
 
@@ -1324,7 +1333,7 @@ the requested one.
 - [x] Published `HEAD` is the direct packaging child of the exact verified
   source commit.
 - [x] Post-packaging analyzer reports `verified_packaging_descendant`.
-- [x] Gates 1/3/5/6/8 pass, 2/4 fail, and 7 is pending in the current audit.
+- [x] Gates 1/3/5/6/8 and amended Gate 7 v2 pass; Gates 2/4 remain failed.
 - [x] Curated checksum manifests verify every listed file.
 - [x] `docs/project/report.pdf` is present, 8--12 pages, and visually checked.
 - [x] GitHub repository is private and both `main` and feature branch resolve
