@@ -19,7 +19,9 @@
 \definecolor{pass}{HTML}{237A45}
 \definecolor{fail}{HTML}{B6423C}
 \definecolor{pending}{HTML}{8A6500}
-\hypersetup{colorlinks=true,linkcolor=carma,urlcolor=carma,citecolor=carma}
+\hypersetup{colorlinks=true,linkcolor=carma,urlcolor=carma,citecolor=carma,
+  pdftitle={CARMA: Online Cluster-Adaptive Eviction for GPTCache},
+  pdfauthor={Talya Yermiyahu}}
 \urlstyle{tt}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{4pt}
@@ -57,9 +59,9 @@
   \vspace{0.18in}
   {\Large Cluster-Adaptive Reuse and Miss-pressure Admission\par}
   \vspace{0.42in}
-  {\large Matan Goldfarb\par}
+  {\large Talya Yermiyahu\par}
   \vspace{0.10in}
-  {\normalsize Final Project Report --- August 2026\par}
+  {\normalsize Final Project Report --- Revised August 30, 2026\par}
   \vspace{0.45in}
 
   \begin{minipage}{0.90\textwidth}
@@ -78,14 +80,18 @@
   non-regression and token-saving gates. Five fresh SQLite/FAISS processes per
   policy showed worst ratios across seeds of 1.032$\times$ LRU for
   post-embedding cache-path p95 latency, 0.997$\times$ LRU for throughput, and
-  1.043$\times$ LRU for sampled peak RSS.
+  1.043$\times$ LRU for sampled peak RSS. A post-report operational amendment
+  froze that measured scope and required every seed to satisfy every limit; the
+  analyzer rerun records \textbf{Gate 7 v2 as PASS}. This result covers the
+  post-embedding SQLite/FAISS path and does not include ONNX embedding latency.
 
   Two preregistered gates \textbf{failed}. CARMA returned 30,000/30,000 valid
   scan-return hits, but LFU already returned 29,998/30,000, leaving only
   +0.0067 percentage points rather than the required +5.0. Separately, no QQP
   calibration threshold met the semantic-precision prerequisite, so the
-  held-out split was not evaluated. The system-overhead gate remains pending
-  because its across-seed rule was not frozen.
+  held-out split was not evaluated. Those failures remain visible, so the
+  overall research audit remains \textbf{FAIL} even though amended Gate 7 v2
+  passes.
   \end{minipage}
 
   \vfill
@@ -138,10 +144,12 @@ FAISS vector cannot shadow a valid neighbor at \code{top\_k=1}.
 
 The contribution is CARMA, a deterministic online policy plus backward-
 compatible GPTCache integration, failure-safe cleanup, restart reconstruction,
-tests, and a reproducible evaluation pipeline. The machine audit records Gates
-1, 3, 5, 6, and 8 as pass; Gates 2 and 4 as fail; and Gate 7 as pending. Its
-overall status is therefore \textbf{FAIL} under the frozen precedence
-fail $>$ pending $>$ pass, despite the supported phase-shift benefit.
+tests, and a reproducible evaluation pipeline. The frozen audit records Gates
+1, 3, 5, 6, and 8 as pass, Gates 2 and 4 as fail, and the original Gate 7 as
+pending. The post-report Gate 7 v2 audit separately records a pass for the
+explicitly post-embedding scope. The current summary therefore treats Gates 1,
+3, 5, 6, amended 7, and 8 as pass and Gates 2 and 4 as fail. Overall status
+remains \textbf{FAIL} under the frozen precedence fail $>$ pending $>$ pass.
 
 \section{Extension design}
 
@@ -301,6 +309,12 @@ metrics are valid-hit rate (VHR), hit precision, false-hit rate, opportunity
 recall, and safe token-saving ratio. System metrics include request latency
 percentiles, throughput, CPU time, sampled RSS, and storage invariants.
 
+Gate 7 v2 is an explicitly post-report operational amendment. It preserves the
+original numerical limits, freezes the measured scope as the post-embedding
+SQLite/FAISS path with precomputed vectors, and requires all five distinct seeds
+to pass every latency, throughput, and RSS check. Missing or incomparable
+evidence remains pending, while any failed per-seed check makes the gate fail.
+
 Paired deltas use 10,000-resample seed bootstraps. Confirmatory VHR comparisons
 against LRU, LFU, and the per-seed stronger baseline share an exact Wilcoxon
 Holm family. Capacity sweeps use the same capacity-100 traces at capacities 20,
@@ -408,11 +422,12 @@ final scalar/vector counts.
 
 Figure~\ref{fig:system} separates policy-only work from post-embedding cache-path
 cost.
-\reportfigure{artifacts/samples/analysis/latency-resources.png}{Real
+\reportfigure{artifacts/samples/gate7-v2/latency-resources.png}{Real
 SQLite/FAISS measurements using precomputed synthetic vectors. Bars are
 five-seed means and circles are individual fresh-process runs. Policy-only
 overhead is shown separately from post-embedding cache-path request cost;
-embedding generation is excluded.}{fig:system}
+embedding generation is excluded. All five seeds pass every amended Gate 7 v2
+limit.}{fig:system}
 \FloatBarrier
 
 \begin{table}[ht]
@@ -439,9 +454,10 @@ admission, and storage-cleanup mixes. The worst ratio across seeds is
 peak RSS. Mean one-core CPU utilization is 96.9\% for CARMA versus 94.1\% for
 LRU. GPU use is not applicable to this CPU-only path, and macOS did not expose
 portable process I/O byte counters. Every seed satisfies the individual
-numerical checks; formal Gate 7 remains pending because the frozen contract
-omitted an across-seed aggregation rule and specified an ONNX integration
-embedding that this run did not use.
+numerical checks. Under the amended all-five-seeds aggregation rule, Gate 7 v2
+therefore passes for this post-embedding scope. The original preregistered gate
+remains historically unresolved because its contract omitted aggregation and
+specified an ONNX integration embedding that this run did not use.
 
 Only each run's mean and quantiles were retained; individual request-latency
 samples were not retained in the integration artifacts. Figure~\ref{fig:system}
@@ -493,14 +509,16 @@ held-out evaluation was not run. \\
 4 & \failmark & Return VHR +0.0067 pp versus required +5.0 pp. \\
 5 & \passmark & Stationary VHR delta CI lower bound +6.572 pp. \\
 6 & \passmark & Safe-token delta CI lower bound meets every workload limit. \\
-7 & \pendingmark & Every precomputed-vector seed meets the diagnostics, but no
-frozen aggregation rule and no ONNX-path run. \\
+7 v2 & \passmark & All five precomputed-vector seeds pass every latency,
+throughput, and RSS limit under the amended post-embedding protocol; ONNX
+embedding latency is excluded. \\
 8 & \passmark & Two fresh network-isolated \code{linux/amd64} runs produced
 byte-identical benchmark artifacts and normalized logs. \\
 \bottomrule
 \end{tabularx}
-\caption{Success-gate status reconciled to the machine-readable audit. Failed
-and pending gates are retained rather than averaged into a global pass.}
+\caption{Success-gate status reconciled to the frozen audit and the separately
+identified Gate 7 v2 amendment. Failed gates remain visible rather than being
+averaged into a global pass.}
 \end{table}
 
 \section{Discussion, protocol audit, and limitations}
@@ -511,8 +529,9 @@ CARMA's strongest evidence is phase adaptation: decay prevents obsolete
 lifetime popularity from dominating after a topic shift, while topic quotas
 preserve coverage. Admission also protects scan performance. The implementation
 cost is measurable in policy-only latency; every tested seed stays inside the
-diagnostic numerical limits on this CPU/SQLite/FAISS path, but the formal
-system gate remains pending.
+numerical limits on this CPU/SQLite/FAISS path, so amended Gate 7 v2 passes for
+the explicitly post-embedding scope. It does not establish ONNX embedding
+latency.
 
 The scan gate explains why raw perfection is not enough. CARMA achieves 100\%
 return VHR, but the correct comparator is the stronger paired baseline, not
@@ -540,7 +559,9 @@ not hide:
   were not run. Capacity sweeps and the four component ablations were run; and
   \item the integration runs used precomputed 2,982-dimensional synthetic
   vectors rather than the frozen ONNX embedding, so their timing covers only
-  the post-embedding cache path and Gate 7 remains diagnostic; and
+  the post-embedding cache path. The original gate remains unresolved, while
+  the separately identified Gate 7 v2 amendment accepts this limited scope and
+  passes under its conservative all-five-seeds rule; and
   \item the QQP implementation computed held-out cosine similarities
   transiently before the calibration abort, although it never selected a
   threshold, classified or aggregated held-out labels, exposed held-out
@@ -549,8 +570,9 @@ not hide:
 
 The exact historical result remains tied to clean commit
 \code{28129f0b9785232827e741c0e2ff2bb96cc19423}; later tooling changes cannot
-retroactively alter its status. A separate deviation ledger documents impact
-and future-run remediation.
+retroactively turn the original preregistered Gate 7 into a pass. Gate 7 v2 is
+a separate amended adjudication of unchanged retained measurements. A separate
+deviation ledger documents its scope, impact, and future-run remediation.
 
 Final correctness and reproducibility evidence is tied to exact source commit:
 \newline\code{9ee91f1ec6b10d1c2831a15fb80e5032353e3af4}. The clean host and both
@@ -581,8 +603,9 @@ checks, deterministic analysis, container/CI definitions, and an auditable
 report. The central hypothesis is only partly supported: CARMA is compelling
 under category shift and passes stationary VHR non-regression, but semantic
 safety fails at QQP calibration and its preregistered scan advantage over the
-strongest baseline fails. System overhead remains diagnostic rather than a
-claimable pass.
+strongest baseline fails. System overhead is a claimable pass only under the
+amended Gate 7 v2 post-embedding scope; end-to-end ONNX embedding latency remains
+unevaluated.
 
 The most valuable next steps are to persist versioned adaptive state, replace
 linear victim scans with per-topic heaps, test more embedding models and cache
@@ -603,8 +626,8 @@ tests (2 skipped); real integration integrity failures are zero. \\
 Reproducibility (30\%) & \passmark & Exact pins and one source archive produced
 matching host plus two fresh network-isolated container benchmark artifacts;
 all retained evidence is checksum-linked. \\
-Performance (15\%) & Mixed & Gates 3, 5, 6 pass; Gates 2 and 4 fail; each
-system seed meets its diagnostic checks but Gate 7 is pending. \\
+Performance (15\%) & Mixed & Gates 3, 5, 6 and amended Gate 7 v2 pass; Gates 2
+and 4 fail. Gate 7 v2 covers the post-embedding SQLite/FAISS path only. \\
 Clarity (15\%) & Complete & One-page baseline rationale, policy/protocol docs,
 README commands, labeled figures, limitations, and this report. \\
 \bottomrule
@@ -634,7 +657,8 @@ statistics, and analysis; benchmark, analyzer, and verifier wrappers. \\
 hashed dependency locks, and lock generator. \\
 \path{README.md}; \path{.github/workflows/carma-ci.yml} & Installation,
 benchmark how-to, and immutable host/container CI. \\
-\path{artifacts/samples/} & \path{full/}, \path{integration/}, and \path{moss/}
+\path{artifacts/samples/} & \path{full/}, \path{integration/}, \path{gate7-v2/},
+and \path{moss/}
 hold curated raw evidence; \path{qqp/} holds stage manifests plus calibration
 and terminal results. \path{analysis/}, \path{verification/}, \path{README.md},
 and \path{SHA256SUMS} hold audit outputs and hashes. Source archives, raw QQP

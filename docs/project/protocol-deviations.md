@@ -145,8 +145,8 @@ cleanup, SQLite/FAISS consistency, and post-embedding cache-path behavior on
 the frozen synthetic geometry. They are not evidence for embedding latency or
 for a complete ONNX-backed request path. Although every seed satisfies the
 individual numerical Gate 7 limits, the frozen contract also omitted an
-across-seed aggregation rule. Gate 7 is therefore reported as a diagnostic
-pending result rather than a confirmatory pass.
+across-seed aggregation rule. The original adjudication was therefore reported
+as a diagnostic pending result rather than a confirmatory pass.
 
 Prospective remediation: a new, separately identified integration run must
 invoke the pinned ONNX model inside the measured request path, freeze how the

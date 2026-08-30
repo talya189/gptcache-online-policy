@@ -66,7 +66,7 @@ completed, negative result rather than being rewritten.
 | Requirement | Status | Evidence |
 |---|---:|---|
 | README install/benchmark instructions | Complete | Root `README.md` CARMA section |
-| Clean GitHub repository | Complete | Private publication target: `https://github.com/MatanGoldfarB/gptcache-online-policy`; `main` and the feature branch point to the packaged submission commit |
+| Clean GitHub repository | Complete | Independent private publication target: `https://github.com/talya189/gptcache-online-policy`; `main` contains the Gate 7 v2 fix and revised report |
 | Docker/environment reproducibility | Complete | Exact-source host evidence and two byte-matched network-isolated `linux/amd64` container runs under `artifacts/samples/verification/publication-20260826-ci-refresh/` |
 | Single 8--12 page PDF | Complete | `docs/project/report.tex` and visually verified `docs/project/report.pdf` |
 | Introduction/related work | Complete in source | Report Section 1 |

@@ -35,20 +35,20 @@ The short version is:
 - Previously verified packaging commit:
   `e1775ccbe9b771182db9784085ebe665656be92e`.
 - Published/private GitHub repository:
-  <https://github.com/MatanGoldfarB/gptcache-online-policy>.
+  <https://github.com/talya189/gptcache-online-policy>.
 - Result: the implementation and reproducibility work are complete, but the
   research hypothesis is only partly supported. Gates 1, 3, 5, 6, and 8 pass;
-  Gates 2 and 4 fail; the original report records Gate 7 as pending. The
-  post-report Gate 7 v2 amendment now passes for the explicitly post-embedding
-  SQLite/FAISS scope. The overall audit remains `FAIL` because Gates 2 and 4
-  are failed, even though the phase-shift result is strong and statistically
-  supported.
+  Gates 2 and 4 fail; the original report edition recorded Gate 7 as pending.
+  The revised report records the post-report Gate 7 v2 amendment as passing for
+  the explicitly post-embedding SQLite/FAISS scope. The overall audit remains
+  `FAIL` because Gates 2 and 4 are failed, even though the phase-shift result is
+  strong and statistically supported.
 
 Do not turn that last sentence into “the project failed.” The correct reading
 is that the engineering deliverable is complete and several claims pass, while
-two preregistered research claims were falsified and one was not fully
-adjudicable. Keeping those negative and pending results visible is part of the
-quality of the submission.
+two preregistered research claims were falsified and the original Gate 7
+contract was incomplete. Keeping those negative results and the Gate 7 amendment
+boundary visible is part of the quality of the submission.
 
 ## 1. What the lecturer required
 
@@ -1266,7 +1266,9 @@ container equality machine-dependent.
 
 **Why can the research audit say FAIL when the implementation is complete?**
 Because the audit represents preregistered claims, not task completion. Two
-hypotheses failed and one gate is pending; hiding them would be worse science.
+hypotheses failed. The original Gate 7 contract was incomplete, while the
+separately identified Gate 7 v2 amendment passes; hiding those distinctions
+would be worse science.
 
 **Why is the report package a different commit from the verified source?**
 Generated evidence can only exist after the source runs. A single restricted
@@ -1286,27 +1288,23 @@ and expected-miss behavior without an API. It is explicitly a negative control.
 
 ## 28. Publication and collaboration state
 
-The project is published as a **private** GitHub repository because this is
-coursework. The upstream GPTCache remote remains available as `origin`;
-the personal submission repository should use a separate remote such as
-`submission` so nobody accidentally pushes to `zilliztech/GPTCache`.
+The project is published as a **private** GitHub repository owned by Talya
+Yermiyahu because this is coursework. The independent submission is `origin`.
+The earlier project repository remains available as fetch-only `source`, with
+its push URL disabled so the two computers cannot accidentally publish over one
+another.
 
 Expected remote layout:
 
 ```text
-origin      https://github.com/zilliztech/GPTCache.git
-submission https://github.com/MatanGoldfarB/gptcache-online-policy.git
+origin  https://github.com/talya189/gptcache-online-policy.git
+source  https://github.com/MatanGoldfarB/gptcache-online-policy.git (fetch only)
 ```
 
-The feature branch and `main` point at the same final packaging commit for an
-easy landing page, the full inherited GPTCache history is preserved, and all
-41 inherited tags are published. On a personal GitHub repository, an outside collaborator can receive
-write/push access but not owner/admin repository-management powers. True admin
-access requires an organization-owned repository. Talya’s invitation therefore
-must use the highest permission actually available on this personal repository.
-The email address alone could not be resolved through GitHub's collaborator
-API; the invitation remains pending until her GitHub username is supplied (or
-an authenticated GitHub browser session is used for the email-address flow).
+The independent `main` branch preserves the inherited project history through
+the matching local snapshot and adds the Gate 7 v2 and revised-report commits.
+No collaborator invitation is needed because `talya189` owns the publication
+repository.
 
 The first hosted Actions run exposed one runner-availability issue before any
 compatibility test executed: GitHub's Python manifest has no 3.8.20 x64 build

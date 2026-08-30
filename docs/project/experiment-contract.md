@@ -248,8 +248,9 @@ Gate 7 v2 has the following complete execution contract:
   `FAIL` when any check fails. Missing, stale, incomparable, or scope-ambiguous
   evidence remains `PENDING`.
 
-The historical report's original Gate 7 result remains correctly described as
-pending under the earlier incomplete contract. Current audits identify their
+The original report edition's Gate 7 result remains correctly described as
+pending under the earlier incomplete contract. The revised report presents that
+historical boundary alongside the amended pass. Current audits identify the new
 verdict as `gate-7-v2-post-embedding` so the amendment is explicit.
 
 ## Output contract
