@@ -155,6 +155,26 @@ def test_admission_disabled_does_not_reject_zero_quota_candidate():
     assert evicted == [1]
 
 
+def test_first_occurrence_rejection_defers_unused_quota_refresh():
+    policy = _policy(
+        lambda _keys: None,
+        maxsize=1,
+        max_cells=3,
+        admission_enabled=True,
+        quota_enabled=True,
+    )
+    policy.put_with_metadata([1], [_vector(1, 0)])
+
+    first = policy.put_with_metadata([2], [_vector(0, 1)])[0]
+
+    assert first["action"] == "reject_first_occurrence"
+    assert policy.stats()["quota_refreshes"] == 0
+
+    policy.put_with_metadata([3], [_vector(0, 1)])
+
+    assert policy.stats()["quota_refreshes"] == 1
+
+
 def test_wrong_vector_dimension_is_rejected_before_scalar_persistence():
     with TemporaryDirectory() as root:
         scalar = CacheBase(

@@ -5,7 +5,6 @@ semantic topics and cells from insertion-time embeddings while retaining the
 legacy ``put(ids)`` / ``get(id)`` eviction interface.
 """
 
-import copy
 import math
 import threading
 from dataclasses import dataclass, field
@@ -502,33 +501,48 @@ class ClusterAdaptiveEviction(EvictionBase):
     def _capture_state(self) -> Dict[str, Any]:
         """Copy mutable policy state without copying arbitrary ID objects."""
 
-        entries = {key: copy.copy(entry) for key, entry in self._entries.items()}
+        # Normal operations only retain this snapshot until the storage
+        # callback succeeds.  Store field tuples here and reconstruct policy
+        # dataclasses only on the exceptional rollback path; creating hundreds
+        # of short-lived dataclass objects dominated rejected-miss latency.
+        entries = {
+            key: (
+                entry.key,
+                entry.topic_id,
+                entry.cell_id,
+                entry.hit_mass,
+                entry.stat_tick,
+                entry.insert_tick,
+                entry.last_hit_tick,
+            )
+            for key, entry in self._entries.items()
+        }
         topics = {
-            topic_id: _TopicState(
-                topic_id=topic.topic_id,
+            topic_id: (
+                topic.topic_id,
                 # Centroid updates replace arrays rather than mutating them, so
                 # sharing the immutable snapshot avoids an O(cells * dimension)
                 # copy on every transactional insertion.
-                centroid=topic.centroid,
-                seen_count=topic.seen_count,
-                residents=set(topic.residents),
-                cell_ids=set(topic.cell_ids),
-                demand=topic.demand,
-                miss_mass=topic.miss_mass,
-                stat_tick=topic.stat_tick,
+                topic.centroid,
+                topic.seen_count,
+                set(topic.residents),
+                set(topic.cell_ids),
+                topic.demand,
+                topic.miss_mass,
+                topic.stat_tick,
             )
             for topic_id, topic in self._topics.items()
         }
         cells = {
-            cell_id: _CellState(
-                cell_id=cell.cell_id,
-                topic_id=cell.topic_id,
-                centroid=cell.centroid,
-                seen_count=cell.seen_count,
-                residents=set(cell.residents),
-                support=cell.support,
-                stat_tick=cell.stat_tick,
-                last_seen_tick=cell.last_seen_tick,
+            cell_id: (
+                cell.cell_id,
+                cell.topic_id,
+                cell.centroid,
+                cell.seen_count,
+                set(cell.residents),
+                cell.support,
+                cell.stat_tick,
+                cell.last_seen_tick,
             )
             for cell_id, cell in self._cells.items()
         }
@@ -559,9 +573,17 @@ class ClusterAdaptiveEviction(EvictionBase):
         self._failure_reason = state["failure_reason"]
         self._tick = state["tick"]
         self._dimension = state["dimension"]
-        self._entries = state["entries"]
-        self._topics = state["topics"]
-        self._cells = state["cells"]
+        self._entries = {
+            key: _EntryState(*entry) for key, entry in state["entries"].items()
+        }
+        self._topics = {
+            topic_id: _TopicState(*topic)
+            for topic_id, topic in state["topics"].items()
+        }
+        self._cells = {
+            cell_id: _CellState(*cell)
+            for cell_id, cell in state["cells"].items()
+        }
         self._next_topic_id = state["next_topic_id"]
         self._next_cell_id = state["next_cell_id"]
         self._quotas = state["quotas"]
@@ -675,7 +697,6 @@ class ClusterAdaptiveEviction(EvictionBase):
             self._last_event = outcome
             return outcome, [victim.key]
 
-        self._refresh_quotas(force=True)
         cell = self._cells[cell_id]
         cell_support = self._decayed(cell.support, cell.stat_tick, self._tick)
         if (
@@ -687,6 +708,11 @@ class ClusterAdaptiveEviction(EvictionBase):
             self._last_event = outcome
             return outcome, [key]
 
+        # A first-occurrence rejection never reads quotas, so avoid rebuilding
+        # every topic's allocation on that dominant miss path.  Quotas remain
+        # decision-equivalent because they are refreshed immediately before
+        # the first quota-dependent admission or victim-selection decision.
+        self._refresh_quotas(force=True)
         if (
             self.admission_enabled
             and self.quota_enabled

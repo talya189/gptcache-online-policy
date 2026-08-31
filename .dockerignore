@@ -26,6 +26,7 @@ docs/project/**
 !docs/project/gate7-v2-remediation-contract.md
 !docs/project/gate7-v3-remediation-contract.md
 !docs/project/gate7-v4-remediation-contract.md
+!docs/project/gate7-v5-remediation-contract.md
 !docs/project/evidence/
 !docs/project/evidence/**
 !artifacts/
@@ -46,6 +47,14 @@ artifacts/samples/verification/gate7-v3-invalid/**
 !artifacts/samples/verification/gate7-v3-invalid/attempt-ledger.jsonl
 !artifacts/samples/verification/gate7-v3-invalid/gate7-preterminal-adjudication.json
 !artifacts/samples/verification/gate7-v3-invalid/manifest.json
+!artifacts/samples/verification/gate7-v4-invalid/
+artifacts/samples/verification/gate7-v4-invalid/**
+!artifacts/samples/verification/gate7-v4-invalid/SHA256SUMS
+!artifacts/samples/verification/gate7-v4-invalid/attempt-ledger.jsonl
+!artifacts/samples/verification/gate7-v4-invalid/attempt-1-failure.json
+!artifacts/samples/verification/gate7-v4-invalid/attempt-2-manifest.json
+!artifacts/samples/verification/gate7-v4-invalid/attempt-2-preterminal-adjudication.json
+!artifacts/samples/verification/gate7-v4-invalid/attempt-2-adjudication.json
 !examples/
 examples/**
 !examples/benchmark/
@@ -58,10 +67,12 @@ scripts/**
 !scripts/gate7_v2_isolated_bootstrap.py
 !scripts/gate7_v3_isolated_bootstrap.py
 !scripts/gate7_v4_isolated_bootstrap.py
+!scripts/gate7_v5_isolated_bootstrap.py
 !scripts/run_ci_benchmark.sh
 !scripts/run_gate7_v2_onnx_integration_benchmark.sh
 !scripts/run_gate7_v3_onnx_integration_benchmark.sh
 !scripts/run_gate7_v4_onnx_integration_benchmark.sh
+!scripts/run_gate7_v5_onnx_integration_benchmark.sh
 !scripts/run_qqp_validation.sh
 !scripts/run_reproducibility_gate.sh
 !scripts/verify_project.sh

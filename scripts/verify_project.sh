@@ -25,6 +25,7 @@ cleanup() {
 trap cleanup EXIT
 
 cd "${PROJECT_ROOT}"
+export PYTHONDONTWRITEBYTECODE=1
 
 echo "[verify] interpreter and dependency integrity"
 python - <<'PY'
@@ -119,6 +120,10 @@ expected_project_tests=(
   tests/project_tests/test_gate7_v4_audit.py
   tests/project_tests/test_gate7_v4_isolated_bootstrap.py
   tests/project_tests/test_gate7_v4_onnx_integration.py
+  tests/project_tests/test_gate7_v4_preservation.py
+  tests/project_tests/test_gate7_v5_audit.py
+  tests/project_tests/test_gate7_v5_isolated_bootstrap.py
+  tests/project_tests/test_gate7_v5_onnx_integration.py
   tests/project_tests/test_moss_benchmark.py
   tests/project_tests/test_qqp_gate7_assets.py
   tests/project_tests/test_qqp_v2.py

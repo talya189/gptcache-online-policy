@@ -57,12 +57,16 @@ def test_docker_context_parent_exceptions_remain_tight():
         gate7_v4_contract = active_patterns.index(
             "!docs/project/gate7-v4-remediation-contract.md"
         )
+        gate7_v5_contract = active_patterns.index(
+            "!docs/project/gate7-v5-remediation-contract.md"
+        )
         evidence_parent = active_patterns.index("!docs/project/evidence/")
         evidence_contents = active_patterns.index("!docs/project/evidence/**")
         assert docs_parent < docs_reexclude < project_parent
         assert project_parent < project_reexclude < gate7_contract
         assert gate7_contract < gate7_v2_contract < gate7_v3_contract
-        assert gate7_v3_contract < gate7_v4_contract < evidence_parent
+        assert gate7_v3_contract < gate7_v4_contract < gate7_v5_contract
+        assert gate7_v5_contract < evidence_parent
         assert evidence_parent < evidence_contents
 
         artifacts_parent = active_patterns.index("!artifacts/")
@@ -87,12 +91,19 @@ def test_docker_context_parent_exceptions_remain_tight():
         v3_reexclude = active_patterns.index(
             "artifacts/samples/verification/gate7-v3-invalid/**"
         )
+        v4_parent = active_patterns.index(
+            "!artifacts/samples/verification/gate7-v4-invalid/"
+        )
+        v4_reexclude = active_patterns.index(
+            "artifacts/samples/verification/gate7-v4-invalid/**"
+        )
         assert artifacts_parent < artifacts_reexclude < samples_parent
         assert samples_parent < samples_reexclude < verification_parent
         assert verification_parent < verification_reexclude < v2_parent
         assert v2_parent < v2_reexclude < v3_parent < v3_reexclude
-        for name in evidence.V4_VERIFICATION_INPUTS[-4:]:
-            assert v3_reexclude < active_patterns.index("!" + name)
+        assert v3_reexclude < v4_parent < v4_reexclude
+        for name in evidence.V5_VERIFICATION_INPUTS[-6:]:
+            assert v4_reexclude < active_patterns.index("!" + name)
 
         assets_parent = active_patterns.index("!assets/")
         assets_reexclude = active_patterns.index("assets/**")
@@ -111,10 +122,12 @@ def test_docker_context_parent_exceptions_remain_tight():
             "!scripts/gate7_v2_isolated_bootstrap.py",
             "!scripts/gate7_v3_isolated_bootstrap.py",
             "!scripts/gate7_v4_isolated_bootstrap.py",
+            "!scripts/gate7_v5_isolated_bootstrap.py",
             "!scripts/run_ci_benchmark.sh",
             "!scripts/run_gate7_v2_onnx_integration_benchmark.sh",
             "!scripts/run_gate7_v3_onnx_integration_benchmark.sh",
             "!scripts/run_gate7_v4_onnx_integration_benchmark.sh",
+            "!scripts/run_gate7_v5_onnx_integration_benchmark.sh",
             "!scripts/run_qqp_validation.sh",
             "!scripts/run_reproducibility_gate.sh",
             "!scripts/verify_project.sh",
@@ -127,11 +140,11 @@ def test_docker_context_parent_exceptions_remain_tight():
         )
 
 
-def test_verifier_project_test_inventory_is_exact_and_v4_complete():
+def test_verifier_project_test_inventory_is_exact_and_v5_complete():
     observed = evidence._verifier_project_tests(PROJECT_ROOT)
 
     assert observed == evidence.EXPECTED_PROJECT_TESTS
-    assert len(observed) == 28
+    assert len(observed) == 32
     assert {
         "tests/project_tests/test_gate7_v2_preservation.py",
         "tests/project_tests/test_gate7_v3_audit.py",
@@ -141,6 +154,10 @@ def test_verifier_project_test_inventory_is_exact_and_v4_complete():
         "tests/project_tests/test_gate7_v4_audit.py",
         "tests/project_tests/test_gate7_v4_isolated_bootstrap.py",
         "tests/project_tests/test_gate7_v4_onnx_integration.py",
+        "tests/project_tests/test_gate7_v4_preservation.py",
+        "tests/project_tests/test_gate7_v5_audit.py",
+        "tests/project_tests/test_gate7_v5_isolated_bootstrap.py",
+        "tests/project_tests/test_gate7_v5_onnx_integration.py",
         "tests/project_tests/test_qqp_gate7_assets.py",
     }.issubset(observed)
 
@@ -251,7 +268,7 @@ def _project_root(tmp_path):
         encoding="utf-8",
     )
     for relative in set(
-        evidence.EXPECTED_PROJECT_TESTS + evidence.V4_VERIFICATION_INPUTS
+        evidence.EXPECTED_PROJECT_TESTS + evidence.V5_VERIFICATION_INPUTS
     ):
         path = root.joinpath(*relative.split("/"))
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -314,7 +331,7 @@ def test_host_writer_emits_analyzer_schema_only_after_pass(monkeypatch, tmp_path
     assert payload["verification_inventory"]["contract_version"] == (
         evidence.VERIFICATION_CONTRACT_VERSION
     )
-    assert payload["verification_inventory"]["project_test_count"] == 28
+    assert payload["verification_inventory"]["project_test_count"] == 32
     assert payload["verification_inventory"]["historical_evidence_reclassified"] is False
     assert payload["source_commit"] == SOURCE_COMMIT
     assert payload["source_archive"]["source_commit"] == SOURCE_COMMIT
@@ -461,10 +478,10 @@ def test_container_writer_derives_normalization_and_compares_bytes(
 
     assert payload["schema_version"] == "carma-container-reproducibility-v1"
     assert payload["verification_inventory"]["gate7_experiment_id"] == (
-        "gate7e-onnx-v4"
+        "gate7f-onnx-v5"
     )
-    assert payload["verification_inventory"]["v4_input_count"] == len(
-        evidence.V4_VERIFICATION_INPUTS
+    assert payload["verification_inventory"]["v5_input_count"] == len(
+        evidence.V5_VERIFICATION_INPUTS
     )
     assert payload["platform"] == "linux/amd64"
     assert payload["fresh_container_count"] == 2

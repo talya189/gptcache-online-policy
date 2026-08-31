@@ -42,9 +42,11 @@ COPY docs/project/gate7-remediation-contract.md ./docs/project/gate7-remediation
 COPY docs/project/gate7-v2-remediation-contract.md ./docs/project/gate7-v2-remediation-contract.md
 COPY docs/project/gate7-v3-remediation-contract.md ./docs/project/gate7-v3-remediation-contract.md
 COPY docs/project/gate7-v4-remediation-contract.md ./docs/project/gate7-v4-remediation-contract.md
+COPY docs/project/gate7-v5-remediation-contract.md ./docs/project/gate7-v5-remediation-contract.md
 COPY docs/project/evidence ./docs/project/evidence
 COPY artifacts/samples/verification/gate7-v2-invalid ./artifacts/samples/verification/gate7-v2-invalid
 COPY artifacts/samples/verification/gate7-v3-invalid ./artifacts/samples/verification/gate7-v3-invalid
+COPY artifacts/samples/verification/gate7-v4-invalid ./artifacts/samples/verification/gate7-v4-invalid
 COPY examples/benchmark ./examples/benchmark
 COPY tests ./tests
 COPY scripts ./scripts
