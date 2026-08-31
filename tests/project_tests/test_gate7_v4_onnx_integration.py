@@ -1167,19 +1167,19 @@ def test_dependency_lock_and_record_aggregate_are_exactly_frozen():
     assert _sha256(gate7_runner.BENCHMARK_LOCK) == (
         gate7_runner.PINNED_BENCHMARK_LOCK_SHA256
     )
-    assert gate7_runner.PINNED_LOCKED_RECORD_HASHED_FILE_COUNT == 10270
-    assert gate7_runner.PINNED_LOCKED_RECORD_HASHED_BYTES == 362595746
+    assert gate7_runner.PINNED_LOCKED_RECORD_HASHED_FILE_COUNT == 10301
+    assert gate7_runner.PINNED_LOCKED_RECORD_HASHED_BYTES == 362599790
     assert gate7_runner.PINNED_LOCKED_RECORD_AGGREGATE_SHA256 == (
-        "1b59e03f6a6d52a8b64adf8f11eb8ed36c40f807d53248965a00c733f8dca2c3"
+        "339593788f19cc22d76fb29f4e5609af1ccbbb8c7fbce528cef92b3f4cca4230"
     )
     assert gate7_runner.PINNED_LOCAL_GPTCACHE_RECORD_SUMMARY == {
         "record_sha256": (
-            "873280782d16563eef2982efbead80814577c01aea0253cea060d7cb3cc5b140"
+            "e59403739bd272872adcb00ad42414b3d4071696c234ab79b5036ad65f4ee8c8"
         ),
         "hashed_file_count": 11,
-        "hashed_bytes": 29856,
+        "hashed_bytes": 42143,
         "hashed_files_sha256": (
-            "29bf983930625eacdddedcd24953d1849e9ebf923f233c09bd38506d67391b91"
+            "cd9112f2f7633e37f0d3a35a22a15623c888912cc468c4788883b7518a060946"
         ),
     }
 
@@ -1359,7 +1359,7 @@ def test_bootstrap_preimport_source_rejects_hygiene_drift():
 @pytest.mark.parametrize(
     "field,value",
     [
-        ("remote_name", "origin"),
+        ("remote_name", "submission"),
         ("fetch_url", "https://example.invalid/repository.git"),
         ("fetch_url_count", 2),
         ("push_url", "https://example.invalid/repository.git"),

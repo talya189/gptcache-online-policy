@@ -72,7 +72,7 @@ PHASE_NAMESPACE = "gate7b-qqp-phase-v1"
 DEFAULT_CONTRACT_PATH = "docs/project/gate7-v4-remediation-contract.md"
 # Replaced exactly once after the v4 contract review and before source tagging.
 PINNED_CONTRACT_SHA256 = (
-    "acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808"
+    "d74545ae80bfe333b30f0c084f03292b7ad0f3946677936401e95d9379fea99c"
 )
 POST_V3_PROTOCOL_DISCLOSURE = {
     "v4_designed_after_v3": True,
@@ -105,10 +105,10 @@ RETAINED_QQP_ARCHIVE_PATH = "source/similiar_qqp_full.json.gz"
 RETAINED_PREPARED_DIRECTORY = "source/prepared"
 DEPENDENCY_ATTESTATION_PATH = "source/dependency-attestation.json"
 FORMAL_SOURCE_TAG_PAYLOAD_PATH = "source/formal-source-tag.raw"
-FORMAL_SOURCE_TAG = "gate7e-onnx-v4-formal-source"
-FORMAL_SOURCE_REMOTE = "submission"
+FORMAL_SOURCE_TAG = "gate7e-onnx-v4-talya-formal-source"
+FORMAL_SOURCE_REMOTE = "origin"
 FORMAL_SOURCE_REMOTE_URL = (
-    "https://github.com/MatanGoldfarB/gptcache-online-policy.git"
+    "https://github.com/talya189/gptcache-online-policy.git"
 )
 FORMAL_ENTRYPOINT_MARKER = "gate7e-wrapper-v1"
 FORMAL_WRAPPER_SHELL_MARKER = "gate7e-shell-v1"
@@ -122,17 +122,17 @@ PINNED_BENCHMARK_LOCK_PIN_COUNT = 50
 PINNED_BENCHMARK_PIN_MAP_SHA256 = (
     "a9ad2cf1ad4db90d5c43d01eaaad84b739153616e31d5404dd817b47f195a759"
 )
-PINNED_LOCKED_RECORD_HASHED_FILE_COUNT = 10270
-PINNED_LOCKED_RECORD_HASHED_BYTES = 362595746
+PINNED_LOCKED_RECORD_HASHED_FILE_COUNT = 10301
+PINNED_LOCKED_RECORD_HASHED_BYTES = 362599790
 PINNED_LOCKED_RECORD_AGGREGATE_SHA256 = (
-    "1b59e03f6a6d52a8b64adf8f11eb8ed36c40f807d53248965a00c733f8dca2c3"
+    "339593788f19cc22d76fb29f4e5609af1ccbbb8c7fbce528cef92b3f4cca4230"
 )
 LOCAL_GPTCACHE_VERSION = "0.1.44"
 PINNED_LOCAL_GPTCACHE_RECORD_SUMMARY = {
-    "record_sha256": "873280782d16563eef2982efbead80814577c01aea0253cea060d7cb3cc5b140",
+    "record_sha256": "e59403739bd272872adcb00ad42414b3d4071696c234ab79b5036ad65f4ee8c8",
     "hashed_file_count": 11,
-    "hashed_bytes": 29856,
-    "hashed_files_sha256": "29bf983930625eacdddedcd24953d1849e9ebf923f233c09bd38506d67391b91",
+    "hashed_bytes": 42143,
+    "hashed_files_sha256": "cd9112f2f7633e37f0d3a35a22a15623c888912cc468c4788883b7518a060946",
 }
 FORMAL_REQUIRED_ENVIRONMENT = {
     "PYTHONHASHSEED": "0",

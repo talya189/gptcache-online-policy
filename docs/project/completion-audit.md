@@ -67,7 +67,7 @@ completed, negative result rather than being rewritten.
 | Requirement | Status | Evidence |
 |---|---:|---|
 | README install/benchmark instructions | Complete with Gate 7 caveat | Root `README.md` CARMA section for ordinary use and prospective v4 preparation/execution; handoff and reproducibility documents preserve the no-repair rule and make clear that v4 has not run |
-| Clean GitHub repository | Complete | Private publication target: `https://github.com/MatanGoldfarB/gptcache-online-policy`; `main` and the feature branch point to the packaged submission commit |
+| Clean GitHub repository | Complete | Talya publication target: `https://github.com/talya189/gptcache-online-policy`; current Gate 7 work is isolated on `feature/gate7-end-to-end`, while historical Matan-bound evidence tags remain immutable |
 | Docker/environment reproducibility | Complete | Exact-source host evidence and two byte-matched network-isolated `linux/amd64` container runs for source `557c6ac0578cb6b77c5ae51595b49abdc0407e10` under `artifacts/samples/verification/publication-20260827-v2-source/` |
 | Single 8--12 page PDF | Complete | `docs/project/report.tex` and visually verified `docs/project/report.pdf` |
 | Introduction/related work | Complete in source | Report Section 1 |

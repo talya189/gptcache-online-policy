@@ -123,12 +123,17 @@ scripts/run_gate7_v4_onnx_integration_benchmark.sh smoke \
 The complete commands are:
 
 ```bash
-# The held-out QQP run needs the hash-locked full-analysis dependency superset.
+# Gate 7 v4 requires a new .venv at the fixed checkout path. Install the
+# hash-locked full-analysis dependency superset directly into that empty venv.
+python3.12 -I -m venv .venv
 .venv/bin/python -m pip --isolated --disable-pip-version-check install \
   --no-input \
   --index-url https://pypi.org/simple \
   --require-hashes --only-binary=:all: \
   --requirement requirements-benchmark.lock
+.venv/bin/python -I -m pip --isolated --disable-pip-version-check install \
+  --no-input --no-index --no-deps --no-build-isolation --editable .
+find .venv/lib/python3.12/site-packages -type f -name '*.pyc' -delete
 scripts/run_full_benchmark.sh full artifacts/carma-full
 for seed in 20260901 20260902 20260903 20260904 20260905; do
   scripts/run_integration_benchmark.sh full \
@@ -139,11 +144,13 @@ CARMA_ONNX_WORKERS=8 CARMA_ONNX_THREADS=1 \
 scripts/run_moss_benchmark.sh run /path/to/checksum-pinned-moss.zip artifacts/carma-moss
 
 # Prepare the exact ignored inputs and model cache required by Gate 7 v4.
-.venv/bin/python -m benchmarks.carma.qqp prepare \
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m benchmarks.carma.qqp prepare \
   --archive examples/benchmark/similiar_qqp_full.json.gz \
   --output artifacts/qqp-full/prepared
-.venv/bin/python -m benchmarks.carma.qqp prefetch-gate7-assets
-.venv/bin/python -m benchmarks.carma.gate7_v4_trace_preflight
+PYTHONDONTWRITEBYTECODE=1 \
+  .venv/bin/python -m benchmarks.carma.qqp prefetch-gate7-assets
+PYTHONDONTWRITEBYTECODE=1 \
+  .venv/bin/python -m benchmarks.carma.gate7_v4_trace_preflight
 
 # Gate 7 v4 formal execution is intentionally shown separately below because
 # it requires a clean, tagged exact-source checkout and a sterile shell.

@@ -5,8 +5,32 @@ Evidence schema: `carma-gate7-onnx-v4`
 Audit schema: `carma-gate7-adjudication-v4`
 Ledger schema: `carma-gate7-attempt-ledger-v5`
 Formal root: `artifacts/gate7-v4-onnx-attempts`
-Formal source tag: `gate7e-onnx-v4-formal-source`
+Formal source tag: `gate7e-onnx-v4-talya-formal-source`
 Drafted: 2026-08-28
+
+Publication binding finalized: 2026-08-31, before any formal v4 policy child
+executed. The authorized publication remote is `origin` at
+`https://github.com/talya189/gptcache-online-policy.git`, and the distinct
+Talya source tag above avoids rewriting the earlier development tag. This is a
+publication/provenance adaptation only: seeds, trace identities, semantic-index
+identities, policy order, requests, model and tokenizer assets, metrics, and
+all numerical bounds remain unchanged. Historical v1-v3 evidence and tags are
+also unchanged.
+
+The dependency RECORD seal was independently finalized in Talya's authorized
+fixed checkout before any v4 policy child executed. The inherited draft seal
+encoded installer metadata and absolute launch-script paths from the earlier
+Matan checkout and could not be reproduced in this checkout despite an
+identical lockfile. The replacement seal keeps the exact same 50 locked names,
+versions, wheels, lock digest, and Python version: 10,301 hashed locked files,
+362,599,790 hashed bytes, and aggregate SHA-256
+`339593788f19cc22d76fb29f4e5609af1ccbbb8c7fbce528cef92b3f4cca4230`.
+The local editable summary is 11 hashed files, 42,143 hashed bytes, RECORD
+SHA-256
+`e59403739bd272872adcb00ad42414b3d4071696c234ab79b5036ad65f4ee8c8`,
+and member-map SHA-256
+`cd9112f2f7633e37f0d3a35a22a15623c888912cc468c4788883b7518a060946`.
+This provenance-only re-pinning cannot affect any timing or pass boundary.
 
 This is a prospective protocol for a new experiment. It is not frozen until:
 
@@ -572,11 +596,13 @@ Preparation is not request timing.
 
 Before freezing or launching v4, a fresh clone must:
 
-1. fetch the submission repository and all existing v1-v3 tags without
+1. fetch the authorized Talya submission repository and all existing v1-v3
+   tags without
    modifying any prior tag or preservation artifact;
-2. create the project `.venv` with exact CPython `3.12.13` and install the exact
-   `requirements-benchmark.lock` pins plus only the local editable
-   `gptcache==0.1.44`;
+2. at the authorized fixed checkout path, create a new project `.venv` with
+   exact CPython `3.12.13`, install `requirements-benchmark.lock` directly into
+   that empty environment, install only local editable `gptcache==0.1.44`, and
+   delete generated `.pyc` files without rewriting any distribution RECORD;
 3. obtain `examples/benchmark/similiar_qqp_full.json.gz`, verify its pinned
    SHA-256, and run the documented QQP preparation command to reproduce the
    pinned prepared pair/text identities;
@@ -595,9 +621,18 @@ Before freezing or launching v4, a fresh clone must:
    absent or validly continued v4 formal root; and
 10. launch formal mode exactly once through Section 15's entrypoint.
 
-The deterministic preparation and trace-only commands are:
+The exact environment setup, deterministic preparation, and trace-only
+commands are:
 
 ```bash
+python3.12 -I -m venv .venv
+.venv/bin/python -I -m pip --isolated --disable-pip-version-check install \
+  --no-input --index-url https://pypi.org/simple \
+  --require-hashes --only-binary=:all: \
+  --requirement requirements-benchmark.lock
+.venv/bin/python -I -m pip --isolated --disable-pip-version-check install \
+  --no-input --no-index --no-deps --no-build-isolation --editable .
+find .venv/lib/python3.12/site-packages -type f -name '*.pyc' -delete
 .venv/bin/python -m benchmarks.carma.qqp prepare \
   --archive examples/benchmark/similiar_qqp_full.json.gz \
   --output artifacts/qqp-full/prepared
@@ -607,6 +642,12 @@ The deterministic preparation and trace-only commands are:
 
 The final command reports `policy_children_executed: 0`; it does not execute a
 cache policy or create a formal ledger entry.
+
+After the bytecode cleanup, all test and preparation commands must run with
+`PYTHONDONTWRITEBYTECODE=1` or through the v4 wrapper. Pip's RECORD includes
+absolute generated launcher bytes, so the sealed v4 environment is deliberately
+fixed-checkout as well as fixed-host; moving or renaming the checkout requires a
+new prospective provenance binding before any policy child executes.
 
 The formal wrapper sets offline Hugging Face/Transformers behavior. Formal
 children may not download assets, contact a model service, install packages,
@@ -620,7 +661,10 @@ Formal mode requires a clean committed worktree; no nonignored untracked import
 files; the exact contract digest independently pinned in producer, auditor, and
 bootstrap; passing tests; checksum-matching retained inputs/model/tokenizer;
 CPU provider; matching dependency seal; AC power; and an annotated local and
-remote `gate7e-onnx-v4-formal-source` tag whose peeled commit equals HEAD.
+remote `gate7e-onnx-v4-talya-formal-source` tag whose peeled commit equals
+HEAD. The sole authorized remote is `origin`, with exactly one fetch URL and
+one push URL, both equal to
+`https://github.com/talya189/gptcache-online-policy.git`.
 
 The tag annotation contains exact lines:
 

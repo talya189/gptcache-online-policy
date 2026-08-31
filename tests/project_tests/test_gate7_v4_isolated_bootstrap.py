@@ -73,7 +73,7 @@ def test_submission_remote_anchor_retains_exact_urls_and_remote_tag(monkeypatch)
     )
 
     assert remote == {
-        "remote_name": "submission",
+        "remote_name": bootstrap.FORMAL_SUBMISSION_REMOTE,
         "fetch_url": bootstrap.FORMAL_SUBMISSION_URL,
         "fetch_url_count": 1,
         "push_url": bootstrap.FORMAL_SUBMISSION_URL,
