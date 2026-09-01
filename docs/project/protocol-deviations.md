@@ -222,17 +222,18 @@ but cannot establish either a v3 or v4 `PASS`. V3 remains operationally
 `INVALID`, its v3-rule preterminal systems result remains `FAIL`, and its
 semantic result remains `FAIL`.
 
-Prospective safeguard: v4 is a new protocol/schema/root/tag using previously
+Executed safeguard: v4 used a new protocol/schema/root/tag with previously
 unexecuted seeds `20261101`--`20261105` and fresh, frozen traces. Every one of
-the 30 new seed-check booleans must pass; the old full-request absolute delta is
-diagnostic only. The governing contract is
+the 30 seed-check booleans was required to pass; the old full-request absolute
+delta was diagnostic only. The governing contract is
 `docs/project/gate7-v4-remediation-contract.md`, SHA-256
 `acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808`.
-No formal v4 policy matrix has run, so v4 remains `PENDING` and has no numerical
-result. Its future evidence must be a new 15-child clean-process matrix. If the
-complete structurally valid matrix violates even one bound, it must terminalize
-`FAIL`; interruption, incompleteness, or evidence-integrity failure after START
-is `INVALID`, not `PENDING`.
+V4 did run. Its first attempt was terminally invalid because of stale duplicate
+package metadata. Its second completed all 15 processes and 45,000 requests but
+terminalized `INVALID` with seven structural audit errors. Independent
+descriptive recomputation also fails: all five seeds exceed the paired
+policy-exclusive limit, and one exceeds the post-embedding limit. The v4
+records remain immutable and nonclaimable.
 
 Retrospective provenance: the ignored authoritative source is
 `artifacts/gate7-v3-onnx-attempts/attempt-20260827T222332Z-36292/requests.jsonl`,
@@ -242,6 +243,38 @@ That identity is bound by the tracked v3 manifest. The compact Git preservation
 snapshot does not include the 128.7 MB raw request file, so the retrospective
 calculation must not be represented as independently reconstructable from the
 compact snapshot alone.
+
+### 8. Gate 7 v5 changes controls and hot-path work after observing v4
+
+Prior v4 result: the complete second v4 matrix could not support a claim because
+the wrapper and auditor used inconsistent path-bound identity shapes, the
+warm-up schema comparison disagreed with the producer, and one resource gap
+violated the brittle absolute 200 ms cadence rule. Its measured CARMA path also
+exceeded the paired policy-exclusive p95 bound on every seed. V4 remains
+`INVALID`; none of its evidence was edited or selectively rerun.
+
+Post-v4 design decision: v5 keeps the same real-text workload, pinned ONNX
+model, capacity, comparator policies, timing boundaries, and all six numerical
+bounds. It changes only prospectively disclosed controls and implementation:
+the identity checks now use the same path-bound shape; cadence requires at
+least 99.9% of gaps within 200 ms plus a 1 s hard ceiling; transaction snapshots
+store field tuples and rebuild dataclasses only on exceptional rollback; and a
+quota refresh is deferred past first-occurrence rejection. An 18,000-event
+differential replay confirmed unchanged admission, eviction, and resident
+decisions. New seeds `20261201`--`20261205` and fresh traces prevent reusing v4
+measurements to tune the outcome.
+
+Frozen safeguard and outcome: the v5 contract is
+`docs/project/gate7-v5-remediation-contract.md`, SHA-256
+`9905baab3f4fde636adc6eefc2298a3ac473b96bf4ff5ba186fb79224de355dd`.
+The sole eligible attempt ran from clean commit
+`f59d64d93a5599149538003078403f1b33e2bab1` and annotated tag
+`gate7f-onnx-v5-talya-formal-source`. It completed all 15 fresh processes and
+45,000 requests with no selective rerun. The canonical terminal status is
+claimable `PASS`: all 30 frozen systems checks pass, the semantic guardrail is
+`PASS_OBSERVED`, and the ordinary auditor records zero errors and warnings. A
+second isolated audit reproduced the canonical adjudication byte-for-byte.
+This v5 result does not repair or reclassify v1--v4.
 
 ## Interpretation boundary
 

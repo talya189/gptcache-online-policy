@@ -11,7 +11,7 @@ completed, negative result rather than being rewritten.
 |---|---:|---|
 | Build on an open-source LLM caching library | Complete | GPTCache baseline commit `c59fb3a6152a4458b2a070ca183b61c4b614095f`; feature branch `feature/online-cluster-aware-cache` |
 | Design and implement an enhanced policy | Complete | `gptcache/manager/eviction/carma.py`; `docs/project/policy-design.md` |
-| Evaluate a measurable performance claim | Complete, mixed result | `artifacts/samples/full/`; Gates 3/5/6 pass and Gates 2/4 fail. The original precomputed-vector Gate 7 diagnostic remains `PENDING`; `gate7b-onnx-v1`, `gate7c-onnx-v2`, and `gate7d-onnx-v3` are immutable, separate `INVALID` histories. V3 completed all 15 children but has no `TERMINAL`; its preserved preterminal systems result is `FAIL` and its semantic guardrail is separately `FAIL`. Prospective `gate7e-onnx-v4` has not run and is `PENDING` |
+| Evaluate a measurable performance claim | Complete, mixed result | `artifacts/samples/full/`; Gates 3/5/6 pass and Gates 2/4 fail. The original precomputed-vector Gate 7 diagnostic remains `PENDING`; formal v1--v4 are immutable `INVALID` histories. The separately frozen `gate7f-onnx-v5` completed all 15 fresh real-ONNX processes and is a claimable `PASS`: all 30 systems checks pass and its semantic guardrail is `PASS_OBSERVED` |
 | Explain a defensible claim to fame | Complete | `docs/project/report.tex`; adaptive category-shift gain and real-system overhead boundary, with failed scan and QQP claims retained |
 
 ## 2. Baseline framework and paper
@@ -31,13 +31,13 @@ completed, negative result rather than being rewritten.
 | Novel long prompts | Partial | Pinned, token-bucket-stratified MOSS replay in `benchmarks/carma/moss.py` validates corpus parsing, recorded-response delivery, and real token accounting with an exact-key LRU cache. Its 200 unique requests produce zero hits, and it does not measure CARMA/LFU semantic behavior or valid end-to-end long-prompt CARMA overhead |
 | Phase shift and pollution stress | Complete | Five frozen phases and 30/40/30 scan; structural preflight tests |
 | Human-labeled semantic safety | Complete, negative result | Strict calibration-only Gate 2 v2 in `benchmarks/carma/qqp_v2.py`; no threshold qualified, the selected threshold is null, and all 56,963 held-out pairs remained unevaluated. At 0.96, precision is 0.97574893, its one-sided Wilson lower bound is 0.96420782, false-hit rate is 0.00219951, and its one-sided Wilson upper bound is 0.00326719 |
-| Mean/p50/p95/p99 latency | Complete, with evidence-status qualification | Historical real integration `runs.csv` retains run summaries. Gate 7 v2 and v3 each retained 45,000 per-request full-path rows with embedding, FAISS, policy, SQLite, response-return, residual, and total timing, but both attempts are operationally `INVALID`; their measurements are descriptive rather than claimable gate results. V4 has no measurements yet |
+| Mean/p50/p95/p99 latency | Complete, with evidence-status qualification | Historical real integration `runs.csv` retains run summaries. Formal v2--v4 each retained complete full-path measurements but are `INVALID`. V5 retained 45,000 per-request full-path rows with embedding, FAISS, policy, SQLite, response-return, residual, and total timing; its canonical result is claimable `PASS` |
 | Implementation/storage correctness | Complete | Raw/valid/false-hit accounting, policy invariants, failure-path tests, and zero stale candidates in the valid historical SQLite/FAISS runs |
-| Semantic reuse correctness | Negative / not established | Gate 2 v2 selected no QQP threshold; the held-out split was not evaluated. The v2 and v3 Gate 7 semantic reconstructions each include three direct-negative and two unlabeled cross-component hits and cannot establish safety. Semantic status is separate from the Gate 7 systems status |
-| Memory/CPU/I/O | Complete for real system, with evidence-status qualification | Five historical SQLite/FAISS `resources.jsonl` traces plus external samples for all 15 v2 and all 15 v3 clean child processes. V2 and v3 remain nonclaimable histories; v4 has not run |
-| Throughput | Complete, with evidence-status qualification | Historical integration requests/second plus v2/v3 service throughput derived from `requests / sum(request_total_ns)`; v2/v3 values remain descriptive because the attempts are operationally `INVALID`, and v4 has no result |
+| Semantic reuse correctness | Mixed by protocol | Gate 2 v2 selected no QQP threshold and did not evaluate the held-out split, so its broad semantic-safety criterion remains failed. Separately, the formal v5 trace reconstruction is `PASS_OBSERVED`: 25,400 same-concept hits and zero cross-concept, labeled-negative, stale-candidate, or response-mismatch hits. Neither result overwrites the other |
+| Memory/CPU/I/O | Complete for real system, with evidence-status qualification | Historical SQLite/FAISS resource traces plus external samples for every complete formal matrix. V2--v4 remain nonclaimable histories; v5 retained 224,804 resource rows and passes both frozen peak-RSS checks on all five seeds |
+| Throughput | Complete, with evidence-status qualification | Historical integration requests/second plus formal service throughput derived from `requests / sum(request_total_ns)`. V5 throughput ratios are 0.988--1.004 against the frozen 0.90 floor and pass on every seed |
 | Automated scripts and CI | Complete for the formal source | `scripts/run_*benchmark.sh`; `.github/workflows/carma-ci.yml`; exact-source host and paired-container evidence; hosted branch/tag checks for source `557c6ac0578cb6b77c5ae51595b49abdc0407e10` |
-| README how-to plus sample logs | Complete with Gate 7 caveat | Root `README.md` distinguishes immutable v1-v3 histories from the prospective v4 preparation/smoke/formal paths. The v4 formal command is not evidence that a run occurred; checksum-verified `artifacts/samples/` bundle |
+| README how-to plus sample logs | Complete with Gate 7 provenance | Root `README.md` distinguishes immutable v1--v4 histories from the claimable v5 result and documents the exact frozen source, sole formal command, no-rerun boundary, retained evidence, and independent re-audit |
 
 ## 4. Extension implementation
 
@@ -58,7 +58,7 @@ completed, negative result rather than being rewritten.
 | Parameter sweep | Complete for primary grid/capacity | 96 validation configs; capacities 20/50/100/200 |
 | Ablation study | Complete with identifiability caveat | One-global-topic (`CARMA_NO_CLUSTER`), no decay, no admission, and no quota; one-global-topic/no-quota are observationally identical |
 | Repeated seeds and confidence intervals | Complete | Ten paired primary seeds; 10,000-resample CIs; exact Wilcoxon/Holm |
-| Latency and hit-rate plots | Complete with evidence-status labels | Historical deterministic figures remain under `artifacts/samples/analysis/`. The separate `artifacts/samples/analysis/gate7-v2-invalid/` package includes descriptive per-request latency distributions and the supplementary frozen-check matrix, each explicitly labeled `INVALID` and nonclaimable |
+| Latency and hit-rate plots | Complete with evidence-status labels | Historical deterministic figures remain under `artifacts/samples/analysis/`. Invalid v2 figures remain explicitly labeled; `artifacts/samples/analysis/gate7-v5-pass/` contains the source-backed six-panel PASS figure and exact per-seed table |
 | Relative improvements | Complete | Summary/gate audit plus report tables |
 | Honest significance discussion | Complete | Gate 4 failure, recovery censoring, and protocol deviations are explicit |
 
@@ -66,7 +66,7 @@ completed, negative result rather than being rewritten.
 
 | Requirement | Status | Evidence |
 |---|---:|---|
-| README install/benchmark instructions | Complete with Gate 7 caveat | Root `README.md` CARMA section for ordinary use and prospective v4 preparation/execution; handoff and reproducibility documents preserve the no-repair rule and make clear that v4 has not run |
+| README install/benchmark instructions | Complete with Gate 7 result | Root `README.md` covers ordinary use, the frozen v5 execution record, canonical PASS, evidence inspection, and the prohibition on rerunning or repairing formal attempts |
 | Clean GitHub repository | Complete | Talya publication target: `https://github.com/talya189/gptcache-online-policy`; current Gate 7 work is isolated on `feature/gate7-end-to-end`, while historical Matan-bound evidence tags remain immutable |
 | Docker/environment reproducibility | Complete | Exact-source host evidence and two byte-matched network-isolated `linux/amd64` container runs for source `557c6ac0578cb6b77c5ae51595b49abdc0407e10` under `artifacts/samples/verification/publication-20260827-v2-source/` |
 | Single 8--12 page PDF | Complete | `docs/project/report.tex` and visually verified `docs/project/report.pdf` |
@@ -88,16 +88,18 @@ Implementation and storage correctness are complete: evidence includes policy
 unit/property tests, real factory integration, failure-path
 rollback/fail-stop regressions, relevant upstream tests, exact capacity
 invariants, zero stale candidates, and zero unknown/false answer IDs in the
-primary real-system runs. The prospective v4 candidate host verifier passed 8
-upstream plus 2 SQLite/FAISS tests (1 optional deselected), 996 project tests,
-dependency integrity, and the deterministic CI benchmark. The earlier
+primary real-system runs. The v5 frozen-source host verifier passed 1,294
+project tests with one optional skip, dependency integrity, and the
+deterministic CI benchmark. The earlier
 hash-bound v2 source output remains retained under
 `artifacts/samples/verification/publication-20260827-v2-source/host/`; it is
-historical evidence and is not inherited by v4.
+historical evidence and is not inherited by v5.
 Semantic reuse correctness is a separate negative result: strict QQP
 calibration selected no threshold, so the held-out split was not evaluated,
-and the invalid Gate 7 v2/v3 traces cannot establish semantic safety. V4 has no
-semantic observation yet.
+and the invalid Gate 7 v2--v4 traces cannot establish semantic safety. The v5
+trace guardrail is separately `PASS_OBSERVED`, with 25,400 same-concept hits
+and no observed cross-concept or response-mismatch hits; it does not convert
+Gate 2 into a pass.
 
 ### Reproducibility (30%)
 
@@ -111,8 +113,11 @@ The attested image ID is
 `sha256:a5203e8d3f3beba85c5dc542b3573e724fb4da26cca65e82b3fb90a1a26985b1`.
 Historical protocol deviations remain separately recorded and are not
 retroactively repaired in the original result bundle. The listed host/container
-evidence remains the v2 source record; v4 requires a new exact-source gate and
-has not yet produced one. The v2 evidence is retained under
+evidence remains the v2 source record. Formal v5 is separately bound to clean
+commit `f59d64d93a5599149538003078403f1b33e2bab1` and annotated tag
+`gate7f-onnx-v5-talya-formal-source`; its hash-chained ledger terminalized PASS,
+and a separate ordinary re-audit reproduced the canonical adjudication
+byte-for-byte. The v2 evidence is retained under
 `artifacts/samples/verification/publication-20260827-v2-source/` and binds both
 host and paired-container status to
 `557c6ac0578cb6b77c5ae51595b49abdc0407e10`.
@@ -133,19 +138,14 @@ This criterion is mixed rather than globally passed. Category shift improves
 by 4.885 percentage points with a positive paired CI and corrected
 significance. Stationary and synthetic weighted-savings-proxy gates pass. The original
 precomputed-vector Gate 7 diagnostic remains `PENDING` under its own frozen
-identity. The separately frozen `gate7c-onnx-v2` execution did measure the full
-raw-text GPTCache/ONNX path for 45,000 requests in 15 clean processes, but it
-is `INVALID` and nonclaimable: the canonical ledger contains only genesis and
-start, the preterminal audit has seven errors, and no terminal or ordinary
-adjudication exists. Its descriptive reconstruction passes 24 of 25 systems
-checks; seed 20261001 fails the absolute p95 delta with 26,230,125 ns against a
-500,000 ns limit. Therefore even a structurally valid version of these exact
-numbers would be `FAIL`, not `PASS`. V3 also completed 15 clean children and
-45,000 requests, but is operationally `INVALID` because its contract-shape bug
-left the ledger without `TERMINAL`; its immutable preterminal systems result is
-`FAIL` under the v3 rule and its semantic guardrail is `FAIL`. V4 was designed
-after v3, uses five new seeds and fresh traces, and has not run, so it remains
-`PENDING`. The preregistered pollution return-phase
+identity. Formal v1--v4 remain immutable and nonclaimable; v4 completed its
+matrix but terminalized `INVALID`, and its measurements fail the unchanged
+systems rules descriptively. The separately frozen `gate7f-onnx-v5` execution
+measured the full raw-text GPTCache/ONNX path for 45,000 requests in 15 fresh
+processes. It terminalized as a claimable `PASS`: all five seeds satisfy all
+six frozen checks, for 30/30 booleans, with zero audit errors or warnings. An
+isolated re-audit reproduced the canonical adjudication exactly. The
+preregistered pollution return-phase
 gate also fails because LFU is already 99.993%, while Gate 2 v2 fails at
 calibration and never evaluates held-out pairs.
 
@@ -158,7 +158,7 @@ exploratory, confirmatory, and failed results are labeled separately.
 
 ## 8. Gate 7 evidence-status audit
 
-The five Gate 7 evidence generations are separate and must not be merged:
+The six Gate 7 evidence generations are separate and must not be merged:
 
 | Evidence generation | Frozen status | What it establishes |
 |---|---:|---|
@@ -166,7 +166,8 @@ The five Gate 7 evidence generations are separate and must not be merged:
 | `gate7b-onnx-v1` | `INVALID`, nonclaimable | The first real-text ONNX child completed 3,000 requests and exposed a cross-concept return, but the v1 runner classified the semantic event as structural corruption and stopped before the other 14 children |
 | `gate7c-onnx-v2` | `INVALID`, nonclaimable | All 15 children exited zero and retained 45,000 full-path requests, but the evidence failed preterminal validation and never acquired a terminal ledger entry |
 | `gate7d-onnx-v3` | Operationally `INVALID`, nonclaimable | All 15 children and 45,000 requests completed. Its structurally clean preterminal report says systems `FAIL` and semantic `FAIL`, but an extra manifest-contract key prevented `TERMINAL` |
-| `gate7e-onnx-v4` | `PENDING`, prospective and not yet run | New seeds `20261101`--`20261105`, fresh traces, a new root/tag/schema, six per-seed systems checks, and exact terminalization. No v4 numerical result exists |
+| `gate7e-onnx-v4` | `INVALID`, nonclaimable | Its complete 15-process matrix terminalized with seven structural audit errors; every seed also fails the paired policy-exclusive limit descriptively and one fails the post-embedding limit |
+| `gate7f-onnx-v5` | `PASS`, claimable; semantic `PASS_OBSERVED` | The sole eligible attempt completed all 15 fresh processes and 45,000 requests; all 30 frozen systems booleans pass, the canonical audit has zero errors/warnings, and an isolated re-audit is byte-identical |
 
 The v2 identity is exact source
 `557c6ac0578cb6b77c5ae51595b49abdc0407e10`, annotated tag
@@ -205,30 +206,29 @@ the v3 full-request absolute-p95 bound (`1,307,374 ns > 500,000 ns`); the
 orthogonal semantic guardrail is also `FAIL`. The operational result remains
 `INVALID` because the missing `TERMINAL` cannot be appended after the fact.
 
-V4 is an explicitly post-v3, prospective successor governed by
-`docs/project/gate7-v4-remediation-contract.md`, SHA-256
-`acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808`.
-For every new seed it freezes six CARMA/LRU checks: full-request p95 ratio
-`<= 1.25`; marginal post-embedding p95 delta `<= 500,000 ns`; nearest-rank p95
-of request-paired policy-exclusive deltas `<= 500,000 ns`; throughput ratio
-`>= 0.90`; peak-RSS ratio `<= 1.20`; and peak-RSS delta
-`<= 67,108,864 bytes`. The old full-request absolute delta is diagnostic only.
-A complete fresh 15-child clean-process matrix and valid terminal audit are
-required. Before a formal START, v4 is `PENDING`; a structurally valid complete
-matrix is `PASS` only if all 30 booleans hold and otherwise must terminalize
-`FAIL`; an incomplete or integrity-invalid formal attempt is `INVALID`. No v4
-formal attempt has run, so its present status is `PENDING`.
+V4 is an explicitly post-v3 successor governed by its own immutable contract.
+Its first attempt was terminally invalid because of stale duplicate package
+metadata. Its second attempt completed all 15 processes and 45,000 requests,
+but the canonical auditor returned `INVALID` with seven structural errors.
+Independent descriptive recomputation also fails: every seed exceeds the
+paired policy-exclusive `500,000 ns` limit, and seed `20261105` exceeds the
+post-embedding limit. These records remain immutable and nonclaimable.
 
-Retrospectively applying the v4 estimands to the preserved v3 raw rows yields
-30/30 passing systems checks. That observation was made after v3 and is only
-design evidence for the estimand correction; it is not a v3 reclassification
-or a v4 result. V3 remains operationally `INVALID`, with its own preterminal
-systems `FAIL` and semantic `FAIL`. The local source is
-`artifacts/gate7-v3-onnx-attempts/attempt-20260827T222332Z-36292/requests.jsonl`,
-45,000 rows, SHA-256
-`e9d418e63e1c86acdacdeaf7c9d26c7347bae63b8f935fb461463c91b16d6dff`;
-the tracked v3 manifest binds that identity, while the compact Git snapshot
-does not ship the 128.7 MB raw file.
+V5 is a separately frozen successor governed by
+`docs/project/gate7-v5-remediation-contract.md`, SHA-256
+`9905baab3f4fde636adc6eefc2298a3ac473b96bf4ff5ba186fb79224de355dd`.
+It retains all six v4 bounds while using fresh seeds `20261201`--`20261205`,
+matching identity schemas, and a coverage-based resource-cadence rule. The sole
+eligible attempt is bound to clean commit
+`f59d64d93a5599149538003078403f1b33e2bab1` and tag
+`gate7f-onnx-v5-talya-formal-source`. It completed all 15 fresh processes and
+terminalized `PASS`; all 30 systems booleans are true, the semantic status is
+`PASS_OBSERVED`, and the ordinary audit has zero errors and warnings. A second
+isolated audit reproduced the canonical adjudication byte-for-byte (SHA-256
+`66378e671784b8f74a39910f918ef472c81ce36a1f1b9f4b10895430ff40b75a`).
+The canonical ledger, manifest, run summaries, and adjudications are retained;
+the 128.8 MB request stream and 160.4 MB resource stream remain local under the
+formal root and are checksum-bound by the manifest and adjudication.
 
 ## Final verification commands
 

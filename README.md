@@ -174,16 +174,26 @@ and seed `20261105` also exceeds the 0.5 ms post-embedding limit. The tracked
 v4 preservation snapshot is under
 `artifacts/samples/verification/gate7-v4-invalid/`.
 
-V5 is a distinct prospective protocol, source tag, ledger, attempt root, and
-set of previously unused seeds (`20261201`--`20261205`). It was designed after
-v4 and does not reclassify any earlier result. It fixes the two mismatched
+V5 is a distinct frozen protocol, source tag, ledger, attempt root, and set of
+previously unused seeds (`20261201`--`20261205`). It was designed after v4 and
+does not reclassify any earlier result. It fixes the two mismatched
 identity/schema checks, replaces the brittle all-or-nothing 200 ms resource
 cadence rule with a frozen 99.9% coverage rule and 1 s hard ceiling, and removes
 two unnecessary CARMA operations from the common first-occurrence rejection
 path. A differential replay matched v4 admission, eviction, and resident
 decisions across 18,000 events. V5 keeps the workload, model, timing boundaries,
-comparators, and all six v4 numerical limits unchanged. Its only formal
-entrypoint is:
+comparators, and all six v4 numerical limits unchanged.
+
+The sole formal v5 attempt ran from clean commit
+`f59d64d93a5599149538003078403f1b33e2bab1` and annotated tag
+`gate7f-onnx-v5-talya-formal-source`. It completed all 15 fresh real-ONNX
+processes and 45,000 requests. The canonical terminal auditor reports a
+claimable **PASS** with zero errors and zero warnings: every one of the five
+seeds passes all six frozen checks. The semantic reconstruction is
+**PASS_OBSERVED**, with 25,400 same-concept hits and zero cross-concept,
+labeled-negative, stale-candidate, or response-mismatch hits. A second isolated
+ordinary audit reproduced the canonical adjudication byte-for-byte. The exact
+command used for that one formal attempt was:
 
 ```bash
 /usr/bin/env -i \
@@ -194,8 +204,7 @@ entrypoint is:
   /bin/bash "$PWD/scripts/run_gate7_v5_onnx_integration_benchmark.sh" full
 ```
 
-This runs 15 fresh real-ONNX policy children and can take several hours on
-CPU. The v5 wrapper registers a hash-chained `START`, then retains per-seed
+The v5 wrapper registers a hash-chained `START`, then retains per-seed
 traces, per-request timings, external resource samples, whole-run and
 four-way outcome latency summaries, run summaries, and a hash-linked
 manifest. A fresh isolated auditor writes the immutable preterminal report;
@@ -216,8 +225,10 @@ That first-attempt guarantee is deliberately checkout-root scoped; proving one
 global first run across separate clones requires an external immutable run
 authority.
 The auditor exits `0/1/2/3` for pass/fail/pending/invalid; a structurally valid
-numerical FAIL still receives a canonical `TERMINAL`. The wrapper treats
-the expected pending status of smoke mode as a successful development check.
+numerical FAIL still receives a canonical `TERMINAL`. The wrapper treats the
+expected pending status of smoke mode as a successful development check. The
+formal root is now terminal and must not be rerun or selectively extended;
+inspect or independently audit the retained evidence instead.
 
 Analyze only completed, manifest-endorsed artifacts; the analyzer rejects
 tampered hashes, partial staging directories, and incompatible legacy schemas.
@@ -254,16 +265,17 @@ path. That system result is diagnostic rather than a formal Gate 7 pass because
 the frozen contract named an ONNX embedding path and did not specify an
 across-seed aggregation rule.
 
-A prospective Gate 7 v5 remediation is now implemented. It enters through
-GPTCache's real `adapt` path with calibration-only QQP text, pinned ONNX
-embeddings, counterbalanced isolated LRU/LFU/CARMA processes, full per-request
-stage timing, and externally sampled resources. Its conservative six-check
-rule requires all five new seeds to pass. A 3,000-request fake-embedding smoke
-pair passed all six numerical checks, and a separate three-policy orchestration
-smoke had zero audit errors or warnings. These development checks do not change
-historical status; a claimable v5 result exists only after a complete
-clean-source real-ONNX matrix reaches `TERMINAL` and passes independent
-re-audit.
+Formal Gate 7 v5 entered through GPTCache's real `adapt` path with
+calibration-only QQP text, pinned ONNX embeddings, counterbalanced isolated
+LRU/LFU/CARMA processes, full per-request stage timing, and externally sampled
+resources. All five new seeds passed its conservative six-check rule. Across
+seeds, the full-request p95 ratio was `0.999`--`1.090` (maximum `1.25`), the
+post-embedding p95 delta was `-0.205`--`+0.016 ms` (maximum `+0.500 ms`), and
+the paired policy-exclusive p95 delta was `0.225`--`0.239 ms` (maximum
+`0.500 ms`). Throughput ratios were `0.988`--`1.004` (minimum `0.90`), peak-RSS
+ratios were `1.001`--`1.006` (maximum `1.20`), and peak-RSS deltas were
+`0.5`--`2.3 MiB` (maximum `64 MiB`). The canonical result is claimable
+**PASS**, and the independently regenerated adjudication is byte-identical.
 
 The QQP v2 analyzer now independently loads the hash-linked float32 matrix,
 recomputes all 7,729 calibration similarities and the frozen 20-threshold

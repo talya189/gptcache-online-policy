@@ -128,9 +128,9 @@ report `verified_packaging_descendant` and the exact changed paths; any dirty
 worktree, additional commit, deletion, rename, or disallowed path invalidates
 the binding and requires a new run from a fresh root.
 
-The current root README distinguishes the permanently preserved v1-v3 records
-from the prospective v4 command. A later result summary must name its exact
-source commit and must not rewrite an earlier attempt. The MOSS path is an
+The current root README distinguishes the permanently preserved v1--v4 records
+from the formal v5 PASS and names its exact source commit and tag without
+rewriting any earlier attempt. The MOSS path is an
 exact-key LRU all-miss negative control, not the lecturer's complete
 novel-long-prompt CARMA/LRU/LFU comparison.
 
@@ -218,8 +218,8 @@ files bind to the same exact archive.
 
 ## Gate 7 full-path ONNX evidence record
 
-Gate 7 now has five deliberately separate evidence generations: the historical
-diagnostic plus four formal protocol versions. They answer related questions
+Gate 7 now has six deliberately separate evidence generations: the historical
+diagnostic plus five formal protocol versions. They answer related questions
 but do not share an evidence identity:
 
 | Generation | Evidence status | Reproducibility meaning |
@@ -228,7 +228,8 @@ but do not share an evidence identity:
 | `gate7b-onnx-v1` | `INVALID`, nonclaimable | The first real-text child exposed a cross-concept return and the v1 runner stopped after conflating semantic disagreement with structural corruption; the retained failure cannot be repaired or selectively resumed |
 | `gate7c-onnx-v2` | `INVALID`, nonclaimable | The complete 15-child full-path matrix exists, but its preterminal evidence check failed and the ledger never terminalized |
 | `gate7d-onnx-v3` | operationally `INVALID`, nonclaimable; preserved preterminal systems `FAIL`; semantic `FAIL` | All 15 children and 45,000 requests completed, but an extra manifest-contract key prevented `TERMINAL`; one inherited full-request absolute-p95 bound also failed |
-| `gate7e-onnx-v4` | `PENDING`, prospective and not yet run | New unseen seeds, exact contract shape, six systems checks, a required complete fresh matrix, and independent terminal audit; no v4 numerical result exists |
+| `gate7e-onnx-v4` | `INVALID`, nonclaimable | Its complete matrix terminalized with seven structural errors; the retained measurements also fail descriptively on policy-exclusive p95 for all seeds and post-embedding p95 for one seed |
+| `gate7f-onnx-v5` | `PASS`, claimable; semantic `PASS_OBSERVED` | The sole eligible fresh-seed attempt completed all 15 real-ONNX processes and 45,000 requests; all 30 frozen systems checks pass, the ordinary audit has zero errors/warnings, and a second isolated audit is byte-identical |
 
 The historical precomputed evidence remains authoritative for its original
 diagnostic and permanently remains `PENDING`. The v1 preservation manifest and
@@ -237,7 +238,7 @@ archive are `docs/project/evidence/gate7-v1-invalid-attempt.json` and
 formal root, `artifacts/gate7-v2-onnx-attempts/`, and links to those prior
 identities without rewriting them.
 
-### Frozen v3 record and prospective v4
+### Frozen v3/v4 records and formal v5
 
 The v3 ledger has exactly `PROTOCOL_GENESIS` and `START`, with no `TERMINAL`.
 Its tracked snapshot is
@@ -249,28 +250,28 @@ preterminal-report SHA-256 values are respectively
 `ed38aefec5fa02528f9948729144bf6df5afa5d5f5b95f06be443b707089272b`, and
 `2ffbe237323ce38bfde39202993b6d12c9abb7a4d77c03f4b0c5137987ebaf00`.
 
-The current prospective v4 contract is
-`docs/project/gate7-v4-remediation-contract.md`, SHA-256
-`acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808`.
-It uses previously unexecuted seeds `20261101`--`20261105`. For every seed,
-CARMA must satisfy all six LRU-relative bounds: request-total p95 ratio
+V4 introduced the six current LRU-relative bounds: request-total p95 ratio
 `<= 1.25`; marginal post-embedding p95 delta `<= 500,000 ns`; nearest-rank p95
 of request-paired policy-exclusive deltas `<= 500,000 ns`; service-throughput
 ratio `>= 0.90`; peak-RSS ratio `<= 1.20`; and peak-RSS delta
-`<= 67,108,864 bytes`. All 30 seed-check booleans must pass. The old
-full-request absolute p95 delta is retained only as a legacy diagnostic. V4
-was designed after v3; this change is disclosed and does not reclassify v3.
-V4 has not been formally executed, so its current result is `PENDING`, not
-`PASS` or `FAIL`.
+`<= 67,108,864 bytes`. Its first attempt was terminally invalid because of
+stale duplicate package metadata. Its second attempt completed all 15 fresh
+processes and 45,000 requests, but terminalized `INVALID` with seven structural
+audit errors. Its values additionally fail descriptively: all five seeds exceed
+the policy-exclusive limit and one exceeds the post-embedding limit. V4 remains
+immutable and nonclaimable.
 
-The v4 publication identity is deliberately shape-stable: START, manifest,
-preterminal report, and terminal intent use exactly the three contract keys
-`path`, `sha256`, and `bytes`; `contract_unchanged` belongs only under
-`publication_integrity`. A future formal run must execute all 15 children in
-clean processes. A structurally valid complete matrix is `PASS` only when all
-30 checks hold and otherwise must terminalize `FAIL`; an interrupted,
-incomplete, or integrity-invalid attempt after START is `INVALID`, not
-`PENDING`.
+V5 keeps those same six bounds and freezes new seeds `20261201`--`20261205`
+under `docs/project/gate7-v5-remediation-contract.md` (SHA-256
+`9905baab3f4fde636adc6eefc2298a3ac473b96bf4ff5ba186fb79224de355dd`).
+Its formal source is commit `f59d64d93a5599149538003078403f1b33e2bab1`,
+annotated tag `gate7f-onnx-v5-talya-formal-source`. The sole eligible attempt,
+`attempt-20260831T165407Z-31743`, completed all 15 clean processes and 45,000
+requests. The hash-chained ledger contains GENESIS, START, and TERMINAL; the
+ordinary auditor reports `PASS`, `claimable: true`, zero errors, and zero
+warnings. All 30 seed-level booleans pass, and the orthogonal semantic result is
+`PASS_OBSERVED`. An isolated re-audit produced a byte-identical adjudication,
+SHA-256 `66378e671784b8f74a39910f918ef472c81ce36a1f1b9f4b10895430ff40b75a`.
 
 The estimand change is explicitly post-v3. A read-only retrospective
 recomputation from the preserved v3 raw attempt would satisfy all 30 v4 systems

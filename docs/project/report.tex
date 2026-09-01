@@ -64,7 +64,7 @@
   \vspace{0.42in}
   {\large Talya Yermiyahu\par}
   \vspace{0.10in}
-  {\normalsize Final Project Report --- August 2026\par}
+  {\normalsize Final Project Report --- September 2026\par}
   \vspace{0.45in}
 
   \begin{minipage}{0.90\textwidth}
@@ -89,16 +89,15 @@
   ``token-saving'' result is a deterministic weighted-savings proxy, not a
   measurement of real model tokens.
 
-  Formal Gate~7 v4 ran all \textbf{15/15} fresh children and retained
-  \textbf{45,000} real-text ONNX requests, but its terminal status is
-  \textbf{INVALID}. The auditor found inconsistent wrapper/warm-up identity
-  schemas and one resource-sampling cadence violation. Its measurements also
-  fail descriptively: every seed exceeds the 0.5 ms paired policy-exclusive
-  limit, and one seed exceeds the post-embedding limit. V5 preserves that
-  result, keeps all six numerical bounds, uses fresh seeds, fixes the control
-  schemas, and removes unnecessary CARMA hot-path work. A 3,000-request
-  fake-embedding smoke pair passes all six checks, but it is nonformal; no v5
-  PASS is claimed before the complete real-ONNX matrix runs.
+  Formal Gate~7 v5 ran all \textbf{15/15} fresh processes and retained
+  \textbf{45,000} real-text ONNX requests across five previously unused seeds.
+  Its canonical terminal auditor reports a claimable \textbf{PASS} with zero
+  errors and zero warnings: every seed satisfies all six frozen latency,
+  throughput, and RSS bounds. The independent semantic reconstruction reports
+  \textbf{PASS\_OBSERVED}: all 25,400 hits are same-concept, with zero
+  cross-concept, labeled-negative, stale-candidate, or response-mismatch hits.
+  An isolated ordinary re-audit reproduced the canonical adjudication
+  byte-for-byte. Earlier v1--v4 outcomes remain immutable and nonclaimable.
 
   Two other preregistered gates \textbf{failed}. CARMA returned 30,000/30,000
   valid scan-return hits, but LFU already returned 29,998/30,000, leaving only
@@ -172,9 +171,11 @@ tests, and a reproducible evaluation pipeline. The historical eight-gate audit
 records Gates 1, 3, 5, 6, and 8 as pass, Gates 2 and 4 as fail, and its original
 precomputed-vector Gate 7 as pending. Later real-text ONNX attempts do not
 rewrite that history: formal v1--v4 are immutable invalid attempts, while
-formal v5 is a prospective protocol with no full result yet. The historical
-audit is therefore mixed (five pass, two fail, one pending); no valid formal
-Gate 7 pass is claimed.
+formal v5 is a separate frozen successor. V5 completed its full 5-by-3 matrix
+and is a claimable \passmark{} under its own preregistered six-check rule. The
+historical audit remains mixed (five pass, two fail, one pending), but the
+current full-path Gate 7 supplement has now passed; these two statements refer
+to distinct frozen evidence generations.
 
 \section{Extension design}
 
@@ -499,14 +500,15 @@ CDF. This is an artifact-granularity limitation despite collecting the frozen
 mean, p50, p95, and p99 metrics in process. The later v2 attempt does retain
 per-request samples, but its invalid ledger permits diagnostic use only.
 
-\subsection{Formal full-path ONNX lineage and prospective v5}
+\subsection{Formal full-path ONNX lineage and v5 result}
 
 Gate 7 now has one historical diagnostic and five formal protocol versions
 (Table~\ref{tab:gate7-lineage}). The historical integration study used real
 SQLite/FAISS but precomputed synthetic vectors. Formal v1 stopped after one
 child because it conflated a semantic failure with structural corruption.
 Formal v2, v3, and v4 each completed a 5-by-3 matrix, but none is claimable.
-V5 is a new prospective experiment; it does not repair or reinterpret any
+V5 is a separately frozen experiment that completed the same matrix and
+terminalized as a claimable \passmark{}; it does not repair or reinterpret any
 earlier result.
 
 \begin{table}[ht]
@@ -527,8 +529,9 @@ Complete data; own systems and semantic rules fail; contract mismatch leaves
 START unmatched. \\
 Formal v4 & Real QQP text, ONNX, all 15 fresh children & \invalidmark &
 Complete data; seven structural audit errors and descriptive numerical FAIL. \\
-Formal v5 & Fresh QQP traces, ONNX, 15 planned children & \pendingmark &
-Same six bounds; corrected controls and optimized CARMA; no formal run yet. \\
+Formal v5 & Fresh QQP traces, ONNX, all 15 fresh processes & \passmark &
+Claimable complete matrix; all six checks pass on every seed; semantic
+guardrail is \textbf{PASS\_OBSERVED}. \\
 \bottomrule
 \end{tabularx}
 \caption{Gate 7 lineage. Each generation is preserved under its own protocol;
@@ -536,57 +539,24 @@ later evidence does not repair or reinterpret an earlier attempt.}
 \label{tab:gate7-lineage}
 \end{table}
 
-The complete v2--v4 matrices measure the full
-\code{gptcache.adapter.adapter.adapt} path: real text, checksum-pinned
+The complete v2--v5 matrices measure the full
+\code{gptcache.adapter.adapter.adapt} path. It includes real text, a pinned
 768-dimensional ALBERT ONNX embedding, similarity, SQLite, FAISS, policy and
 cleanup work, recorded miss response, and response return. LRU, LFU, and CARMA
 receive the same 3,000-request trace at capacity 100 in fresh child processes
-and storage, under a documented counterbalanced order. Each complete attempt has
+and storage, under a documented counterbalanced order. Each complete matrix has
 45,000 request rows with mutually exclusive stage timings and external
 resource samples.
 
-V2 remains useful only as a diagnostic. Its immutable preterminal report found
-seven contract errors and its bootstrap rejected an auditor-identity shape
-mismatch, leaving START unmatched. It also fails one of its 25 numerical
-checks: on seed 20261001 the full-request p95 CARMA--LRU delta is 26,230,125 ns
-against 500,000 ns. ONNX embedding dominates total latency, so marginal p95s
-of two independent full-path samples can differ materially even when the
-post-embedding policy path is close; this observation motivates, but does not
-retroactively validate, the v4 estimands.
-
-V3 retained another complete 45,000-row matrix in its local attempt root. Its
-producer placed an extra publication flag inside the manifest contract although
-START used the exact three-key identity. The bootstrap correctly refused
-terminalization; the original ledger, manifest, and preterminal report remain
-untouched. Under v3's own rule,
-seed 20261001 exceeds the full-request p95 marginal-delta bound by reporting
-+1,307,374 ns, so systems status is \failmark{}. Separately, 25,400 hits are
-same-component, three are direct-negative, and two are unlabeled
-cross-component; semantic status is \failmark{}. Operational status remains
-\invalidmark{} because no TERMINAL exists.
-
-V4 used experiment \code{gate7e-onnx-v4}, fresh seeds
-20261101--20261105, and the six previously defined CARMA--LRU checks:
-full-request p95 ratio at most 1.25; post-embedding marginal p95 delta at most
-500,000 ns; request-ID-paired policy-exclusive p95 delta at most 500,000 ns;
-throughput ratio at least 0.90; peak-RSS ratio at most 1.20; and peak-RSS delta
-at most 67,108,864 bytes. The first formal attempt stopped terminally INVALID
-because stale duplicate package metadata made the virtual environment
-noncanonical. After rebuilding that environment, the second attempt completed
-all 15 children and terminalized, but its ordinary auditor still returned
-\invalidmark{}.
-
-Three control issues caused that status: the auditor compared a compact
-two-field wrapper identity with a path-bound three-field source identity; it
-expected warm-up declarations without the \code{path} field that the producer
-correctly emitted; and one of roughly 17,500 resource gaps for a run was
-450,258,708 ns, above v4's absolute 200 ms rule. These defects invalidate a
-formal claim, but they do not erase the measurements. Independent
-recomputation shows that every v4 seed fails the paired policy-exclusive
-0.5 ms limit, with deltas from 599,792 to 681,291 ns. Seed 20261105 also fails
-the post-embedding limit at 536,915 ns. All full-request ratios, throughput
-ratios, and RSS checks pass. The semantic guardrail is separately
-\failmark{}.
+V2--v4 remain diagnostic only. V2 completed its matrix but had seven
+preterminal errors and no TERMINAL. V3 also completed but a manifest-contract
+shape defect blocked terminalization; under its own rules, both systems and
+semantic status fail. V4 introduced the six bounds retained by v5. Its first
+attempt was invalid because of stale package metadata; its second completed all
+15 processes but terminalized \invalidmark{} because of identity, warm-up, and
+resource-cadence control errors. Descriptively, every v4 seed exceeds the
+0.5 ms paired policy-exclusive limit and one exceeds the post-embedding limit.
+These immutable records motivate v5 but receive no status change from it.
 
 V5 was designed after observing v4 and therefore uses new seeds
 20261201--20261205 and fresh trace hashes. It keeps the workload, timing
@@ -598,13 +568,38 @@ on exceptional rollback; quota refresh is deferred past a first-occurrence
 rejection that never reads quotas. A differential replay matched v4 admission
 and eviction decisions across 18,000 randomized events.
 
-The final 3,000-request development smoke pair on seed 20261201 uses fake
-embeddings and is not confirmatory evidence, but all six numerical checks pass:
-the paired policy-exclusive p95 delta is 145,127 ns, the full-request ratio is
-0.631, throughput ratio is 1.076, RSS ratio is 1.004, and both absolute deltas
-are below their limits. The isolated three-policy protocol smoke also has zero
-audit errors and warnings. Because neither smoke uses the real ONNX model or
-the full five-seed matrix, formal v5 status remains \pendingmark{}.
+The formal run was launched once from clean commit
+\code{f59d64d93a5599149538003078403f1b33e2bab1} and annotated tag
+\code{gate7f-onnx-v5-talya-formal-source}. It completed all 15 fresh
+policy--seed processes, 45,000 request rows, and 224,804 external resource
+rows. The canonical TERMINAL and ordinary auditor both report a claimable
+\passmark{}, with zero errors and zero warnings. A second isolated invocation
+of the frozen ordinary auditor produced a byte-identical adjudication, SHA-256
+\newline\code{66378e671784b8f74a39910f918ef472c81ce36a1f1b9f4b10895430ff40b75a}.
+
+All five seeds pass all six checks. Across seeds, the full-request p95 ratio is
+0.999--1.090 against the 1.25 ceiling; post-embedding p95 delta is
+$-0.205$--$+0.016$ ms against the $+0.500$ ms ceiling; paired
+policy-exclusive p95 delta is 0.225--0.239 ms against 0.500 ms; throughput
+ratio is 0.988--1.004 against the 0.90 floor; peak-RSS ratio is
+1.001--1.006 against the 1.20 ceiling; and peak-RSS delta is 0.5--2.3 MiB
+against 64 MiB. Independent semantic reconstruction reports
+\textbf{PASS\_OBSERVED}: 25,400/25,400 hits are same-concept, with zero
+cross-concept, labeled-negative, stale-candidate, source-response, or returned-
+response mismatches. These are observations on this frozen QQP workload, not a
+universal semantic-safety guarantee.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.93\linewidth]
+    {artifacts/samples/analysis/gate7-v5-pass/gate7-v5-frozen-checks.png}
+  \caption{Formal Gate 7 v5 per-seed measurements against the six frozen
+  bounds. Each seed contains 3,000 requests for each of LRU, LFU, and CARMA in
+  fresh real-text ONNX processes (15 runs; 45,000 requests total). The dashed
+  line in each panel is the applicable ceiling or floor; all 30 seed-level
+  checks pass.}
+  \label{fig:gate7-v5}
+\end{figure}
 
 \FloatBarrier
 
@@ -663,15 +658,16 @@ held-out evaluation was not run. \\
 6 & \passmark & Synthetic weighted-savings-proxy delta CI lower bound meets
 every workload limit. \\
 7 & \pendingmark & The historical precomputed-vector study is diagnostic only;
-formal ONNX v1--v4 are separately \textbf{INVALID}, and prospective v5 has no
-full result, so none replaces this row. \\
+formal ONNX v1--v4 are separately \textbf{INVALID}. Formal v5 is separately
+\textbf{PASS} and claimable, but does not retroactively relabel this frozen row. \\
 8 & \passmark & Two fresh network-isolated \code{linux/amd64} runs produced
 byte-identical benchmark artifacts and normalized logs. \\
 \bottomrule
 \end{tabularx}
 \caption{Historical success-gate table. Gates 2 and 4 remain failed; the
 original Gate 7 remains pending, while Table~\ref{tab:gate7-lineage} records
-the later formal versions without rewriting this audit.}
+the later formal versions---including the claimable v5 PASS---without rewriting
+this audit.}
 \end{table}
 
 \section{Discussion, protocol audit, and limitations}
@@ -685,9 +681,11 @@ from clustering or quotas, so they cannot support a causal quota-coverage
 claim. The implementation cost is measurable in policy-only latency. All
 historical precomputed-vector seeds stay inside their diagnostic limits, but
 formal v1--v4 are operationally invalid; v4 also fails the six systems checks
-descriptively. V5 is prospective, not formal evidence yet. The evidence therefore
-supports an adaptive-policy contribution driven most clearly by decay and
-admission, not a formal Gate 7 performance pass.
+descriptively. Formal v5 supplies the missing claimable full-path result: it
+passes every frozen systems check on every seed and its observed semantic
+guardrail. The evidence therefore supports an adaptive-policy contribution
+driven most clearly by decay and admission, plus a bounded-performance result
+for the frozen v5 host, model, workload, and capacity.
 
 The scan gate explains why raw perfection is not enough. CARMA achieves 100\%
 return VHR, but the correct comparator is the stronger paired baseline, not
@@ -738,7 +736,9 @@ direct packaging child. Gate 7 v1--v4 are separately bound to their clean
 sources, but inherit no pass from the host/container reproducibility gate.
 Their evidence and ledger outcomes remain frozen and may not be repaired in
 place. V5 therefore has a new contract, experiment ID, formal root, ledger
-schema, fresh seeds/traces, and source tag.
+schema, fresh seeds/traces, and source tag. Its sole eligible full attempt is
+bound to commit \code{f59d64d93a5599149538003078403f1b33e2bab1}; the
+hash-chained ledger contains GENESIS, START, and a PASS TERMINAL.
 
 \subsection{External validity}
 
@@ -748,10 +748,11 @@ held-out split was not evaluated, and neither represents conversational
 distribution shift. MOSS is an exact-key recorded-response negative control
 rather than a CARMA semantic-policy or long-prompt overhead comparison.
 Historical system timing excludes embedding; formal v1--v4 include real ONNX
-embedding but are invalid evidence, while v5 has not yet run formally. These
-studies use one Apple-arm64 machine, five seeds, capacity 100, and SQLite/FAISS.
-Restart loses adaptive counters. These boundaries limit generalization but
-make each retained claim traceable.
+embedding but are invalid evidence, while formal v5 is claimable and includes
+the full request path. The v5 result still uses one Apple-arm64 machine, five
+seeds, capacity 100, one pinned CPU ONNX model, and SQLite/FAISS. Restart loses
+adaptive counters. These boundaries limit generalization but make each
+retained claim traceable.
 
 \section{Conclusion and future work}
 
@@ -767,20 +768,21 @@ safety fails at QQP calibration and its preregistered scan advantage over the
 strongest baseline fails. Full-path Gate 7 v1--v4 are invalid and
 nonclaimable. V4 completed all 15 children, but its retained measurements also
 fail the unchanged systems limits descriptively and its semantic guardrail
-fails.
+fails. The separately frozen v5 matrix completed all 15 processes and is a
+claimable \passmark{}: every seed passes all six systems bounds, with zero
+audit errors or warnings, and the observed semantic guardrail also passes.
 
-The prospective v5 implementation addresses the observed v4 control defects
+The v5 implementation addresses the observed v4 control defects
 without altering old evidence: matching path-bound identities, exact warm-up
 schemas, a coverage-based resource-cadence rule with a hard ceiling, and
 adversarial terminal/auditor tests. It also removes two unnecessary operations
 from CARMA's first-occurrence rejection path while preserving decisions in an
 18,000-event differential replay. Its estimands and all six numerical limits
-are unchanged from v4. Development smoke passes all six checks, but it uses
-fake embeddings and is not confirmatory evidence. The remaining formal action
-is one clean, source-tagged 5$\times$3 real-ONNX execution using five fresh
-seeds. No seed or policy may be selectively rerun; only a canonical TERMINAL
-plus independent ordinary audit can produce a v5 PASS or FAIL. Until then the
-exact v5 result is \pendingmark{}.
+are unchanged from v4. The clean, source-tagged 5$\times$3 real-ONNX execution
+used five fresh seeds and no selective reruns. Its canonical TERMINAL and
+independent ordinary re-audit agree exactly on \passmark{}. Future work should
+replicate this result on additional hosts, capacities, embedding models, and
+conversational workloads rather than weakening the frozen gate.
 Public PR \href{https://github.com/zilliztech/GPTCache/pull/696}{zilliztech/GPTCache\#696}
 targets \code{dev}; it is mergeable and DCO-passing, but no maintainer has
 reviewed or adopted it. The exceptional adopted-PR route therefore remains an
@@ -795,18 +797,19 @@ unmet external criterion.
 Criterion & Status & Evidence \\
 \midrule
 Correctness (40\%) & Implementation \passmark; semantic \failmark & The
-prospective v5 host verifier passed 1,294 project tests with one optional skip,
+v5 source host verifier passed 1,294 project tests with one optional skip,
 dependency integrity, and the deterministic CI benchmark. QQP calibration
 selected no qualifying threshold, so semantic reuse safety is not
-established. \\
+established for Gate 2; the distinct v5 trace guardrail is
+\textbf{PASS\_OBSERVED}. \\
 Reproducibility (30\%) & \passmark & Exact pins and one source archive produced
 matching host plus two fresh network-isolated container benchmark artifacts;
 evidence is checksum-linked; a final-source replay reproduced all four
 synthetic summaries byte-for-byte. \\
 Performance (15\%) & Mixed & Gates 3, 5, 6 pass; Gates 2 and 4 fail; each
 historical system seed meets its diagnostics; formal Gate 7 v1--v4 are
-invalid, v4 fails the unchanged systems rules descriptively, and v5 is
-prospective. \\
+invalid and v4 fails the unchanged systems rules descriptively; formal v5 is
+claimable \passmark{} with all 30 frozen checks passing. \\
 Clarity (15\%) & Complete with caveat & Baseline rationale, policy/protocol
 docs, labeled figures, limitations, and this report are complete; the sealed
 README and contract expose the versioned v5 command and claim boundary. \\
@@ -822,9 +825,11 @@ are under \path{docs/project/}; and curated checksummed evidence is under
 \path{artifacts/samples/}. Authoritative v1--v4 evidence remains immutable;
 compact checksum-bound preservation records for v2--v4 are tracked. The v4
 root \path{artifacts/gate7-v4-onnx-attempts/} contains its two terminally
-invalid attempts. The prospective v5 formal root is
-\path{artifacts/gate7-v5-onnx-attempts/}; it contains no formal attempt before
-source freeze. Environment/CI definitions are \path{Dockerfile.project},
+invalid attempts. The v5 formal root
+\path{artifacts/gate7-v5-onnx-attempts/} contains the sole complete attempt,
+its hash-chained PASS ledger, manifest, run summaries, and canonical
+adjudication. Curated v5 values and Figure~\ref{fig:gate7-v5} are under
+\path{artifacts/samples/analysis/gate7-v5-pass/}. Environment/CI definitions are \path{Dockerfile.project},
 \path{requirements-*.lock}, and \path{.github/workflows/carma-ci.yml}.
 
 \begingroup
