@@ -236,7 +236,8 @@ EXPECTED_DOCKERIGNORE_PATTERNS = (
 PYTEST_SUMMARY = re.compile(
     rb"(?m)^(?P<result>[0-9]+ passed"
     rb"(?:, [0-9]+ (?:deselected|skipped|xfailed|xpassed|warnings?))*)"
-    rb" in [0-9]+(?:[.][0-9]+)?s$"
+    rb" in [0-9]+(?:[.][0-9]+)?s"
+    rb"(?: \([0-9]+:[0-9]{2}:[0-9]{2}\))?$"
 )
 
 

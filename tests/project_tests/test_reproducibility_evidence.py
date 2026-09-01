@@ -766,6 +766,22 @@ def test_verification_log_requires_project_pytest_summary():
         )
 
 
+def test_verification_log_accepts_pytest_long_duration_summary():
+    raw = (
+        b"8 passed in 0.80s\n"
+        b"2 passed, 1 deselected in 1.60s\n"
+        b"1291 passed, 4 skipped in 83.13s (0:01:23)\n"
+    )
+
+    evidence._require_pytest_summaries(raw, "fixture verification log")
+
+    assert evidence._normalize_pytest_elapsed(raw) == (
+        b"8 passed in <elapsed>\n"
+        b"2 passed, 1 deselected in <elapsed>\n"
+        b"1291 passed, 4 skipped in <elapsed>\n"
+    )
+
+
 def test_lock_requirements_include_cannot_escape_project_root(tmp_path):
     project = tmp_path / "project"
     project.mkdir()
