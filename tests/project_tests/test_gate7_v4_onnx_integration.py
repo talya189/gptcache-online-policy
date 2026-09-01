@@ -898,7 +898,11 @@ def test_fake_smoke_artifacts_cross_full_terminalization_lifecycle_in_tmp_path(
         (output / "manifest.json").read_text(encoding="utf-8")
     )
     started = datetime.fromisoformat(promoted["started_at_utc"])
-    head = promoted["git"]["head_commit"]
+    # GitHub verifies an exported source archive without a .git directory.
+    # Give this synthetic lifecycle a valid commit identity in that setting.
+    head = promoted["git"]["head_commit"] or "a" * 40
+    promoted["git"]["head_commit"] = head
+    promoted["attempt_id"] = gate7_runner._attempt_id_for(started, head)
     context = _formal_context(head)
     context["source_snapshot_sha256"] = (
         gate7_runner._canonical_mapping_sha256(promoted["source_identities"])

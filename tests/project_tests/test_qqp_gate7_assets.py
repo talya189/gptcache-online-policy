@@ -1,10 +1,21 @@
 """Regression tests for deterministic Gate 7 asset acquisition."""
 
+import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
 from benchmarks.carma import qqp
+
+
+def _install_fake_huggingface_hub(
+    monkeypatch, hf_hub_download, snapshot_download
+):
+    module = ModuleType("huggingface_hub")
+    module.hf_hub_download = hf_hub_download
+    module.snapshot_download = snapshot_download
+    monkeypatch.setitem(sys.modules, "huggingface_hub", module)
 
 
 def _asset_fixture(tmp_path: Path):
@@ -20,8 +31,6 @@ def _asset_fixture(tmp_path: Path):
 def test_prefetch_gate7_assets_uses_exact_revisions_and_verifies_full_maps(
     tmp_path, monkeypatch
 ):
-    import huggingface_hub
-
     model, tokenizer = _asset_fixture(tmp_path)
     calls = []
 
@@ -39,8 +48,9 @@ def test_prefetch_gate7_assets_uses_exact_revisions_and_verifies_full_maps(
             return qqp.GATE7_MODEL_FILES["model.onnx"]
         return qqp.GATE7_TOKENIZER_FILES[path.name]
 
-    monkeypatch.setattr(huggingface_hub, "hf_hub_download", fake_model)
-    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_tokenizer)
+    _install_fake_huggingface_hub(
+        monkeypatch, fake_model, fake_tokenizer
+    )
     monkeypatch.setattr(qqp, "sha256_file", fake_sha256)
 
     result = qqp.prefetch_gate7_assets(tmp_path / "cache")
@@ -78,14 +88,11 @@ def test_prefetch_gate7_assets_uses_exact_revisions_and_verifies_full_maps(
 
 
 def test_prefetch_gate7_assets_rejects_checksum_drift(tmp_path, monkeypatch):
-    import huggingface_hub
-
     model, tokenizer = _asset_fixture(tmp_path)
-    monkeypatch.setattr(
-        huggingface_hub, "hf_hub_download", lambda **_kwargs: str(model)
-    )
-    monkeypatch.setattr(
-        huggingface_hub, "snapshot_download", lambda **_kwargs: str(tokenizer)
+    _install_fake_huggingface_hub(
+        monkeypatch,
+        lambda **_kwargs: str(model),
+        lambda **_kwargs: str(tokenizer),
     )
 
     def drifted_sha256(path):
