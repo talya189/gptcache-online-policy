@@ -16,7 +16,7 @@ import os
 import tarfile
 import unicodedata
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -26,6 +26,22 @@ TOKENIZER_REPOSITORY = "GPTCache/paraphrase-albert-small-v2"
 TOKENIZER_REVISION = "5fb246187b5489d59ce0db167e739192759defab"
 MODEL_REPOSITORY = "GPTCache/paraphrase-albert-onnx"
 MODEL_REVISION = "5b562a100bc67e898ac89814e7a4668a18d65756"
+GATE7_MODEL_FILES = {
+    "model.onnx": "a173875cdc1ed10fc67ed1d4900d10b5414bd20052eb33785ffa1cad0162afb8",
+}
+GATE7_MODEL_DIGEST_SHA256 = (
+    "af8dd7ee021644802c30f27709e46ad77e65425d527ecdca8346995dea83d7ce"
+)
+GATE7_TOKENIZER_FILES = {
+    "config.json": "69765de9af37e704755cab37bee53f251465c269ae3f0c95436ab250dd11e342",
+    "special_tokens_map.json": "129fed06908ddcc3e36105e41d753ff0b934e5cfb2e451ca0a48904acef41863",
+    "spiece.model": "fefb02b667a6c5c2fe27602d28e5fb3428f66ab89c7d6f388e7c8d44a02d0336",
+    "tokenizer.json": "d0a881fece9b11d4f8003a08ac7d8d65409e3aa573fc385faa8708cdd5a77087",
+    "tokenizer_config.json": "95f31ea415a8e447b1e2ca05b897a05c1f5857b0643579d42dbec5ac5c2555c1",
+}
+GATE7_TOKENIZER_DIGEST_SHA256 = (
+    "41f1aee1afa8c01eecd6f60e8097836cb8e97bae95bf2f7fe34d85c5764f9deb"
+)
 CALIBRATION_PERCENT = 20
 SCHEMA_VERSION = "carma-qqp-v1"
 
@@ -139,6 +155,82 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _asset_map_digest(files: Mapping[str, str]) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            dict(files), sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _snapshot_file_map(snapshot: Path) -> Dict[str, str]:
+    root = Path(snapshot)
+    if root.is_symlink() or not root.is_dir():
+        raise RuntimeError("tokenizer snapshot directory is missing or unsafe")
+    files = {
+        item.relative_to(root).as_posix(): sha256_file(item)
+        for item in sorted(root.rglob("*"))
+        if item.is_file()
+    }
+    if not files:
+        raise RuntimeError("tokenizer snapshot contains no files")
+    return files
+
+
+def prefetch_gate7_assets(cache_dir: Optional[Path] = None) -> Dict[str, Any]:
+    """Fetch exact Gate 7 ONNX assets and verify their complete used file maps."""
+
+    try:
+        from huggingface_hub import hf_hub_download, snapshot_download
+    except ImportError as exc:
+        raise RuntimeError(
+            "Gate 7 asset preparation needs requirements-benchmark.txt"
+        ) from exc
+
+    cache = str(Path(cache_dir).expanduser().resolve()) if cache_dir else None
+    model_path = Path(
+        hf_hub_download(
+            repo_id=MODEL_REPOSITORY,
+            filename="model.onnx",
+            revision=MODEL_REVISION,
+            cache_dir=cache,
+        )
+    ).resolve()
+    tokenizer_path = Path(
+        snapshot_download(
+            repo_id=TOKENIZER_REPOSITORY,
+            revision=TOKENIZER_REVISION,
+            allow_patterns=("*.json", "*.txt", "tokenizer.*", "*.model"),
+            cache_dir=cache,
+        )
+    ).resolve()
+    model_files = {"model.onnx": sha256_file(model_path)}
+    tokenizer_files = _snapshot_file_map(tokenizer_path)
+    model_digest = _asset_map_digest(model_files)
+    tokenizer_digest = _asset_map_digest(tokenizer_files)
+    if (
+        model_files != GATE7_MODEL_FILES
+        or model_digest != GATE7_MODEL_DIGEST_SHA256
+        or tokenizer_files != GATE7_TOKENIZER_FILES
+        or tokenizer_digest != GATE7_TOKENIZER_DIGEST_SHA256
+    ):
+        raise RuntimeError("downloaded Gate 7 assets differ from frozen identities")
+    return {
+        "schema_version": "carma-gate7-assets-v1",
+        "status": "verified",
+        "model_repository": MODEL_REPOSITORY,
+        "model_revision": MODEL_REVISION,
+        "model_path": str(model_path),
+        "model_files": model_files,
+        "model_digest_sha256": model_digest,
+        "tokenizer_repository": TOKENIZER_REPOSITORY,
+        "tokenizer_revision": TOKENIZER_REVISION,
+        "tokenizer_path": str(tokenizer_path),
+        "tokenizer_files": tokenizer_files,
+        "tokenizer_digest_sha256": tokenizer_digest,
+    }
 
 
 def load_pairs(archive: Path) -> List[Dict[str, Any]]:
@@ -630,6 +722,17 @@ def build_parser() -> argparse.ArgumentParser:
     prepare_parser.add_argument("--archive", type=Path, required=True)
     prepare_parser.add_argument("--output", type=Path, required=True)
 
+    assets_parser = subparsers.add_parser(
+        "prefetch-gate7-assets",
+        help="fetch and checksum the exact ONNX model and tokenizer used by Gate 7",
+    )
+    assets_parser.add_argument(
+        "--cache-dir",
+        type=Path,
+        default=None,
+        help="optional Hugging Face cache root (default: the standard user cache)",
+    )
+
     embed_parser = subparsers.add_parser("embed")
     embed_parser.add_argument("--prepared", type=Path, required=True)
     embed_parser.add_argument("--output", type=Path, required=True)
@@ -648,6 +751,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "prepare":
         result = prepare(args.archive, args.output)
+    elif args.command == "prefetch-gate7-assets":
+        result = prefetch_gate7_assets(args.cache_dir)
     elif args.command == "embed":
         result = embed(
             args.prepared,

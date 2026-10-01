@@ -8,8 +8,10 @@ import re
 import shutil
 import subprocess
 
+import numpy as np
 import pytest
 
+from benchmarks.carma import qqp_v2
 from benchmarks.carma.analyze_results import (
     AGGREGATE_FIELDS,
     ANALYSIS_SCHEMA,
@@ -1057,6 +1059,112 @@ def _failed_qqp_fixture(root):
     return result_path
 
 
+def _qqp_v2_fixture(root):
+    prepared = root / "prepared"
+    embeddings = root / "embeddings"
+    evaluation = root / "evaluation"
+    prepared.mkdir(parents=True)
+    embeddings.mkdir(parents=True)
+    text_ids = ["question-%d" % index for index in range(4)]
+    pair_rows = [
+        {
+            "split": "calibration",
+            "label": 1,
+            "text_a_id": text_ids[0],
+            "text_b_id": text_ids[1],
+        },
+        {
+            "split": "calibration",
+            "label": 0,
+            "text_a_id": text_ids[2],
+            "text_b_id": text_ids[3],
+        },
+        {
+            "split": "test",
+            "label": 1,
+            "text_a_id": text_ids[0],
+            "text_b_id": text_ids[1],
+        },
+        {
+            "split": "test",
+            "label": 0,
+            "text_a_id": text_ids[2],
+            "text_b_id": text_ids[3],
+        },
+    ]
+    pairs_path = prepared / "pairs.jsonl"
+    pairs_path.write_text(
+        "".join(
+            json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+            for row in pair_rows
+        ),
+        encoding="utf-8",
+    )
+    texts_path = prepared / "texts.jsonl"
+    texts_path.write_text(
+        "".join(
+            json.dumps(
+                {"text_id": text_id, "text": text_id},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n"
+            for text_id in text_ids
+        ),
+        encoding="utf-8",
+    )
+    _write_json(
+        prepared / "manifest.json",
+        {
+            "schema_version": "carma-qqp-v1",
+            "archive_sha256": (
+                "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58"
+            ),
+            "counts": {
+                "calibration_negative": 1,
+                "calibration_positive": 1,
+                "test_negative": 1,
+                "test_positive": 1,
+            },
+            "unique_questions_kept": len(text_ids),
+            "pairs_sha256": sha256_file(pairs_path),
+            "texts_sha256": sha256_file(texts_path),
+        },
+    )
+    text_ids_path = embeddings / "text_ids.json"
+    text_ids_path.write_text(
+        json.dumps(text_ids, separators=(",", ":")), encoding="utf-8"
+    )
+    matrix = np.zeros((len(text_ids), 768), dtype=np.float32)
+    matrix[:, 0] = 1.0
+    matrix_path = embeddings / "embeddings.npy"
+    np.save(matrix_path, matrix)
+    _write_json(
+        embeddings / "manifest.json",
+        {
+            "schema_version": "carma-qqp-v1",
+            "tokenizer_repository": "GPTCache/paraphrase-albert-small-v2",
+            "tokenizer_revision": (
+                "5fb246187b5489d59ce0db167e739192759defab"
+            ),
+            "model_repository": "GPTCache/paraphrase-albert-onnx",
+            "model_revision": "5b562a100bc67e898ac89814e7a4668a18d65756",
+            "dimension": 768,
+            "dtype": "float32",
+            "max_length": 512,
+            "normalized": True,
+            "rows": len(text_ids),
+            "embeddings_sha256": sha256_file(matrix_path),
+            "text_ids_sha256": hashlib.sha256(
+                "\n".join(text_ids).encode("utf-8")
+            ).hexdigest(),
+        },
+    )
+    result = qqp_v2.calibrate(prepared, embeddings, evaluation)
+    assert result["status"] == "no_threshold_met_precision_gate"
+    return evaluation / "result.json"
+
+
 def test_failed_qqp_result_is_strict_and_manifest_reconciled(tmp_path):
     result_path = _failed_qqp_fixture(tmp_path / "qqp")
     loaded = _load_qqp(result_path)
@@ -1117,6 +1225,168 @@ def test_failed_qqp_result_requires_positive_pair_counts():
     }
     with pytest.raises(AnalysisError, match="pair counts must be positive"):
         _validate_qqp_result(result)
+
+
+def test_qqp_v2_output_is_verified_end_to_end_not_stale(tmp_path):
+    full, integrations, _, moss = _complete_inputs(tmp_path)
+    qqp = _qqp_v2_fixture(tmp_path / "qqp-v2")
+    result = analyze_results(
+        tmp_path / "analysis-v2", full, integrations, qqp, moss
+    )
+
+    source = result["sources"]["qqp"]
+    assert source["status"] == "verified"
+    assert source["schema_version"] == "carma-qqp-v2"
+    assert source["provenance"]["status"] == (
+        "verified_calibration_recomputed"
+    )
+    assert source["provenance"]["stage_manifests"]["status"] == "verified"
+    assert source["provenance"]["independent_recomputation"] == {
+        "calibration_pairs": 2,
+        "heldout_rows": 2,
+        "matrix_shape": [4, 768],
+        "matrix_dtype": "float32",
+        "all_rows_normalized": True,
+    }
+    assert result["gates"]["gate_2_semantic_safety"]["status"] == "fail"
+
+
+def test_qqp_v2_hash_bound_selection_tamper_is_rejected(tmp_path):
+    result_path = _qqp_v2_fixture(tmp_path / "qqp-v2")
+    selection_path = result_path.parent / "threshold-selection.json"
+    selection = json.loads(selection_path.read_text(encoding="utf-8"))
+    selection["selection_uses_heldout"] = True
+    _write_json(selection_path, selection)
+
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["selection_transcript"] = {
+        "path": "threshold-selection.json",
+        "bytes": selection_path.stat().st_size,
+        "sha256": sha256_file(selection_path),
+    }
+    _write_json(result_path, result)
+
+    with pytest.raises(AnalysisError, match="leakage controls mismatch"):
+        _load_qqp(result_path)
+
+
+def test_qqp_v2_selected_result_is_rejected_until_independently_recomputed(
+    tmp_path,
+):
+    result_path = _qqp_v2_fixture(tmp_path / "qqp-v2")
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["status"] = "ok"
+    _write_json(result_path, result)
+
+    with pytest.raises(AnalysisError, match="selected-threshold results are unsupported"):
+        _load_qqp(result_path)
+
+
+def test_qqp_v2_retained_renamed_siblings_resolve_by_identity(tmp_path):
+    result_path = _qqp_v2_fixture(tmp_path / "qqp-v2")
+    evaluation = result_path.parent
+    (evaluation / "threshold-selection.json").rename(
+        evaluation / "qqp-v2-threshold-selection.json"
+    )
+    (evaluation / "calibration-thresholds.csv").rename(
+        evaluation / "qqp-v2-calibration-thresholds.csv"
+    )
+
+    loaded = _load_qqp(result_path)
+
+    assert loaded["report"]["status"] == "verified"
+    assert loaded["report"]["provenance"]["status"] == (
+        "verified_calibration_recomputed"
+    )
+
+
+def test_qqp_v2_retained_rename_rejects_outside_symlink(tmp_path):
+    result_path = _qqp_v2_fixture(tmp_path / "qqp-v2")
+    evaluation = result_path.parent
+    original = evaluation / "threshold-selection.json"
+    outside = tmp_path / "outside-threshold-selection.json"
+    original.rename(outside)
+    (evaluation / "qqp-v2-threshold-selection.json").symlink_to(outside)
+
+    with pytest.raises(AnalysisError, match="missing or .* ambiguous"):
+        _load_qqp(result_path)
+
+
+def test_qqp_v2_rejects_hash_linked_non_npy_matrix(tmp_path):
+    root = tmp_path / "qqp-v2"
+    result_path = _qqp_v2_fixture(root)
+    matrix_path = root / "embeddings" / "embeddings.npy"
+    matrix_path.write_bytes(b"not-a-numpy-file")
+    manifest_path = root / "embeddings" / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["embeddings_sha256"] = sha256_file(matrix_path)
+    _write_json(manifest_path, manifest)
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["inputs"]["embedding_matrix"].update(
+        bytes=matrix_path.stat().st_size,
+        sha256=sha256_file(matrix_path),
+    )
+    result["inputs"]["embedding_manifest"].update(
+        bytes=manifest_path.stat().st_size,
+        sha256=sha256_file(manifest_path),
+    )
+    selection_path = root / "evaluation" / "threshold-selection.json"
+    selection = json.loads(selection_path.read_text(encoding="utf-8"))
+    selection["inputs"] = result["inputs"]
+    _write_json(selection_path, selection)
+    result["selection_transcript"] = {
+        "path": "threshold-selection.json",
+        "bytes": selection_path.stat().st_size,
+        "sha256": sha256_file(selection_path),
+    }
+    _write_json(result_path, result)
+
+    with pytest.raises(AnalysisError, match="embedding inputs are unreadable"):
+        _load_qqp(result_path)
+
+
+def test_qqp_v2_rejects_self_consistent_but_unrecomputed_grid(tmp_path):
+    result_path = _qqp_v2_fixture(tmp_path / "qqp-v2")
+    evaluation = result_path.parent
+    grid_path = evaluation / "calibration-thresholds.csv"
+    rows, fields = _read_csv(grid_path)
+    wilson = _wilson_lower(1, 1)
+    false_hit_upper = 1.0 - _wilson_lower(2, 2)
+    for row in rows:
+        row.update(
+            true_positive="1",
+            false_positive="0",
+            true_negative="1",
+            false_negative="0",
+            precision="1.0",
+            recall="1.0",
+            false_positive_rate="0.0",
+            wilson_precision_lower_one_sided_95=str(wilson),
+            false_hit_rate="0.0",
+            false_hit_rate_definition="FP / (TP + FP + TN + FN)",
+            wilson_false_hit_rate_upper_one_sided_95=str(false_hit_upper),
+        )
+    _write_csv(grid_path, fields, rows)
+    grid_identity = {
+        "path": "calibration-thresholds.csv",
+        "bytes": grid_path.stat().st_size,
+        "sha256": sha256_file(grid_path),
+    }
+    selection_path = evaluation / "threshold-selection.json"
+    selection = json.loads(selection_path.read_text(encoding="utf-8"))
+    selection["calibration_thresholds"] = grid_identity
+    _write_json(selection_path, selection)
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["calibration_thresholds"] = grid_identity
+    result["selection_transcript"] = {
+        "path": "threshold-selection.json",
+        "bytes": selection_path.stat().st_size,
+        "sha256": sha256_file(selection_path),
+    }
+    _write_json(result_path, result)
+
+    with pytest.raises(AnalysisError, match="independently recomputed similarities"):
+        _load_qqp(result_path)
 
 
 def _moss_fixture(root):
@@ -1400,6 +1670,7 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
             return (current + " " + source + "\n").encode("ascii")
         if "diff" in command:
             return (
+                b"M\0handoff.md\0"
                 b"M\0docs/project/report.pdf\0"
                 b"M\0artifacts/samples/analysis/gates.json\0"
                 b"A\0artifacts/samples/qqp/result.json\0"
@@ -1414,6 +1685,7 @@ def test_packaging_descendant_parser_allows_only_added_or_modified_paths(
     assert _packaging_descendant_changes(
         source, current, "fixture evidence"
     ) == [
+        {"status": "M", "path": "handoff.md"},
         {"status": "M", "path": "docs/project/report.pdf"},
         {"status": "M", "path": "artifacts/samples/analysis/gates.json"},
         {"status": "A", "path": "artifacts/samples/qqp/result.json"},

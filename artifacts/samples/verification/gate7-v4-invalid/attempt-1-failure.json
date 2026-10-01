@@ -1,0 +1,1496 @@
+{
+  "artifacts": {
+    "child.stderr.log": {
+      "bytes": 281,
+      "sha256": "bab3fbf6c294061689df6f78f5c40929ebf17f4a1565d652f69585bc2feda93b"
+    },
+    "child.stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "failed-requests.jsonl": {
+      "bytes": 8598167,
+      "rows": 3000,
+      "sha256": "c2dbc96cc906fb1944260a8ea76807fa6a4a3fb3e1b75f0299e7e70932e85d1b"
+    },
+    "failed-resources.jsonl": {
+      "bytes": 11705217,
+      "rows": 16361,
+      "sha256": "c9d567aa6cfafa7dae1b976e30d270518c75d1be0754d7b73b165084e3807877"
+    },
+    "failed-structural-summary.json": {
+      "bytes": 331,
+      "sha256": "03143a4907e4c15d8c6ea914fa09183fda6ffed13a3e5c504625656d6c0bf52c"
+    },
+    "semantic-indexes/seed-20261101.json": {
+      "bytes": 391917,
+      "sha256": "fbd64d959491e78f0c312cdf30821f5a4320842fdbd7eb7f1d90bbaceaf2545b"
+    },
+    "source/dependency-attestation.json": {
+      "bytes": 27026,
+      "path": "source/dependency-attestation.json",
+      "rows": 654,
+      "sha256": "1b97ceb96ef3b5cbbab49424cfe0a1d028a6839a9df3077f03b8b104a7f21296"
+    },
+    "source/formal-source-tag.raw": {
+      "bytes": 288,
+      "path": "source/formal-source-tag.raw",
+      "rows": 7,
+      "sha256": "a1516ff7bdfada19c1d413a19bdd3b0ce16c1c726086af3713cb23c5a753fae8"
+    },
+    "source/prepared/manifest.json": {
+      "bytes": 865,
+      "path": "source/prepared/manifest.json",
+      "rows": 22,
+      "sha256": "c57d719457fe40f2b3d898509a0f63c92ff65a4e2494d68300a6a522c3711a5b"
+    },
+    "source/prepared/pairs.jsonl": {
+      "bytes": 15312448,
+      "path": "source/prepared/pairs.jsonl",
+      "rows": 64692,
+      "sha256": "c84d9897bd4838e8c12f45d59e04401031bbd5fa533570490db016cf40235126"
+    },
+    "source/prepared/texts.jsonl": {
+      "bytes": 11818049,
+      "path": "source/prepared/texts.jsonl",
+      "rows": 108732,
+      "sha256": "645ece94cebf36d1d37a66410d925d7d2252b6d39dd42b473e866289d1576dc3"
+    },
+    "source/similiar_qqp_full.json.gz": {
+      "bytes": 3876675,
+      "path": "source/similiar_qqp_full.json.gz",
+      "rows": 14037,
+      "sha256": "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58"
+    },
+    "traces/seed-20261101.jsonl": {
+      "bytes": 1159250,
+      "rows": 3000,
+      "sha256": "7aa07e4f4b918bd280ece48863a16ddb137cadd59c6427dde2be78727b840947"
+    }
+  },
+  "attempt_id": "20260831T082932459735Z-886020aff7d8",
+  "attempt_ledger": {
+    "entry_sha256": "0e90e535e2cd88cad323b992caf7500757696ad402ca2c9ca9eb5295da3c9a24",
+    "event": "START",
+    "path": "attempt-ledger.jsonl",
+    "prefix_bytes": 24978,
+    "prefix_rows": 2,
+    "prefix_sha256": "2432ae84edb17148fd3a4d6923d42e2fde3a1ee9fe396f1bd9959b22298740f8"
+  },
+  "attempt_policy": {
+    "directory": "attempt-20260831T082921Z-21172",
+    "eligibility": "first structurally valid complete attempt in the retained predecessor chain",
+    "formal_root": "artifacts/gate7-v4-onnx-attempts",
+    "rerun_scope": "complete five-seed, three-policy matrix under a new attempt ID"
+  },
+  "child_diagnostic": {
+    "attempt_id": "20260831T082932459735Z-886020aff7d8",
+    "completed_request_count": 3000,
+    "completed_requests_artifact": "failed-requests.jsonl",
+    "error": "unowned or unhashed Python startup file under sys.prefix: __editable__.gptcache-0.1.44 2.pth",
+    "error_type": "RuntimeError",
+    "experiment_id": "gate7e-onnx-v4",
+    "failed_request_index": 2999,
+    "kind": "child_failure_diagnostics",
+    "order_position": 0,
+    "policy": "CARMA",
+    "run_id": "07749a2057a916a20358",
+    "schema_version": "carma-gate7-onnx-v4",
+    "seed": 20261101,
+    "trace_hash": "7aa07e4f4b918bd280ece48863a16ddb137cadd59c6427dde2be78727b840947"
+  },
+  "child_exit_status": 4,
+  "config": {
+    "admission_margin": 1.05,
+    "capacity": 100,
+    "cell_threshold": 0.97,
+    "centroid_alpha": 0.05,
+    "demand_half_life": 500.0,
+    "entry_hit_weight": 0.25,
+    "fake_embedding": false,
+    "ghost_support_threshold": 1.5,
+    "hit_threshold": 0.97,
+    "max_length": 512,
+    "mode": "full",
+    "onnx_inter_threads": 1,
+    "onnx_intra_threads": 1,
+    "quota_strength": 1.0,
+    "requests": 3000,
+    "resource_interval_ms": 100,
+    "topic_threshold": 0.7,
+    "warmup_requests": 20
+  },
+  "contract": {
+    "bytes": 35914,
+    "path": "docs/project/gate7-v4-remediation-contract.md",
+    "sha256": "d74545ae80bfe333b30f0c084f03292b7ad0f3946677936401e95d9379fea99c"
+  },
+  "dependency_attestation": {
+    "attestation_sha256": "5b55b5832eb8d1d3b4027a67fdb49791d0e11f3a44258d366b62f8a501f658a0",
+    "environment": {
+      "bootstrap_evidence_present": true,
+      "dynamic": {
+        "CARMA_GATE7_LAUNCH_MODE": "full",
+        "CARMA_GATE7_WRAPPER_PATH": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end/scripts/run_gate7_v4_onnx_integration_benchmark.sh",
+        "CARMA_GATE7_WRAPPER_PID": "21172",
+        "CARMA_GATE7_WRAPPER_SHELL_HOME": "/Users/talyayermiyahu",
+        "CARMA_GATE7_WRAPPER_SHELL_OPTIONAL_CF": "0x1F5:0x0:0x0",
+        "CARMA_GATE7_WRAPPER_SHELL_PROFILE": "env-i-v1",
+        "CARMA_GATE7_WRAPPER_SHELL_PWD": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end",
+        "CARMA_GATE7_WRAPPER_SHELL_SHLVL": "1",
+        "CARMA_GATE7_WRAPPER_SHELL_TMPDIR": "/tmp",
+        "HF_HOME": "/Users/talyayermiyahu/.cache/huggingface",
+        "HF_HUB_CACHE": "/Users/talyayermiyahu/.cache/huggingface/hub",
+        "HOME": "/Users/talyayermiyahu",
+        "PYTHONPYCACHEPREFIX": "/tmp/gate7-runtime.tyDz3v/pycache",
+        "TMPDIR": "/tmp/gate7-runtime.tyDz3v/tmp"
+      },
+      "environment_sha256": "7096f903fc43d0ee526d54e94c3249029ca511056949c7188d08402b2885ea64",
+      "forbidden_absent": [
+        "PYTHONHOME",
+        "PYTHONPATH",
+        "PYTHONSTARTUP"
+      ],
+      "forbidden_cache_absent": [
+        "TRANSFORMERS_CACHE",
+        "XDG_CACHE_HOME",
+        "PYTHONUSERBASE"
+      ],
+      "loader_variables_absent": true,
+      "optional_os": {
+        "__CF_USER_TEXT_ENCODING": "0x1F5:0x0:0x0"
+      },
+      "pycache_prefix": "/private/tmp/gate7-runtime.tyDz3v/pycache",
+      "pycache_prefix_empty": true,
+      "required": {
+        "CARMA_GATE7_FORMAL_ENTRYPOINT": "gate7e-wrapper-v1",
+        "CARMA_GATE7_WRAPPER_SHELL": "gate7e-shell-v1",
+        "CARMA_ONNX_THREADS": "1",
+        "CARMA_ONNX_WORKERS": "1",
+        "HF_HUB_OFFLINE": "1",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "LC_CTYPE": "C.UTF-8",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONSAFEPATH": "1",
+        "TOKENIZERS_PARALLELISM": "false",
+        "TRANSFORMERS_OFFLINE": "1",
+        "TZ": "UTC",
+        "VECLIB_MAXIMUM_THREADS": "1"
+      },
+      "unexpected_absent": true
+    },
+    "faiss": {
+      "max_threads": 1
+    },
+    "installed": {
+      "gptcache": {
+        "editable": true,
+        "module_origin": "gptcache/__init__.py",
+        "source_path": ".",
+        "version": "0.1.44"
+      },
+      "imported_origins": {
+        "cachetools": {
+          "owner": "cachetools",
+          "path": "lib/python3.12/site-packages/cachetools/__init__.py"
+        },
+        "faiss": {
+          "owner": "faiss-cpu",
+          "path": "lib/python3.12/site-packages/faiss/__init__.py"
+        },
+        "huggingface_hub": {
+          "owner": "huggingface-hub",
+          "path": "lib/python3.12/site-packages/huggingface_hub/__init__.py"
+        },
+        "numpy": {
+          "owner": "numpy",
+          "path": "lib/python3.12/site-packages/numpy/__init__.py"
+        },
+        "onnxruntime": {
+          "owner": "onnxruntime",
+          "path": "lib/python3.12/site-packages/onnxruntime/__init__.py"
+        },
+        "psutil": {
+          "owner": "psutil",
+          "path": "lib/python3.12/site-packages/psutil/__init__.py"
+        },
+        "sqlalchemy": {
+          "owner": "sqlalchemy",
+          "path": "lib/python3.12/site-packages/sqlalchemy/__init__.py"
+        },
+        "tokenizers": {
+          "owner": "tokenizers",
+          "path": "lib/python3.12/site-packages/tokenizers/__init__.py"
+        },
+        "transformers": {
+          "owner": "transformers",
+          "path": "lib/python3.12/site-packages/transformers/__init__.py"
+        }
+      },
+      "package_map_sha256": "f7ddea423376cd917f18e7189a9fbf1915f48bc8001e0b66a2c890bf649c301b",
+      "packages": {
+        "cachetools": "7.1.7",
+        "certifi": "2026.7.22",
+        "charset-normalizer": "3.5.1",
+        "coloredlogs": "15.0.1",
+        "contourpy": "1.3.3",
+        "coverage": "7.15.4",
+        "cycler": "0.12.1",
+        "faiss-cpu": "1.15.0",
+        "filelock": "3.32.4",
+        "flatbuffers": "25.12.19",
+        "fonttools": "4.63.0",
+        "fsspec": "2026.7.0",
+        "gptcache": "0.1.44",
+        "greenlet": "3.5.5",
+        "hf-xet": "1.6.0",
+        "huggingface-hub": "0.36.0",
+        "humanfriendly": "10.0",
+        "idna": "3.19",
+        "iniconfig": "2.3.0",
+        "kiwisolver": "1.5.0",
+        "matplotlib": "3.10.8",
+        "mpmath": "1.3.0",
+        "numpy": "2.5.2",
+        "onnxruntime": "1.23.2",
+        "packaging": "26.3",
+        "pillow": "12.3.0",
+        "pip": "26.2.1",
+        "pluggy": "1.6.0",
+        "protobuf": "7.36.0",
+        "psutil": "7.2.2",
+        "pygments": "2.21.0",
+        "pyparsing": "3.3.2",
+        "pytest": "9.1.1",
+        "pytest-cov": "7.1.0",
+        "python-dateutil": "2.9.0.post0",
+        "pyyaml": "6.0.3",
+        "regex": "2026.7.19",
+        "requests": "2.34.2",
+        "safetensors": "0.8.0",
+        "scipy": "1.16.3",
+        "setuptools": "84.0.0",
+        "six": "1.17.0",
+        "sqlalchemy": "2.0.52",
+        "sympy": "1.14.0",
+        "tiktoken": "0.14.0",
+        "tokenizers": "0.22.2",
+        "tqdm": "4.70.0",
+        "transformers": "4.57.6",
+        "typing-extensions": "4.16.0",
+        "urllib3": "2.7.0",
+        "wheel": "0.48.0"
+      },
+      "third_party_origins": {
+        "cachetools": "lib/python3.12/site-packages",
+        "certifi": "lib/python3.12/site-packages",
+        "charset-normalizer": "lib/python3.12/site-packages",
+        "coloredlogs": "lib/python3.12/site-packages",
+        "contourpy": "lib/python3.12/site-packages",
+        "coverage": "lib/python3.12/site-packages",
+        "cycler": "lib/python3.12/site-packages",
+        "faiss-cpu": "lib/python3.12/site-packages",
+        "filelock": "lib/python3.12/site-packages",
+        "flatbuffers": "lib/python3.12/site-packages",
+        "fonttools": "lib/python3.12/site-packages",
+        "fsspec": "lib/python3.12/site-packages",
+        "greenlet": "lib/python3.12/site-packages",
+        "hf-xet": "lib/python3.12/site-packages",
+        "huggingface-hub": "lib/python3.12/site-packages",
+        "humanfriendly": "lib/python3.12/site-packages",
+        "idna": "lib/python3.12/site-packages",
+        "iniconfig": "lib/python3.12/site-packages",
+        "kiwisolver": "lib/python3.12/site-packages",
+        "matplotlib": "lib/python3.12/site-packages",
+        "mpmath": "lib/python3.12/site-packages",
+        "numpy": "lib/python3.12/site-packages",
+        "onnxruntime": "lib/python3.12/site-packages",
+        "packaging": "lib/python3.12/site-packages",
+        "pillow": "lib/python3.12/site-packages",
+        "pip": "lib/python3.12/site-packages",
+        "pluggy": "lib/python3.12/site-packages",
+        "protobuf": "lib/python3.12/site-packages",
+        "psutil": "lib/python3.12/site-packages",
+        "pygments": "lib/python3.12/site-packages",
+        "pyparsing": "lib/python3.12/site-packages",
+        "pytest": "lib/python3.12/site-packages",
+        "pytest-cov": "lib/python3.12/site-packages",
+        "python-dateutil": "lib/python3.12/site-packages",
+        "pyyaml": "lib/python3.12/site-packages",
+        "regex": "lib/python3.12/site-packages",
+        "requests": "lib/python3.12/site-packages",
+        "safetensors": "lib/python3.12/site-packages",
+        "scipy": "lib/python3.12/site-packages",
+        "setuptools": "lib/python3.12/site-packages",
+        "six": "lib/python3.12/site-packages",
+        "sqlalchemy": "lib/python3.12/site-packages",
+        "sympy": "lib/python3.12/site-packages",
+        "tiktoken": "lib/python3.12/site-packages",
+        "tokenizers": "lib/python3.12/site-packages",
+        "tqdm": "lib/python3.12/site-packages",
+        "transformers": "lib/python3.12/site-packages",
+        "typing-extensions": "lib/python3.12/site-packages",
+        "urllib3": "lib/python3.12/site-packages",
+        "wheel": "lib/python3.12/site-packages"
+      }
+    },
+    "lock": {
+      "path": "requirements-benchmark.lock",
+      "pin_count": 50,
+      "pin_map_sha256": "a9ad2cf1ad4db90d5c43d01eaaad84b739153616e31d5404dd817b47f195a759",
+      "pins": {
+        "cachetools": "7.1.7",
+        "certifi": "2026.7.22",
+        "charset-normalizer": "3.5.1",
+        "coloredlogs": "15.0.1",
+        "contourpy": "1.3.3",
+        "coverage": "7.15.4",
+        "cycler": "0.12.1",
+        "faiss-cpu": "1.15.0",
+        "filelock": "3.32.4",
+        "flatbuffers": "25.12.19",
+        "fonttools": "4.63.0",
+        "fsspec": "2026.7.0",
+        "greenlet": "3.5.5",
+        "hf-xet": "1.6.0",
+        "huggingface-hub": "0.36.0",
+        "humanfriendly": "10.0",
+        "idna": "3.19",
+        "iniconfig": "2.3.0",
+        "kiwisolver": "1.5.0",
+        "matplotlib": "3.10.8",
+        "mpmath": "1.3.0",
+        "numpy": "2.5.2",
+        "onnxruntime": "1.23.2",
+        "packaging": "26.3",
+        "pillow": "12.3.0",
+        "pip": "26.2.1",
+        "pluggy": "1.6.0",
+        "protobuf": "7.36.0",
+        "psutil": "7.2.2",
+        "pygments": "2.21.0",
+        "pyparsing": "3.3.2",
+        "pytest": "9.1.1",
+        "pytest-cov": "7.1.0",
+        "python-dateutil": "2.9.0.post0",
+        "pyyaml": "6.0.3",
+        "regex": "2026.7.19",
+        "requests": "2.34.2",
+        "safetensors": "0.8.0",
+        "scipy": "1.16.3",
+        "setuptools": "84.0.0",
+        "six": "1.17.0",
+        "sqlalchemy": "2.0.52",
+        "sympy": "1.14.0",
+        "tiktoken": "0.14.0",
+        "tokenizers": "0.22.2",
+        "tqdm": "4.70.0",
+        "transformers": "4.57.6",
+        "typing-extensions": "4.16.0",
+        "urllib3": "2.7.0",
+        "wheel": "0.48.0"
+      },
+      "sha256": "8723b1875ff08ff16691e7b9d7166fc6b089fb362c8d27f2f43dde34be04d8ad"
+    },
+    "numpy": {
+      "blas": "accelerate",
+      "lapack": "accelerate"
+    },
+    "pip_check": {
+      "method": "in_process_requires_dist_consistency",
+      "returncode": 0,
+      "site_module_absent": true,
+      "status": "pass"
+    },
+    "project_shadow_scan": {
+      "rejected_files": [],
+      "runtime_roots": [
+        "gptcache",
+        "benchmarks",
+        "."
+      ]
+    },
+    "python": {
+      "executable": ".venv/bin/python",
+      "implementation": "CPython",
+      "pyvenv_cfg": {
+        "bytes": 509,
+        "path": ".venv/pyvenv.cfg",
+        "sha256": "88301fc1f6e98d01a3528c3c4cb397d9ab75755dc2f44c7aeefa29bad0f4cb29"
+      },
+      "resolved_executable": "/Users/talyayermiyahu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+      "sys_prefix": ".venv",
+      "version": "3.12.13"
+    },
+    "record_integrity": {
+      "aggregate_sha256": "71cfee8681ed04c2c532d6aa07249e2b9eb7d6b288d8ffd0b5cb0cf2c09d3f31",
+      "local_editable": {
+        "hashed_bytes": 42143,
+        "hashed_file_count": 11,
+        "hashed_files_sha256": "cd9112f2f7633e37f0d3a35a22a15623c888912cc468c4788883b7518a060946",
+        "record_sha256": "e59403739bd272872adcb00ad42414b3d4071696c234ab79b5036ad65f4ee8c8"
+      },
+      "locked_aggregate_sha256": "339593788f19cc22d76fb29f4e5609af1ccbbb8c7fbce528cef92b3f4cca4230",
+      "locked_distribution_count": 50,
+      "locked_distributions": {
+        "cachetools": {
+          "hashed_bytes": 67346,
+          "hashed_file_count": 15,
+          "hashed_files_sha256": "6ee25591174a04f86a358af7d5c90ec2049388c1545235162ae9896125b2351b",
+          "record_sha256": "5916d3143211248f195a626e4d51516245f46ed2eaa5ad25fa2848160b7b88d6"
+        },
+        "certifi": {
+          "hashed_bytes": 247980,
+          "hashed_file_count": 13,
+          "hashed_files_sha256": "7217d56960295034c9836a7069300d92e0266f5612d1909e19e88b2bd03ab3a6",
+          "record_sha256": "659fc7bbd500a39195c04ca8e6127fb2ea50a347fbb1f80afe4cab525e48e457"
+        },
+        "charset-normalizer": {
+          "hashed_bytes": 1083286,
+          "hashed_file_count": 23,
+          "hashed_files_sha256": "cb5ee8b440064e18f57fd31abb4ebb318449c10e6bdc9654c692bc0fe892ba7a",
+          "record_sha256": "196239c66f97772dcd9ee4b76710cf87833403b682574a22a94eaffff5652c27"
+        },
+        "coloredlogs": {
+          "hashed_bytes": 150261,
+          "hashed_file_count": 16,
+          "hashed_files_sha256": "76c2f2651edde278c3177532c377a5e6966a9a6fc1dcc75719dff69407345d0a",
+          "record_sha256": "1d108889f8906172321619e99f8ec896e85ebe592f8d858d5efd3218deccb714"
+        },
+        "contourpy": {
+          "hashed_bytes": 999432,
+          "hashed_file_count": 25,
+          "hashed_files_sha256": "39d0e42b40e85870e84f025bc63959df0f51cffa9c827344c7a53d8eadb7062b",
+          "record_sha256": "f993322e24fd4212d6918deebbc7aa6fdcc6c14202054e1be5d0722eab05df30"
+        },
+        "coverage": {
+          "hashed_bytes": 759549,
+          "hashed_file_count": 66,
+          "hashed_files_sha256": "806b5a86c1cb674e8bde12999059f2ea97538346479e73f527e39678a504ac7f",
+          "record_sha256": "b83aa5685084a91bde100471ba79f6048235472fceb8c9f27e03085de8388c79"
+        },
+        "cycler": {
+          "hashed_bytes": 22088,
+          "hashed_file_count": 8,
+          "hashed_files_sha256": "20cf2e0b2c4c59a73223241a885e5fe52127ce3e70305c6cbe91095cd415bf6c",
+          "record_sha256": "4cb77b5408ae7bd44e1d184653e7c85e492346d53f5570110dad54a5ba111210"
+        },
+        "faiss-cpu": {
+          "hashed_bytes": 17508466,
+          "hashed_file_count": 37,
+          "hashed_files_sha256": "fb062bcf8003b51ccbfd76fb9b35b9c43a2bf1317ce243b39276dce3f9bea07e",
+          "record_sha256": "83262341ef8b1e12183e8c19b1a8675d73540768f164afdd9331e066e55a7bea"
+        },
+        "filelock": {
+          "hashed_bytes": 352382,
+          "hashed_file_count": 27,
+          "hashed_files_sha256": "06d731b94a730a6897836094c3a0804219be5779a3ba766a54d2f629fe1400f2",
+          "record_sha256": "30083152025fec83ecbb1e765d7105b57ab95cb5c6c77a82d69abc2c12deffbf"
+        },
+        "flatbuffers": {
+          "hashed_bytes": 86872,
+          "hashed_file_count": 15,
+          "hashed_files_sha256": "ec755644a5ef97b65386a22b3d2af0ae64839a0f2983b6bf121fa90562b2767b",
+          "record_sha256": "7ced0220c7592df5b72b146f346c83ab7a393f26fb8e32dac348d6f57a6a80aa"
+        },
+        "fonttools": {
+          "hashed_bytes": 12595898,
+          "hashed_file_count": 364,
+          "hashed_files_sha256": "844039b950f44bba5047044c64a87f52a01ec171010a0319285396baece3672b",
+          "record_sha256": "3bbec5d7e67f90d81312b13e4c1b65102fa1151587e1daaf19f413905166714e"
+        },
+        "fsspec": {
+          "hashed_bytes": 747383,
+          "hashed_file_count": 62,
+          "hashed_files_sha256": "9be5995599d0217b31fecba35bbbd4ddfb8b2d449634576ea8eb9edb9886a671",
+          "record_sha256": "e04b4fd7c3de47ae9ed6860ccb049e990a855219349983404f3ced12e9944e76"
+        },
+        "greenlet": {
+          "hashed_bytes": 1001253,
+          "hashed_file_count": 100,
+          "hashed_files_sha256": "c31ee73b2829e44e11fbd2793977cd271f0944b8ae88fd1d76b9189f5e521247",
+          "record_sha256": "47dc860f76c88ee3f341daeb0944e4ce79b68b28adf040024d1c3fcf1a56361a"
+        },
+        "hf-xet": {
+          "hashed_bytes": 8151698,
+          "hashed_file_count": 8,
+          "hashed_files_sha256": "5da1c68a0b07cf84cad3a4669761fc7636de35987344a25c2c506d01ac8109cb",
+          "record_sha256": "3e2863e46e91d6083d2f5a302c0fb8d62fec2db9a8dae72a9ebcf21051bbde4f"
+        },
+        "huggingface-hub": {
+          "hashed_bytes": 2239270,
+          "hashed_file_count": 174,
+          "hashed_files_sha256": "f1fd1aa912f09efceb4568aebe4c11f4b4ad56c1d3df425b5b029fe34d07d33b",
+          "record_sha256": "741391e7de405f261187c96af185f3033aee2c728e59501fc14472726a5d58d5"
+        },
+        "humanfriendly": {
+          "hashed_bytes": 297196,
+          "hashed_file_count": 24,
+          "hashed_files_sha256": "90a9b1baffe19c31a809c316999536ef9ab53217d164da454f68e29286402566",
+          "record_sha256": "a75400e43c3ce2ebbced097704ff9b689bb0aab32a610be519db45c13684897b"
+        },
+        "idna": {
+          "hashed_bytes": 336410,
+          "hashed_file_count": 18,
+          "hashed_files_sha256": "527da8574740bb4ed394a2c7653c3ce977bc995ec4741097946e8a9b2d0ad197",
+          "record_sha256": "0b4375ef828905cac348ecec1443f87721c38935e969222d5808790bbd7f8e4c"
+        },
+        "iniconfig": {
+          "hashed_bytes": 17552,
+          "hashed_file_count": 11,
+          "hashed_files_sha256": "cc762d00d0cb66a54f8652dbfd08e4f5566deb314b48b3fb973ed4b0d461856f",
+          "record_sha256": "13bd6a921fffdf4350ffff526d3b26581159c832d96e3ba8c3be0f5199e305c6"
+        },
+        "kiwisolver": {
+          "hashed_bytes": 241093,
+          "hashed_file_count": 11,
+          "hashed_files_sha256": "09ba186ef056273a4e764666c781c226a9635a4883c28c21d59ca96dff37cd33",
+          "record_sha256": "b13ffdcde687f3d8f5e8b5d4d1cc0cda4e2e6b668131a1b4d9837aa4e27f9d15"
+        },
+        "matplotlib": {
+          "hashed_bytes": 20651467,
+          "hashed_file_count": 596,
+          "hashed_files_sha256": "4aea6b62450f29d8af90eb5e75bf9655e03e476a42d0e45cc2ca644f6a55af3d",
+          "record_sha256": "bd375b7e423e1644b67933ab373a0dca537af191abb5042a99caa7d05d780f7b"
+        },
+        "mpmath": {
+          "hashed_bytes": 1942524,
+          "hashed_file_count": 93,
+          "hashed_files_sha256": "6e37d90c430001022b7ae6712dccab94eea36dee6863b41776e74ebcbcb2b6a3",
+          "record_sha256": "631ffb63282ac4c1792216f2b0f26f6fd4f3ae58410436a6a7118eeaf62b951a"
+        },
+        "numpy": {
+          "hashed_bytes": 20335012,
+          "hashed_file_count": 926,
+          "hashed_files_sha256": "f2b87c2673dce00c141bf7e1544ceb8f78e5594488bd99a8eef0351b92e9e06f",
+          "record_sha256": "b213a0f4b65f0ad54abecf4c2cf1fdef5bdd78363d1ccef4b00e3781fe52b017"
+        },
+        "onnxruntime": {
+          "hashed_bytes": 65242755,
+          "hashed_file_count": 321,
+          "hashed_files_sha256": "3adb63c0b7e3962ce95614dab15d7eece374d33b04764d34e0d398eaceba473a",
+          "record_sha256": "522f21018ebe5389263435322fd41574513ac7a4c90a47667e62bf6ab444eb38"
+        },
+        "packaging": {
+          "hashed_bytes": 496844,
+          "hashed_file_count": 30,
+          "hashed_files_sha256": "e4f9d2d0719e1cb54cdc571a24ada649713e48081fcbf83d5778ea7eb88c9467",
+          "record_sha256": "fd59b791119d91d0602060c81541e41118992995c6a0070e411a5ea3c6b1ebb2"
+        },
+        "pillow": {
+          "hashed_bytes": 13255114,
+          "hashed_file_count": 140,
+          "hashed_files_sha256": "651ced31e6df92433b717de1bc9f1ea0251e202fee000d7610efa07c2dac7d66",
+          "record_sha256": "e9fe50a7b7df02bd63a7dff85951ab0172b27b28e88798fa7e8c666139bc89bb"
+        },
+        "pip": {
+          "hashed_bytes": 5622519,
+          "hashed_file_count": 480,
+          "hashed_files_sha256": "fdd14b81557da4933960b13e1011a1ae8cb49be10a09edceea8774ea17d841ab",
+          "record_sha256": "b294fd1952df25156d3b513733b812edb7811f3bf0d12a34bbd31888ce4b98a0"
+        },
+        "pluggy": {
+          "hashed_bytes": 64772,
+          "hashed_file_count": 15,
+          "hashed_files_sha256": "98abf6529a7dbbef6fd34da48fec0f9b53745b341ce67f18bfc92ca52bc11021",
+          "record_sha256": "e74c84c006b998695cf9aaf46b4ef25e2e6ed343592dfd71065e33fab061b570"
+        },
+        "protobuf": {
+          "hashed_bytes": 1644967,
+          "hashed_file_count": 63,
+          "hashed_files_sha256": "bca55be94f722299498d5707f0fad144e18aac00bc1c7c39c11c489325af23c8",
+          "record_sha256": "e49c4507211bc57a1928bc68f6aecfe05a02faae4b2de029f1f7692d5a5757d5"
+        },
+        "psutil": {
+          "hashed_bytes": 474333,
+          "hashed_file_count": 17,
+          "hashed_files_sha256": "56dd3a3e3b67daf633576fafa5fb7c4578ceb00dd18620b92ea784124c7db439",
+          "record_sha256": "bbf09706e72b06979d838dde373278f8903fc3e4b7b08c226ecbc2d7bf3dd442"
+        },
+        "pygments": {
+          "hashed_bytes": 4592630,
+          "hashed_file_count": 351,
+          "hashed_files_sha256": "686fbd4996283838cce8ee711780e3c9c33606fa99c592ab5ae99e0791fcd0ac",
+          "record_sha256": "32defb98a96973d310d3ba109b507680351b25235408aef18aacae4b06ef02b6"
+        },
+        "pyparsing": {
+          "hashed_bytes": 462144,
+          "hashed_file_count": 24,
+          "hashed_files_sha256": "e9e85716ae8ba3b42363530b64769f02467a18f676990e4f95040da61ea3b8d4",
+          "record_sha256": "32e90c95ab878e2375fac93593baa110db77acc976e2d31fd449fb1be1099ce1"
+        },
+        "pytest": {
+          "hashed_bytes": 1357151,
+          "hashed_file_count": 92,
+          "hashed_files_sha256": "2734fe1716b809d94dfa07730552bb73d2646870ee05328756f1a784df5100eb",
+          "record_sha256": "45c6f0c8b425b9446d196cacc901a25f338b29754b0e1c85fa39c57bb2b9ee85"
+        },
+        "pytest-cov": {
+          "hashed_bytes": 71721,
+          "hashed_file_count": 10,
+          "hashed_files_sha256": "7a48ac7954095ded821e399e1536a10cc44aff7fa843d3f9774f55cf2a7fc3ea",
+          "record_sha256": "c60c4d7aba610a71f07d9f693e931f9d95fabb58d2cef5714635bb60ed1f7400"
+        },
+        "python-dateutil": {
+          "hashed_bytes": 439503,
+          "hashed_file_count": 26,
+          "hashed_files_sha256": "1f71d432264ae2106ba3f01270ecfeda0739336f3a152c319f4a36d53fcc8632",
+          "record_sha256": "244ea30267733198717f5d8fa2ca6e0e5f3cfdcc66d78a552ecdf819f296a014"
+        },
+        "pyyaml": {
+          "hashed_bytes": 604279,
+          "hashed_file_count": 25,
+          "hashed_files_sha256": "d18ff635c242639a56075d7f9489d7691abce474f4456b74d312d312988e3e35",
+          "record_sha256": "1b027d69a740b3a21d87fface6ac135c2f3af43b8e3c79ce7eee228a1e7297ca"
+        },
+        "regex": {
+          "hashed_bytes": 1249935,
+          "hashed_file_count": 11,
+          "hashed_files_sha256": "a187af433dd314f3b41137e09f422eca27f3218d931b6a54e0a35fbce2f4d24e",
+          "record_sha256": "9709757169a87e52494dc3ca7b273ba446cd6e0c22c3bdc3d9714762e77f65df"
+        },
+        "requests": {
+          "hashed_bytes": 232374,
+          "hashed_file_count": 27,
+          "hashed_files_sha256": "469bea796c6c56547d2f16624f4c51636c54c2029382c00790dc3053becfbdd0",
+          "record_sha256": "da741c2b9ead7ebcdbe3837ca1f094090666b76db41385596e6c57ee5d90938e"
+        },
+        "safetensors": {
+          "hashed_bytes": 1211818,
+          "hashed_file_count": 16,
+          "hashed_files_sha256": "b57abb976ef09c4113fe34d528ca857e46bcb2d255fe62294797ca8b1d4b9283",
+          "record_sha256": "145a9fb6b3a6b2e19fafd9e3e78bcb0371eba9201a15a00820e41f3bac52eb95"
+        },
+        "scipy": {
+          "hashed_bytes": 72709394,
+          "hashed_file_count": 1417,
+          "hashed_files_sha256": "856397f04da5949dbc6a8bb07bf7f7e68bca98456e688075f52a7bb6b25a4663",
+          "record_sha256": "fde4050b6a1466c6044f20b8804c7fe05bf986d1e4f9860e36558fa2913ba7db"
+        },
+        "setuptools": {
+          "hashed_bytes": 2740126,
+          "hashed_file_count": 344,
+          "hashed_files_sha256": "d68df83e4e1590c38199808f386d7e0087e1b212356cd05692288849877aaa6c",
+          "record_sha256": "85ea4841ba165ee9bfddb927a623c7af05f37aff61e8bf39d22b0b70cf2c3b6e"
+        },
+        "six": {
+          "hashed_bytes": 37544,
+          "hashed_file_count": 7,
+          "hashed_files_sha256": "612bb4e292bf82249cdaa80490ba8bccb8621c0ad8bbf9ff51a9f10bb9c647a2",
+          "record_sha256": "9f1c0d6da86acfde698b1a0a31931cba957b2896a49bce80c4b0e3cac9d03aef"
+        },
+        "sqlalchemy": {
+          "hashed_bytes": 8963452,
+          "hashed_file_count": 275,
+          "hashed_files_sha256": "e72e426e9bc72101c0b84cfae5a6dd5d7621a0565fc24297312e461d3f80182f",
+          "record_sha256": "6f1a3e9e33e569f0f2de47bc60b0daf2c029347a950bc539e5e7aafcc6b8c60a"
+        },
+        "sympy": {
+          "hashed_bytes": 26696847,
+          "hashed_file_count": 1572,
+          "hashed_files_sha256": "dc79d5367e4af27cebccb28a8525423e5194f91397adc4e7d62c02e7c5994dc6",
+          "record_sha256": "6909d56fe8ad0561ff6d758c6eb1ec2579423c838c736fb840cba7dda476fa30"
+        },
+        "tiktoken": {
+          "hashed_bytes": 2970222,
+          "hashed_file_count": 15,
+          "hashed_files_sha256": "4ca04d2fefd63973e99ea43192b6d749842ddcca29909c7fff984335b61d4663",
+          "record_sha256": "86e2126a8ab16e6cedf78f88bf1fb6f19f0ec6ce43fd0f6d29b288ae6a455437"
+        },
+        "tokenizers": {
+          "hashed_bytes": 8506298,
+          "hashed_file_count": 30,
+          "hashed_files_sha256": "156f2d823cb43276340830f1f9f0b0d32b8b567ed2774b16eb567d0e7613d458",
+          "record_sha256": "a3c13f46ace0e227bc7c3816c172244631afd183fca5c9cb4de2adc7e71e635b"
+        },
+        "tqdm": {
+          "hashed_bytes": 230915,
+          "hashed_file_count": 41,
+          "hashed_files_sha256": "c6d76a725a17b78f53fcafa844f8ca234c202602993fdf1dc43b3e40b4ced794",
+          "record_sha256": "dee5a4b8c1c23374cbdff2f9dfab3c5908606ade68bc5eac92719ee2a6edf7df"
+        },
+        "transformers": {
+          "hashed_bytes": 52180680,
+          "hashed_file_count": 2249,
+          "hashed_files_sha256": "e56e14ceb4000c5f0e56752c01004c943b7eadfa6c5adce0929c376dda4ad365",
+          "record_sha256": "5ac67840ad713ecacfd5ec60327ea1b048ddaab6e8f1fee52e1cc9c8b44bfb2d"
+        },
+        "typing-extensions": {
+          "hashed_bytes": 182344,
+          "hashed_file_count": 6,
+          "hashed_files_sha256": "d6ca3682c209b4c88f8f35338f7b5559bc080ada24828e121791606ae1878da6",
+          "record_sha256": "9861cb1104df8ec0ce0e5de06999ed8540a156766893cf404a41e9adb275afff"
+        },
+        "urllib3": {
+          "hashed_bytes": 428938,
+          "hashed_file_count": 43,
+          "hashed_files_sha256": "e94e1669ce1603d876eb306a03835a644525dc96d7e92599ce5f99e1cdf96d2f",
+          "record_sha256": "eacc277dd360ef76064bcf7a606ec709b49013cf4d65794f5b0137ea99c5ea8b"
+        },
+        "wheel": {
+          "hashed_bytes": 95753,
+          "hashed_file_count": 22,
+          "hashed_files_sha256": "5a8a5e6424c4e0ca4b635ec431f639feec35bcfc8a6ae23db9b3f27ea90b7f23",
+          "record_sha256": "7734cab6df06b352cc73af84cd37c31d090419eec63bc2b62ad9ef5f2eb91bce"
+        }
+      },
+      "locked_hashed_bytes": 362599790,
+      "locked_hashed_file_count": 10301,
+      "sealed_site_packages": {
+        "owned_directories_sha256": "6e84d3adfa84fa7d5a277e97b4452a187c6519252896e81327e20b738b6cbf48",
+        "owned_directory_count": 2292,
+        "owned_file_count": 18615,
+        "owned_paths_sha256": "45c06989ee3467d2a330bed3d578829f365a876683d291fcaf7bee1e90a2334c",
+        "unowned_directories": [],
+        "unowned_files": []
+      },
+      "sitecustomize_absent": true,
+      "startup_files": {
+        "lib/python3.12/site-packages/__editable__.gptcache-0.1.44.pth": {
+          "bytes": 89,
+          "owner": "gptcache",
+          "sha256": "08aa0783cabb1c39329892a6374c68c9b6d7a2d59002d955e7ab057d549d5593"
+        },
+        "lib/python3.12/site-packages/a1_coverage.pth": {
+          "bytes": 205,
+          "owner": "coverage",
+          "sha256": "ef2ed06d19867ec669c09a804060666a9cd5e383af0a9d11aa2de79b77d448e8"
+        },
+        "lib/python3.12/site-packages/coloredlogs.pth": {
+          "bytes": 147,
+          "owner": "coloredlogs",
+          "sha256": "dda83a855986efa5cd87f0248b0199c0086eb0e8e7fece7d6741959c5ce39536"
+        },
+        "lib/python3.12/site-packages/distutils-precedence.pth": {
+          "bytes": 151,
+          "owner": "setuptools",
+          "sha256": "2638ce9e2500e572a5e0de7faed6661eb569d1b696fcba07b0dd223da5f5d224"
+        }
+      },
+      "usercustomize_absent": true
+    },
+    "schema_version": "carma-gate7-dependency-attestation-v2"
+  },
+  "diagnostic_only": true,
+  "entrypoint_attestation": {
+    "bootstrap_attestation": {
+      "attestation_sha256": "3954eae5e4c5447dc71ad8d09a5464defd4d0d451991bfc2031eecd2328a2c6d",
+      "dependency": {
+        "installed_package_map_sha256": "f7ddea423376cd917f18e7189a9fbf1915f48bc8001e0b66a2c890bf649c301b",
+        "installed_packages": {
+          "cachetools": "7.1.7",
+          "certifi": "2026.7.22",
+          "charset-normalizer": "3.5.1",
+          "coloredlogs": "15.0.1",
+          "contourpy": "1.3.3",
+          "coverage": "7.15.4",
+          "cycler": "0.12.1",
+          "faiss-cpu": "1.15.0",
+          "filelock": "3.32.4",
+          "flatbuffers": "25.12.19",
+          "fonttools": "4.63.0",
+          "fsspec": "2026.7.0",
+          "gptcache": "0.1.44",
+          "greenlet": "3.5.5",
+          "hf-xet": "1.6.0",
+          "huggingface-hub": "0.36.0",
+          "humanfriendly": "10.0",
+          "idna": "3.19",
+          "iniconfig": "2.3.0",
+          "kiwisolver": "1.5.0",
+          "matplotlib": "3.10.8",
+          "mpmath": "1.3.0",
+          "numpy": "2.5.2",
+          "onnxruntime": "1.23.2",
+          "packaging": "26.3",
+          "pillow": "12.3.0",
+          "pip": "26.2.1",
+          "pluggy": "1.6.0",
+          "protobuf": "7.36.0",
+          "psutil": "7.2.2",
+          "pygments": "2.21.0",
+          "pyparsing": "3.3.2",
+          "pytest": "9.1.1",
+          "pytest-cov": "7.1.0",
+          "python-dateutil": "2.9.0.post0",
+          "pyyaml": "6.0.3",
+          "regex": "2026.7.19",
+          "requests": "2.34.2",
+          "safetensors": "0.8.0",
+          "scipy": "1.16.3",
+          "setuptools": "84.0.0",
+          "six": "1.17.0",
+          "sqlalchemy": "2.0.52",
+          "sympy": "1.14.0",
+          "tiktoken": "0.14.0",
+          "tokenizers": "0.22.2",
+          "tqdm": "4.70.0",
+          "transformers": "4.57.6",
+          "typing-extensions": "4.16.0",
+          "urllib3": "2.7.0",
+          "wheel": "0.48.0"
+        },
+        "local_editable": {
+          "hashed_bytes": 42143,
+          "hashed_file_count": 11,
+          "hashed_files_sha256": "cd9112f2f7633e37f0d3a35a22a15623c888912cc468c4788883b7518a060946",
+          "record_sha256": "e59403739bd272872adcb00ad42414b3d4071696c234ab79b5036ad65f4ee8c8"
+        },
+        "locked_distribution_count": 50,
+        "locked_hashed_bytes": 362599790,
+        "locked_hashed_file_count": 10301,
+        "locked_record_aggregate_sha256": "339593788f19cc22d76fb29f4e5609af1ccbbb8c7fbce528cef92b3f4cca4230",
+        "pth_files": {
+          "lib/python3.12/site-packages/__editable__.gptcache-0.1.44.pth": {
+            "bytes": 89,
+            "owner": "gptcache",
+            "sha256": "08aa0783cabb1c39329892a6374c68c9b6d7a2d59002d955e7ab057d549d5593"
+          },
+          "lib/python3.12/site-packages/a1_coverage.pth": {
+            "bytes": 205,
+            "owner": "coverage",
+            "sha256": "ef2ed06d19867ec669c09a804060666a9cd5e383af0a9d11aa2de79b77d448e8"
+          },
+          "lib/python3.12/site-packages/coloredlogs.pth": {
+            "bytes": 147,
+            "owner": "coloredlogs",
+            "sha256": "dda83a855986efa5cd87f0248b0199c0086eb0e8e7fece7d6741959c5ce39536"
+          },
+          "lib/python3.12/site-packages/distutils-precedence.pth": {
+            "bytes": 151,
+            "owner": "setuptools",
+            "sha256": "2638ce9e2500e572a5e0de7faed6661eb569d1b696fcba07b0dd223da5f5d224"
+          }
+        },
+        "sealed_site_packages": true,
+        "site_directory_count": 2291,
+        "site_file_count": 10331,
+        "unhashed_existing_file_count": 51,
+        "unhashed_existing_sha256": "4a0eebaafbeb4702b05f9dcc0431f212cff9eca68eb58e6a55622ead60dd0f3f"
+      },
+      "lock": {
+        "path": "requirements-benchmark.lock",
+        "pin_count": 50,
+        "pin_map_sha256": "a9ad2cf1ad4db90d5c43d01eaaad84b739153616e31d5404dd817b47f195a759",
+        "sha256": "8723b1875ff08ff16691e7b9d7166fc6b089fb362c8d27f2f43dde34be04d8ad"
+      },
+      "preimport_source": {
+        "anchor": {
+          "annotation": {
+            "contract_sha256": "d74545ae80bfe333b30f0c084f03292b7ad0f3946677936401e95d9379fea99c",
+            "experiment_id": "gate7e-onnx-v4"
+          },
+          "contract_bytes": 35914,
+          "contract_path": "docs/project/gate7-v4-remediation-contract.md",
+          "contract_sha256": "d74545ae80bfe333b30f0c084f03292b7ad0f3946677936401e95d9379fea99c",
+          "head_commit": "886020aff7d8ed3b10e576e42d9fdfe9eb54d945",
+          "head_tree": "cefe5758eacaafb8b44f69c4f43013306cf5ee48",
+          "object_format": "sha1",
+          "peeled_commit": "886020aff7d8ed3b10e576e42d9fdfe9eb54d945",
+          "remote": {
+            "fetch_url": "https://github.com/talya189/gptcache-online-policy.git",
+            "fetch_url_count": 1,
+            "peeled_commit": "886020aff7d8ed3b10e576e42d9fdfe9eb54d945",
+            "peeled_ref": "refs/tags/gate7e-onnx-v4-talya-formal-source^{}",
+            "push_url": "https://github.com/talya189/gptcache-online-policy.git",
+            "push_url_count": 1,
+            "remote_name": "origin",
+            "tag_object_id": "a7d6628f0972712f261ab78812b1a4903b7f4448",
+            "tag_ref": "refs/tags/gate7e-onnx-v4-talya-formal-source"
+          },
+          "tag_name": "gate7e-onnx-v4-talya-formal-source",
+          "tag_object_id": "a7d6628f0972712f261ab78812b1a4903b7f4448",
+          "tag_object_type": "tag",
+          "tag_payload_bytes": 288,
+          "tag_payload_sha256": "a1516ff7bdfada19c1d413a19bdd3b0ce16c1c726086af3713cb23c5a753fae8",
+          "tag_tree": "cefe5758eacaafb8b44f69c4f43013306cf5ee48"
+        },
+        "enforced": true,
+        "git_executable": {
+          "bytes": 118928,
+          "path": "/usr/bin/git",
+          "sha256": "179301dcb41ea78accc3fa0048a7e6f6710d891945a751a34addd622020c1818",
+          "version": "git version 2.50.1 (Apple Git-155)"
+        },
+        "git_status_clean": true,
+        "inventory": {
+          "project_import_namespace": {
+            "excluded_sealed_roots": [
+              ".git",
+              ".venv"
+            ],
+            "import_file_count": 276,
+            "import_suffixes": [
+              ".py",
+              ".pyc",
+              ".pyo",
+              ".so",
+              ".pyd",
+              ".dylib",
+              ".dll"
+            ],
+            "symlink_count": 0,
+            "untracked_or_ignored_import_file_count": 0
+          },
+          "runtime_file_count": 123,
+          "runtime_roots": [
+            "gptcache",
+            "benchmarks"
+          ],
+          "runtime_symlink_count": 0,
+          "runtime_untracked_or_missing_file_count": 0,
+          "tracked_file_bytes": 3412054,
+          "tracked_file_count": 126,
+          "tracked_file_map_sha256": "1bc9ee3e8209145aca6ce6fed88d2a40031983ab8b57279b30d9cd609b38f0e0"
+        },
+        "launch_mode": "full",
+        "schema_version": "carma-gate7-preimport-source-v1"
+      },
+      "preloaded_module_origins": {
+        "__future__": "<stdlib>/lib/python3.12/__future__.py",
+        "__main__": "scripts/gate7_v4_isolated_bootstrap.py",
+        "_collections_abc": "<stdlib>/lib/python3.12/_collections_abc.py",
+        "_compression": "<stdlib>/lib/python3.12/_compression.py",
+        "_frozen_importlib": "<stdlib>/lib/python3.12/importlib/_bootstrap.py",
+        "_frozen_importlib_external": "<stdlib>/lib/python3.12/importlib/_bootstrap_external.py",
+        "_weakrefset": "<stdlib>/lib/python3.12/_weakrefset.py",
+        "abc": "<stdlib>/lib/python3.12/abc.py",
+        "ast": "<stdlib>/lib/python3.12/ast.py",
+        "base64": "<stdlib>/lib/python3.12/base64.py",
+        "bisect": "<stdlib>/lib/python3.12/bisect.py",
+        "bz2": "<stdlib>/lib/python3.12/bz2.py",
+        "calendar": "<stdlib>/lib/python3.12/calendar.py",
+        "codecs": "<stdlib>/lib/python3.12/codecs.py",
+        "collections": "<stdlib>/lib/python3.12/collections/__init__.py",
+        "collections.abc": "<stdlib>/lib/python3.12/collections/abc.py",
+        "contextlib": "<stdlib>/lib/python3.12/contextlib.py",
+        "copyreg": "<stdlib>/lib/python3.12/copyreg.py",
+        "csv": "<stdlib>/lib/python3.12/csv.py",
+        "datetime": "<stdlib>/lib/python3.12/datetime.py",
+        "dis": "<stdlib>/lib/python3.12/dis.py",
+        "email": "<stdlib>/lib/python3.12/email/__init__.py",
+        "email._encoded_words": "<stdlib>/lib/python3.12/email/_encoded_words.py",
+        "email._parseaddr": "<stdlib>/lib/python3.12/email/_parseaddr.py",
+        "email._policybase": "<stdlib>/lib/python3.12/email/_policybase.py",
+        "email.base64mime": "<stdlib>/lib/python3.12/email/base64mime.py",
+        "email.charset": "<stdlib>/lib/python3.12/email/charset.py",
+        "email.encoders": "<stdlib>/lib/python3.12/email/encoders.py",
+        "email.errors": "<stdlib>/lib/python3.12/email/errors.py",
+        "email.header": "<stdlib>/lib/python3.12/email/header.py",
+        "email.iterators": "<stdlib>/lib/python3.12/email/iterators.py",
+        "email.message": "<stdlib>/lib/python3.12/email/message.py",
+        "email.quoprimime": "<stdlib>/lib/python3.12/email/quoprimime.py",
+        "email.utils": "<stdlib>/lib/python3.12/email/utils.py",
+        "encodings": "<stdlib>/lib/python3.12/encodings/__init__.py",
+        "encodings.aliases": "<stdlib>/lib/python3.12/encodings/aliases.py",
+        "encodings.utf_8": "<stdlib>/lib/python3.12/encodings/utf_8.py",
+        "enum": "<stdlib>/lib/python3.12/enum.py",
+        "fnmatch": "<stdlib>/lib/python3.12/fnmatch.py",
+        "functools": "<stdlib>/lib/python3.12/functools.py",
+        "genericpath": "<stdlib>/lib/python3.12/genericpath.py",
+        "hashlib": "<stdlib>/lib/python3.12/hashlib.py",
+        "importlib": "<stdlib>/lib/python3.12/importlib/__init__.py",
+        "importlib._abc": "<stdlib>/lib/python3.12/importlib/_abc.py",
+        "importlib._bootstrap": "<stdlib>/lib/python3.12/importlib/_bootstrap.py",
+        "importlib._bootstrap_external": "<stdlib>/lib/python3.12/importlib/_bootstrap_external.py",
+        "importlib.abc": "<stdlib>/lib/python3.12/importlib/abc.py",
+        "importlib.machinery": "<stdlib>/lib/python3.12/importlib/machinery.py",
+        "importlib.metadata": "<stdlib>/lib/python3.12/importlib/metadata/__init__.py",
+        "importlib.metadata._adapters": "<stdlib>/lib/python3.12/importlib/metadata/_adapters.py",
+        "importlib.metadata._collections": "<stdlib>/lib/python3.12/importlib/metadata/_collections.py",
+        "importlib.metadata._functools": "<stdlib>/lib/python3.12/importlib/metadata/_functools.py",
+        "importlib.metadata._itertools": "<stdlib>/lib/python3.12/importlib/metadata/_itertools.py",
+        "importlib.metadata._meta": "<stdlib>/lib/python3.12/importlib/metadata/_meta.py",
+        "importlib.metadata._text": "<stdlib>/lib/python3.12/importlib/metadata/_text.py",
+        "importlib.resources": "<stdlib>/lib/python3.12/importlib/resources/__init__.py",
+        "importlib.resources._adapters": "<stdlib>/lib/python3.12/importlib/resources/_adapters.py",
+        "importlib.resources._common": "<stdlib>/lib/python3.12/importlib/resources/_common.py",
+        "importlib.resources._legacy": "<stdlib>/lib/python3.12/importlib/resources/_legacy.py",
+        "importlib.resources.abc": "<stdlib>/lib/python3.12/importlib/resources/abc.py",
+        "importlib.util": "<stdlib>/lib/python3.12/importlib/util.py",
+        "inspect": "<stdlib>/lib/python3.12/inspect.py",
+        "io": "<stdlib>/lib/python3.12/io.py",
+        "ipaddress": "<stdlib>/lib/python3.12/ipaddress.py",
+        "json": "<stdlib>/lib/python3.12/json/__init__.py",
+        "json.decoder": "<stdlib>/lib/python3.12/json/decoder.py",
+        "json.encoder": "<stdlib>/lib/python3.12/json/encoder.py",
+        "json.scanner": "<stdlib>/lib/python3.12/json/scanner.py",
+        "keyword": "<stdlib>/lib/python3.12/keyword.py",
+        "linecache": "<stdlib>/lib/python3.12/linecache.py",
+        "locale": "<stdlib>/lib/python3.12/locale.py",
+        "lzma": "<stdlib>/lib/python3.12/lzma.py",
+        "ntpath": "<stdlib>/lib/python3.12/ntpath.py",
+        "opcode": "<stdlib>/lib/python3.12/opcode.py",
+        "operator": "<stdlib>/lib/python3.12/operator.py",
+        "os": "<stdlib>/lib/python3.12/os.py",
+        "os.path": "<stdlib>/lib/python3.12/posixpath.py",
+        "pathlib": "<stdlib>/lib/python3.12/pathlib.py",
+        "platform": "<stdlib>/lib/python3.12/platform.py",
+        "posixpath": "<stdlib>/lib/python3.12/posixpath.py",
+        "quopri": "<stdlib>/lib/python3.12/quopri.py",
+        "random": "<stdlib>/lib/python3.12/random.py",
+        "re": "<stdlib>/lib/python3.12/re/__init__.py",
+        "re._casefix": "<stdlib>/lib/python3.12/re/_casefix.py",
+        "re._compiler": "<stdlib>/lib/python3.12/re/_compiler.py",
+        "re._constants": "<stdlib>/lib/python3.12/re/_constants.py",
+        "re._parser": "<stdlib>/lib/python3.12/re/_parser.py",
+        "reprlib": "<stdlib>/lib/python3.12/reprlib.py",
+        "runpy": "<stdlib>/lib/python3.12/runpy.py",
+        "selectors": "<stdlib>/lib/python3.12/selectors.py",
+        "shutil": "<stdlib>/lib/python3.12/shutil.py",
+        "signal": "<stdlib>/lib/python3.12/signal.py",
+        "socket": "<stdlib>/lib/python3.12/socket.py",
+        "stat": "<stdlib>/lib/python3.12/stat.py",
+        "string": "<stdlib>/lib/python3.12/string.py",
+        "struct": "<stdlib>/lib/python3.12/struct.py",
+        "subprocess": "<stdlib>/lib/python3.12/subprocess.py",
+        "tempfile": "<stdlib>/lib/python3.12/tempfile.py",
+        "textwrap": "<stdlib>/lib/python3.12/textwrap.py",
+        "threading": "<stdlib>/lib/python3.12/threading.py",
+        "token": "<stdlib>/lib/python3.12/token.py",
+        "tokenize": "<stdlib>/lib/python3.12/tokenize.py",
+        "types": "<stdlib>/lib/python3.12/types.py",
+        "typing": "<stdlib>/lib/python3.12/typing.py",
+        "urllib": "<stdlib>/lib/python3.12/urllib/__init__.py",
+        "urllib.parse": "<stdlib>/lib/python3.12/urllib/parse.py",
+        "warnings": "<stdlib>/lib/python3.12/warnings.py",
+        "weakref": "<stdlib>/lib/python3.12/weakref.py",
+        "zipfile": "<stdlib>/lib/python3.12/zipfile/__init__.py",
+        "zipfile._path": "<stdlib>/lib/python3.12/zipfile/_path/__init__.py",
+        "zipfile._path.glob": "<stdlib>/lib/python3.12/zipfile/_path/glob.py",
+        "zipimport": "<stdlib>/lib/python3.12/zipimport.py"
+      },
+      "project_root": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end",
+      "pth_executed": false,
+      "python": {
+        "base_prefix": "/Users/talyayermiyahu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python",
+        "environment": {
+          "CARMA_GATE7_FORMAL_ENTRYPOINT": "gate7e-wrapper-v1",
+          "CARMA_GATE7_LAUNCH_MODE": "full",
+          "CARMA_GATE7_WRAPPER_PATH": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end/scripts/run_gate7_v4_onnx_integration_benchmark.sh",
+          "CARMA_GATE7_WRAPPER_PID": "21172",
+          "CARMA_GATE7_WRAPPER_SHELL": "gate7e-shell-v1",
+          "CARMA_GATE7_WRAPPER_SHELL_HOME": "/Users/talyayermiyahu",
+          "CARMA_GATE7_WRAPPER_SHELL_OPTIONAL_CF": "0x1F5:0x0:0x0",
+          "CARMA_GATE7_WRAPPER_SHELL_PROFILE": "env-i-v1",
+          "CARMA_GATE7_WRAPPER_SHELL_PWD": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end",
+          "CARMA_GATE7_WRAPPER_SHELL_SHLVL": "1",
+          "CARMA_GATE7_WRAPPER_SHELL_TMPDIR": "/tmp",
+          "CARMA_ONNX_THREADS": "1",
+          "CARMA_ONNX_WORKERS": "1",
+          "HF_HOME": "/Users/talyayermiyahu/.cache/huggingface",
+          "HF_HUB_CACHE": "/Users/talyayermiyahu/.cache/huggingface/hub",
+          "HF_HUB_OFFLINE": "1",
+          "HOME": "/Users/talyayermiyahu",
+          "LANG": "C.UTF-8",
+          "LC_ALL": "C.UTF-8",
+          "LC_CTYPE": "C.UTF-8",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+          "PYTHONDONTWRITEBYTECODE": "1",
+          "PYTHONHASHSEED": "0",
+          "PYTHONNOUSERSITE": "1",
+          "PYTHONPYCACHEPREFIX": "/tmp/gate7-runtime.tyDz3v/pycache",
+          "PYTHONSAFEPATH": "1",
+          "TMPDIR": "/tmp/gate7-runtime.tyDz3v/tmp",
+          "TOKENIZERS_PARALLELISM": "false",
+          "TRANSFORMERS_OFFLINE": "1",
+          "TZ": "UTC",
+          "VECLIB_MAXIMUM_THREADS": "1",
+          "__CF_USER_TEXT_ENCODING": "0x1F5:0x0:0x0"
+        },
+        "executable": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end/.venv/bin/python",
+        "executable_resolved": "/Users/talyayermiyahu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+        "executable_sha256": "71720f1fc66989ebd691e81c96111b47ae6ff3f1a478666084d1cacbf0fccbf2",
+        "flags": {
+          "dont_write_bytecode": 1,
+          "hash_randomization": 0,
+          "ignore_environment": 0,
+          "isolated": 0,
+          "no_site": 1,
+          "safe_path": true
+        },
+        "initial_sys_path": [
+          "/Users/talyayermiyahu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python312.zip",
+          "/Users/talyayermiyahu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12",
+          "/Users/talyayermiyahu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/lib-dynload"
+        ],
+        "wrapper_pid": 21172,
+        "wrapper_shell_startup": {
+          "attestation_sha256": "82d7dbe28c56d980b35c0c04805ace1991500665f6d352e4aee2570aa799bb4a",
+          "fixed_environment": {
+            "LANG": "C.UTF-8",
+            "LC_ALL": "C.UTF-8",
+            "LC_CTYPE": "C.UTF-8",
+            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+            "TZ": "UTC"
+          },
+          "home": "/Users/talyayermiyahu",
+          "launch_mode": "full",
+          "marker": "gate7e-shell-v1",
+          "optional_cf_user_text_encoding": "0x1F5:0x0:0x0",
+          "outer_env_i_operator_root_required": true,
+          "profile": "env-i-v1",
+          "pwd": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end",
+          "schema_version": "carma-gate7-wrapper-shell-startup-v1",
+          "shlvl": "1",
+          "tmpdir": "/tmp"
+        }
+      },
+      "pyvenv": {
+        "path": ".venv/pyvenv.cfg",
+        "sha256": "88301fc1f6e98d01a3528c3c4cb397d9ab75755dc2f44c7aeefa29bad0f4cb29",
+        "values": {
+          "command": "/Users/talyayermiyahu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -m venv /Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end/.venv",
+          "executable": "/Users/talyayermiyahu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "home": "/Users/talyayermiyahu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin",
+          "include-system-site-packages": "false",
+          "version": "3.12.13"
+        }
+      },
+      "role": "parent",
+      "schema_version": "carma-gate7-isolated-bootstrap-v2",
+      "site_module_absent": true,
+      "site_packages": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end/.venv/lib/python3.12/site-packages",
+      "target": "benchmarks/carma/gate7_v4_onnx_integration_benchmark.py",
+      "target_sha256": "4e546b611c79c88c27a265fc17764c05fab66441eb336a2729c096f2a3ef492a",
+      "venv_root": "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end/.venv"
+    },
+    "bootstrap_attestation_sha256": "3954eae5e4c5447dc71ad8d09a5464defd4d0d451991bfc2031eecd2328a2c6d",
+    "marker": "gate7e-wrapper-v1",
+    "mode": "full",
+    "parent_cmdline": [
+      "/bin/bash",
+      "/Users/talyayermiyahu/Documents/bgu/\u05ea\u05d5\u05d0\u05e8 \u05e9\u05e0\u05d9/\u05e1\u05de\u05e1\u05d8\u05e8 \u05d0/\u05d4\u05d8\u05de\u05e0\u05ea \u05de\u05d5\u05d3\u05dc\u05d9 \u05e9\u05e4\u05d4/gptcache-gate7-end-to-end/scripts/run_gate7_v4_onnx_integration_benchmark.sh",
+      "full"
+    ],
+    "parent_executable": "/bin/bash",
+    "producer_parent_pid": 21172,
+    "schema_version": "carma-gate7-formal-entrypoint-attestation-v1",
+    "wrapper_identity": {
+      "bytes": 7242,
+      "sha256": "d589799beeb8eb4869e3f48e14e926ddbc078f5c34edbde49b580cbd7f1352a3"
+    },
+    "wrapper_path": "scripts/run_gate7_v4_onnx_integration_benchmark.sh",
+    "wrapper_pid": 21172
+  },
+  "environment_sha256": "7096f903fc43d0ee526d54e94c3249029ca511056949c7188d08402b2885ea64",
+  "error": "CARMA seed 20261101 child failed (exit 4)",
+  "error_type": "ChildExecutionError",
+  "experiment_id": "gate7e-onnx-v4",
+  "failed_at_utc": "2026-08-31T08:57:59.358997+00:00",
+  "formal_source_anchor": {
+    "annotation": {
+      "contract_sha256": "d74545ae80bfe333b30f0c084f03292b7ad0f3946677936401e95d9379fea99c",
+      "experiment_id": "gate7e-onnx-v4"
+    },
+    "head_commit": "886020aff7d8ed3b10e576e42d9fdfe9eb54d945",
+    "object_format": "sha1",
+    "peeled_commit": "886020aff7d8ed3b10e576e42d9fdfe9eb54d945",
+    "remote": {
+      "fetch_urls": [
+        "https://github.com/talya189/gptcache-online-policy.git"
+      ],
+      "peeled_commit": "886020aff7d8ed3b10e576e42d9fdfe9eb54d945",
+      "push_urls": [
+        "https://github.com/talya189/gptcache-online-policy.git"
+      ],
+      "tag_object_id": "a7d6628f0972712f261ab78812b1a4903b7f4448"
+    },
+    "remote_name": "origin",
+    "retained_tag_payload_path": "source/formal-source-tag.raw",
+    "schema_version": "carma-gate7-formal-source-anchor-v1",
+    "tag_name": "gate7e-onnx-v4-talya-formal-source",
+    "tag_object_id": "a7d6628f0972712f261ab78812b1a4903b7f4448",
+    "tag_object_type": "tag",
+    "tag_payload_bytes": 288,
+    "tag_payload_sha256": "a1516ff7bdfada19c1d413a19bdd3b0ce16c1c726086af3713cb23c5a753fae8",
+    "tree_id": "cefe5758eacaafb8b44f69c4f43013306cf5ee48"
+  },
+  "git": {
+    "head_commit": "886020aff7d8ed3b10e576e42d9fdfe9eb54d945",
+    "status": "",
+    "worktree_dirty": false
+  },
+  "kind": "prospective_gate7_failed_attempt",
+  "numerically_claimable": false,
+  "order_position": 0,
+  "policy": "CARMA",
+  "power_observations": {
+    "availability_limitation": "point observations cannot prove uninterrupted AC between observations",
+    "end": {
+      "available": true,
+      "observed_at_utc": "2026-08-31T08:57:59.140599+00:00",
+      "percent": 59.0,
+      "plugged": true,
+      "seconds_left": -2
+    },
+    "pre_start": {
+      "available": true,
+      "observed_at_utc": "2026-08-31T08:29:54.084352+00:00",
+      "percent": 53.0,
+      "plugged": true,
+      "seconds_left": -2
+    }
+  },
+  "prior_attempt_exists": false,
+  "prior_attempts": [],
+  "rerun_rule": "retain this attempt and rerun the complete five-seed, three-policy matrix under a new attempt ID",
+  "retained_inputs": {
+    "archive": {
+      "bytes": 3876675,
+      "path": "source/similiar_qqp_full.json.gz",
+      "sha256": "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58"
+    },
+    "audit_source_policy": "retained_attempt_copies_only",
+    "dependency_attestation": {
+      "attestation_sha256": "5b55b5832eb8d1d3b4027a67fdb49791d0e11f3a44258d366b62f8a501f658a0",
+      "bytes": 27026,
+      "path": "source/dependency-attestation.json",
+      "sha256": "1b97ceb96ef3b5cbbab49424cfe0a1d028a6839a9df3077f03b8b104a7f21296"
+    },
+    "formal_source_tag_payload": {
+      "bytes": 288,
+      "path": "source/formal-source-tag.raw",
+      "sha256": "a1516ff7bdfada19c1d413a19bdd3b0ce16c1c726086af3713cb23c5a753fae8"
+    },
+    "prepared": {
+      "manifest.json": {
+        "bytes": 865,
+        "path": "source/prepared/manifest.json",
+        "sha256": "c57d719457fe40f2b3d898509a0f63c92ff65a4e2494d68300a6a522c3711a5b"
+      },
+      "pairs.jsonl": {
+        "bytes": 15312448,
+        "path": "source/prepared/pairs.jsonl",
+        "sha256": "c84d9897bd4838e8c12f45d59e04401031bbd5fa533570490db016cf40235126"
+      },
+      "texts.jsonl": {
+        "bytes": 11818049,
+        "path": "source/prepared/texts.jsonl",
+        "sha256": "645ece94cebf36d1d37a66410d925d7d2252b6d39dd42b473e866289d1576dc3"
+      }
+    },
+    "trace_construction_prepared_dir": "source/prepared"
+  },
+  "schema_version": "carma-gate7-onnx-v4",
+  "seed": 20261101,
+  "source_identities": {
+    "Dockerfile.project": {
+      "bytes": 3421,
+      "path": "Dockerfile.project",
+      "sha256": "931211f4c49903843070892dc4795ca693ddd62ddc0f3141f177d739ebac1c59"
+    },
+    "artifacts/samples/verification/gate7-v2-invalid/SHA256SUMS": {
+      "bytes": 269,
+      "path": "artifacts/samples/verification/gate7-v2-invalid/SHA256SUMS",
+      "sha256": "069ee7e3951ac3a4f015841fe0a020168f501c2cc38e19b3505f87f7c619cb07"
+    },
+    "artifacts/samples/verification/gate7-v2-invalid/attempt-ledger.jsonl": {
+      "bytes": 21346,
+      "path": "artifacts/samples/verification/gate7-v2-invalid/attempt-ledger.jsonl",
+      "sha256": "84eee7963f4e5c27f8d962e31ddcdcec9779b1cd463a8952841946ffc8557f0c"
+    },
+    "artifacts/samples/verification/gate7-v2-invalid/gate7-preterminal-adjudication.json": {
+      "bytes": 293720,
+      "path": "artifacts/samples/verification/gate7-v2-invalid/gate7-preterminal-adjudication.json",
+      "sha256": "e3e8df2787049d3b1ea4e622e7666502b715ae572431b4f8d4e4b213c12dd39b"
+    },
+    "artifacts/samples/verification/gate7-v2-invalid/manifest.json": {
+      "bytes": 695528,
+      "path": "artifacts/samples/verification/gate7-v2-invalid/manifest.json",
+      "sha256": "7574127cce8f1c72e87a1528dc6709947860178f43667a92add155e89e1f1cf8"
+    },
+    "artifacts/samples/verification/gate7-v3-invalid/SHA256SUMS": {
+      "bytes": 269,
+      "path": "artifacts/samples/verification/gate7-v3-invalid/SHA256SUMS",
+      "sha256": "ff1cf2e5fae7775880c261b8e2a83486275f3cfdea0718eb7e6155a1b10ab2b7"
+    },
+    "artifacts/samples/verification/gate7-v3-invalid/attempt-ledger.jsonl": {
+      "bytes": 22296,
+      "path": "artifacts/samples/verification/gate7-v3-invalid/attempt-ledger.jsonl",
+      "sha256": "aa232ea1a818d01ed7ae7338fb33e44f19124a571f1d3c29a221d688af07888a"
+    },
+    "artifacts/samples/verification/gate7-v3-invalid/gate7-preterminal-adjudication.json": {
+      "bytes": 292380,
+      "path": "artifacts/samples/verification/gate7-v3-invalid/gate7-preterminal-adjudication.json",
+      "sha256": "2ffbe237323ce38bfde39202993b6d12c9abb7a4d77c03f4b0c5137987ebaf00"
+    },
+    "artifacts/samples/verification/gate7-v3-invalid/manifest.json": {
+      "bytes": 696765,
+      "path": "artifacts/samples/verification/gate7-v3-invalid/manifest.json",
+      "sha256": "ed38aefec5fa02528f9948729144bf6df5afa5d5f5b95f06be443b707089272b"
+    },
+    "benchmarks/carma/gate7_v2_trace.py": {
+      "bytes": 41220,
+      "path": "benchmarks/carma/gate7_v2_trace.py",
+      "sha256": "948a550958fc074f02297908113ea2f1980a5a9a556cfe374d819d56dcd51c30"
+    },
+    "benchmarks/carma/gate7_v4_audit.py": {
+      "bytes": 367266,
+      "path": "benchmarks/carma/gate7_v4_audit.py",
+      "sha256": "9891f3265e64a3c276c27e6ee5bb488d7a733f4ebad527e11b91f6efe3567f3f"
+    },
+    "benchmarks/carma/gate7_v4_onnx_integration_benchmark.py": {
+      "bytes": 355767,
+      "path": "benchmarks/carma/gate7_v4_onnx_integration_benchmark.py",
+      "sha256": "4e546b611c79c88c27a265fc17764c05fab66441eb336a2729c096f2a3ef492a"
+    },
+    "benchmarks/carma/gate7_v4_trace_preflight.py": {
+      "bytes": 2772,
+      "path": "benchmarks/carma/gate7_v4_trace_preflight.py",
+      "sha256": "4fd73d5b53035218ee3163141d63ff7bfd50a15050d5b7ab801875bfdedd507b"
+    },
+    "benchmarks/carma/integration_benchmark.py": {
+      "bytes": 35443,
+      "path": "benchmarks/carma/integration_benchmark.py",
+      "sha256": "9a187f1ba85643d19e61f543ba5a9d0e60d7c8c6144c8e2a41194a734ece3e4e"
+    },
+    "benchmarks/carma/qqp.py": {
+      "bytes": 29701,
+      "path": "benchmarks/carma/qqp.py",
+      "sha256": "b2e7a15dad2f75381bd10acafdd90c6909dff4e62ebf59a0c91ed410d2978f44"
+    },
+    "benchmarks/carma/qqp_v2.py": {
+      "bytes": 13391,
+      "path": "benchmarks/carma/qqp_v2.py",
+      "sha256": "cb828e7ace178ffe331e39922639e15b8b1295ae4d86cb9cdab3cdae75e9351e"
+    },
+    "docs/project/evidence/gate7-v1-invalid-attempt.json": {
+      "bytes": 2217,
+      "path": "docs/project/evidence/gate7-v1-invalid-attempt.json",
+      "sha256": "b7ee1befd512d1582c0816152b9b87c1cbed91ac3a924bbbebc2bcedc3c6dee1"
+    },
+    "docs/project/evidence/gate7-v1-invalid-attempt.tar.gz": {
+      "bytes": 484539,
+      "path": "docs/project/evidence/gate7-v1-invalid-attempt.tar.gz",
+      "sha256": "cb326101dcc8323575be376d923630cfda6191c2e7adbc3b7fd6b01acf6b9147"
+    },
+    "docs/project/evidence/qqp-v2-calibration-thresholds.csv": {
+      "bytes": 3589,
+      "path": "docs/project/evidence/qqp-v2-calibration-thresholds.csv",
+      "sha256": "6cb322dc79b32fca9b3200ca16e1f28136589860b3e9aa558d70b64d44c7f038"
+    },
+    "docs/project/evidence/qqp-v2-result.json": {
+      "bytes": 2117,
+      "path": "docs/project/evidence/qqp-v2-result.json",
+      "sha256": "3544e53f45f6fdd540a0489c4bc5a0a5750fcec96bb93204b9bc7df43016eca1"
+    },
+    "docs/project/evidence/qqp-v2-threshold-selection.json": {
+      "bytes": 2522,
+      "path": "docs/project/evidence/qqp-v2-threshold-selection.json",
+      "sha256": "eb53e05e1816765fb93f2bed05bd01e2ce233c98879a20838f6853b97c1bd08c"
+    },
+    "examples/benchmark/similiar_qqp_full.json.gz": {
+      "bytes": 3876675,
+      "path": "examples/benchmark/similiar_qqp_full.json.gz",
+      "sha256": "1fcd814990dd8ebbc1cdacd41fca11e56739e2e4d72e4ac119334084ed7e2b58"
+    },
+    "requirements-benchmark.lock": {
+      "bytes": 112707,
+      "path": "requirements-benchmark.lock",
+      "sha256": "8723b1875ff08ff16691e7b9d7166fc6b089fb362c8d27f2f43dde34be04d8ad"
+    },
+    "requirements-project.lock": {
+      "bytes": 93179,
+      "path": "requirements-project.lock",
+      "sha256": "d6881a7ea4d8630adf032882123ec1bb61c10ddc45d41e5daf85b3389ef7c721"
+    },
+    "scripts/gate7_v4_isolated_bootstrap.py": {
+      "bytes": 105409,
+      "path": "scripts/gate7_v4_isolated_bootstrap.py",
+      "sha256": "20a8c06556ac3b3ca527fd78aa5e20d80f9e6c4f459fe7477d0c12e553be3974"
+    },
+    "scripts/run_gate7_v4_onnx_integration_benchmark.sh": {
+      "bytes": 7242,
+      "path": "scripts/run_gate7_v4_onnx_integration_benchmark.sh",
+      "sha256": "d589799beeb8eb4869e3f48e14e926ddbc078f5c34edbde49b580cbd7f1352a3"
+    },
+    "scripts/verify_project.sh": {
+      "bytes": 6407,
+      "path": "scripts/verify_project.sh",
+      "sha256": "f8babcee4ebdcfbdc61baeff562618ef7beed97b25604817cbc6fdf1e70fe296"
+    },
+    "tests/project_tests/test_gate7_v1_preservation.py": {
+      "bytes": 3166,
+      "path": "tests/project_tests/test_gate7_v1_preservation.py",
+      "sha256": "362133aaecaa62ff5210af1e10c199d2a21532940ddad5f4e5a47a6768001b4b"
+    },
+    "tests/project_tests/test_gate7_v2_preservation.py": {
+      "bytes": 3251,
+      "path": "tests/project_tests/test_gate7_v2_preservation.py",
+      "sha256": "29e1486aa45e757149e2140389669cbe2a5af2e99497717f255274986d501d76"
+    },
+    "tests/project_tests/test_gate7_v2_trace.py": {
+      "bytes": 19326,
+      "path": "tests/project_tests/test_gate7_v2_trace.py",
+      "sha256": "22fa27596f3de91010455c6261880e517f5325b5b6fb1f521a4bd13793d8c50c"
+    },
+    "tests/project_tests/test_gate7_v3_preservation.py": {
+      "bytes": 5080,
+      "path": "tests/project_tests/test_gate7_v3_preservation.py",
+      "sha256": "843d60f7749903609cbdabb72c9d98c89e9ac19ab1fe272f81966efd37939d6b"
+    },
+    "tests/project_tests/test_gate7_v4_audit.py": {
+      "bytes": 177691,
+      "path": "tests/project_tests/test_gate7_v4_audit.py",
+      "sha256": "cccae1d902de79a7f30ad58ea63de70ff0ba9b93a01f375aed3d6ce474465c44"
+    },
+    "tests/project_tests/test_gate7_v4_isolated_bootstrap.py": {
+      "bytes": 32858,
+      "path": "tests/project_tests/test_gate7_v4_isolated_bootstrap.py",
+      "sha256": "0e6b30e66648cd67072ad2fbdca3e92aca8b220d46cc9dcc0ab021bb9d527927"
+    },
+    "tests/project_tests/test_gate7_v4_onnx_integration.py": {
+      "bytes": 126800,
+      "path": "tests/project_tests/test_gate7_v4_onnx_integration.py",
+      "sha256": "a0ae2972c10f0291da410e1bce378270523e363260dda1f7cef52fa90cb07bb4"
+    },
+    "tests/project_tests/test_qqp_gate7_assets.py": {
+      "bytes": 3266,
+      "path": "tests/project_tests/test_qqp_gate7_assets.py",
+      "sha256": "c1a39bc2e899d746f68dae37d617936e570541f31fc59a3ae03cf8ce844d84a0"
+    },
+    "tests/project_tests/test_qqp_v2.py": {
+      "bytes": 9752,
+      "path": "tests/project_tests/test_qqp_v2.py",
+      "sha256": "10a0163bba703c6e484483a2f5b7a691eac7471d0d06aae28c5f5c8b042faa3b"
+    }
+  },
+  "source_snapshot_sha256": "28e64997715a5889dc4136a497e4158e3232d6ad25c5397a1240ba3aa134dfad",
+  "started_at_utc": "2026-08-31T08:29:32.459735+00:00",
+  "status": "invalid",
+  "structural_summary": {
+    "experiment_id": "gate7e-onnx-v4",
+    "schema_version": "carma-gate7-onnx-v4",
+    "storage_failure": "CARMA seed 20261101 child failed (exit 4)",
+    "structural_failure_flags_total": 1,
+    "structural_failure_reason_counts": {
+      "child_execution_failure": 1
+    },
+    "structural_failure_requests": 1,
+    "structural_valid": false
+  },
+  "v1_lineage": {
+    "archive_path": "docs/project/evidence/gate7-v1-invalid-attempt.tar.gz",
+    "archive_sha256": "cb326101dcc8323575be376d923630cfda6191c2e7adbc3b7fd6b01acf6b9147",
+    "attempt_ledger_sha256": "96539252388659e779ac09014895886156e9f405020ce278527b82bfea22aeb7",
+    "failure_sha256": "41a7af508e769f24a91e72b221906fd7e50c6d20176032a9d58590ba9feb9f12",
+    "formal_root": "artifacts/gate7-onnx-attempts",
+    "manifest_path": "docs/project/evidence/gate7-v1-invalid-attempt.json",
+    "manifest_sha256": "b7ee1befd512d1582c0816152b9b87c1cbed91ac3a924bbbebc2bcedc3c6dee1",
+    "terminal_attempt_id": "20260827T084100878176Z-b74ed9553e7c",
+    "terminal_entry_sha256": "768d681eac5f5f39e7517275ef7c2b29ff4f57d5fa7e2531c45e3db6142157a5"
+  }
+}

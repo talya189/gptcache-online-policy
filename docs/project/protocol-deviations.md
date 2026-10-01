@@ -145,22 +145,20 @@ cleanup, SQLite/FAISS consistency, and post-embedding cache-path behavior on
 the frozen synthetic geometry. They are not evidence for embedding latency or
 for a complete ONNX-backed request path. Although every seed satisfies the
 individual numerical Gate 7 limits, the frozen contract also omitted an
-across-seed aggregation rule. The original adjudication was therefore reported
-as a diagnostic pending result rather than a confirmatory pass.
+across-seed aggregation rule. Gate 7 is therefore reported as a diagnostic
+pending result rather than a confirmatory pass.
 
 Prospective remediation: a new, separately identified integration run must
 invoke the pinned ONNX model inside the measured request path, freeze how the
 five seeds are aggregated, and publish that rule before results are observed.
 It must not replace or relabel the existing precomputed-vector manifests.
 
-Resolution on 2026-08-30: the current analyzer implements an explicitly
-post-report Gate 7 v2 instead of relabeling the original preregistered claim.
-Gate 7 v2 freezes the measured scope as the post-embedding SQLite/FAISS path,
-accepts only the retained deterministic precomputed-vector manifests, and uses
-the conservative rule that all five distinct full-mode seeds must pass every
-limit. ONNX embedding latency remains excluded. The original pending verdict
-is preserved as historical context; current audits name the amended protocol
-`gate-7-v2-post-embedding`.
+Implementation status: this remediation is now encoded prospectively in
+`docs/project/gate7-remediation-contract.md`, with a real-text GPTCache adapter
+runner, retained per-request/resource evidence, counterbalanced policy order,
+and an independent all-seeds adjudicator. Development smoke runs are excluded
+from the claim. Until the complete clean-source five-seed matrix is executed,
+the follow-up is pending and the historical status above is unchanged.
 
 ### 6. QQP held-out similarities were computed before the calibration abort
 
@@ -188,6 +186,95 @@ Prospective remediation: compute calibration similarities first and return on
 a failed prerequisite before loading or scoring held-out pairs. Only after a
 threshold is frozen should a separate one-shot path compute held-out
 similarities and metrics. The completed QQP artifacts are retained unchanged.
+
+### 7. Gate 7 v4 changes the absolute-latency estimand after observing v3
+
+Prior commitment and v3 result: Gate 7 v3 compared separate full-request p95
+values and required both a CARMA/LRU p95 ratio at most `1.25` and a directional
+CARMA-minus-LRU absolute delta at most `500,000 ns`. V3 completed all 15 policy
+children and 45,000 requests. Its immutable, structurally clean preterminal
+report records systems `FAIL`: seed `20261001` has a full-request p95 delta of
+`1,307,374 ns`. Its semantic guardrail is separately `FAIL`. A manifest-contract
+shape defect prevented `TERMINAL`, so the operational v3 result is permanently
+`INVALID`, not a terminal `FAIL` or `PASS`.
+
+Post-v3 design decision: v3 showed that the absolute full-request p95 delta
+combines CARMA overhead with dominant common ONNX timing variation. V4 therefore
+retains the user-visible full-request p95 ratio bound, moves the inherited
+`500,000 ns` absolute-scale bound to the complete post-embedding cache path, and
+adds a second `500,000 ns` bound on the nearest-rank p95 of exact request-paired
+`CARMA.policy_exclusive_ns - LRU.policy_exclusive_ns` differences. It also
+retains throughput and RSS guardrails. The six per-seed v4 checks are:
+
+1. full-request p95 ratio `<= 1.25`;
+2. marginal post-embedding p95 delta `<= 500,000 ns`;
+3. request-paired policy-exclusive delta p95 `<= 500,000 ns`;
+4. service-throughput ratio `>= 0.90`;
+5. peak-RSS ratio `<= 1.20`; and
+6. peak-RSS delta `<= 67,108,864 bytes`.
+
+Scientific boundary: this is a post-v3 metric change, not a repair of the v3
+contract. A read-only retrospective recomputation from the preserved raw v3
+rows would pass all 30 v4 systems checks. The largest marginal post-embedding
+p95 delta is `251,418 ns`, and the largest request-paired policy-exclusive p95
+delta is `425,709 ns`. Those favorable post-hoc values may explain the design,
+but cannot establish either a v3 or v4 `PASS`. V3 remains operationally
+`INVALID`, its v3-rule preterminal systems result remains `FAIL`, and its
+semantic result remains `FAIL`.
+
+Executed safeguard: v4 used a new protocol/schema/root/tag with previously
+unexecuted seeds `20261101`--`20261105` and fresh, frozen traces. Every one of
+the 30 seed-check booleans was required to pass; the old full-request absolute
+delta was diagnostic only. The governing contract is
+`docs/project/gate7-v4-remediation-contract.md`, SHA-256
+`acc55a60e25aa36682a7b66da20d2a982f16ca70e1bbe6aca13fad96eb1bd808`.
+V4 did run. Its first attempt was terminally invalid because of stale duplicate
+package metadata. Its second completed all 15 processes and 45,000 requests but
+terminalized `INVALID` with seven structural audit errors. Independent
+descriptive recomputation also fails: all five seeds exceed the paired
+policy-exclusive limit, and one exceeds the post-embedding limit. The v4
+records remain immutable and nonclaimable.
+
+Retrospective provenance: the ignored authoritative source is
+`artifacts/gate7-v3-onnx-attempts/attempt-20260827T222332Z-36292/requests.jsonl`,
+45,000 rows, SHA-256
+`e9d418e63e1c86acdacdeaf7c9d26c7347bae63b8f935fb461463c91b16d6dff`.
+That identity is bound by the tracked v3 manifest. The compact Git preservation
+snapshot does not include the 128.7 MB raw request file, so the retrospective
+calculation must not be represented as independently reconstructable from the
+compact snapshot alone.
+
+### 8. Gate 7 v5 changes controls and hot-path work after observing v4
+
+Prior v4 result: the complete second v4 matrix could not support a claim because
+the wrapper and auditor used inconsistent path-bound identity shapes, the
+warm-up schema comparison disagreed with the producer, and one resource gap
+violated the brittle absolute 200 ms cadence rule. Its measured CARMA path also
+exceeded the paired policy-exclusive p95 bound on every seed. V4 remains
+`INVALID`; none of its evidence was edited or selectively rerun.
+
+Post-v4 design decision: v5 keeps the same real-text workload, pinned ONNX
+model, capacity, comparator policies, timing boundaries, and all six numerical
+bounds. It changes only prospectively disclosed controls and implementation:
+the identity checks now use the same path-bound shape; cadence requires at
+least 99.9% of gaps within 200 ms plus a 1 s hard ceiling; transaction snapshots
+store field tuples and rebuild dataclasses only on exceptional rollback; and a
+quota refresh is deferred past first-occurrence rejection. An 18,000-event
+differential replay confirmed unchanged admission, eviction, and resident
+decisions. New seeds `20261201`--`20261205` and fresh traces prevent reusing v4
+measurements to tune the outcome.
+
+Frozen safeguard and outcome: the v5 contract is
+`docs/project/gate7-v5-remediation-contract.md`, SHA-256
+`9905baab3f4fde636adc6eefc2298a3ac473b96bf4ff5ba186fb79224de355dd`.
+The sole eligible attempt ran from clean commit
+`f59d64d93a5599149538003078403f1b33e2bab1` and annotated tag
+`gate7f-onnx-v5-talya-formal-source`. It completed all 15 fresh processes and
+45,000 requests with no selective rerun. The canonical terminal status is
+claimable `PASS`: all 30 frozen systems checks pass, the semantic guardrail is
+`PASS_OBSERVED`, and the ordinary auditor records zero errors and warnings. A
+second isolated audit reproduced the canonical adjudication byte-for-byte.
+This v5 result does not repair or reclassify v1--v4.
 
 ## Interpretation boundary
 

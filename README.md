@@ -115,17 +115,25 @@ multi-million-request frozen study:
 scripts/run_ci_benchmark.sh artifacts/carma-ci
 scripts/run_full_benchmark.sh smoke artifacts/carma-full-smoke
 scripts/run_integration_benchmark.sh smoke artifacts/carma-integration-smoke
+scripts/run_onnx_integration_benchmark.sh smoke artifacts/gate7-onnx-smoke
+scripts/run_gate7_v5_onnx_integration_benchmark.sh smoke \
+  artifacts/gate7-v5-onnx-smoke
 ```
 
 The complete commands are:
 
 ```bash
-# The held-out QQP run needs the hash-locked full-analysis dependency superset.
+# Gate 7 v5 requires a new .venv at the fixed checkout path. Install the
+# hash-locked full-analysis dependency superset directly into that empty venv.
+python3.12 -I -m venv .venv
 .venv/bin/python -m pip --isolated --disable-pip-version-check install \
   --no-input \
   --index-url https://pypi.org/simple \
   --require-hashes --only-binary=:all: \
   --requirement requirements-benchmark.lock
+.venv/bin/python -I -m pip --isolated --disable-pip-version-check install \
+  --no-input --no-index --no-deps --no-build-isolation --editable .
+find .venv/lib/python3.12/site-packages -type f -name '*.pyc' -delete
 scripts/run_full_benchmark.sh full artifacts/carma-full
 for seed in 20260901 20260902 20260903 20260904 20260905; do
   scripts/run_integration_benchmark.sh full \
@@ -134,7 +142,93 @@ done
 CARMA_ONNX_WORKERS=8 CARMA_ONNX_THREADS=1 \
   scripts/run_qqp_validation.sh artifacts/qqp
 scripts/run_moss_benchmark.sh run /path/to/checksum-pinned-moss.zip artifacts/carma-moss
+
+# Prepare the exact ignored inputs and model cache required by Gate 7 v5.
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m benchmarks.carma.qqp prepare \
+  --archive examples/benchmark/similiar_qqp_full.json.gz \
+  --output artifacts/qqp-full/prepared
+PYTHONDONTWRITEBYTECODE=1 \
+  .venv/bin/python -m benchmarks.carma.qqp prefetch-gate7-assets
+PYTHONDONTWRITEBYTECODE=1 \
+  .venv/bin/python -m benchmarks.carma.gate7_v5_trace_preflight
+
+# Gate 7 v5 formal execution is intentionally shown separately below because
+# it requires a clean, tagged exact-source checkout and a sterile shell.
 ```
+
+The MOSS command is an exact-key, recorded-response, all-miss negative control.
+It does not compare CARMA, LRU, and LFU and must not be presented as the
+lecturer's complete novel-long-prompt policy experiment.
+
+Gate 7 v1, v2, v3, and v4 are frozen **INVALID** attempts. They must not be
+continued, repaired, selectively rerun, or used for a formal numerical
+performance claim. V3 completed all 15 children, but it has no `TERMINAL`; its
+preserved preterminal systems result is **FAIL** and its semantic guardrail is
+**FAIL**. V4 used fresh seeds `20261101`--`20261105`. Its first attempt was
+terminally invalid because the environment contained stale duplicate package
+metadata. Its second attempt completed all 15 children and 45,000 requests but
+was also terminally invalid because of three producer/auditor control
+inconsistencies. Independent recomputation additionally shows a descriptive
+systems **FAIL**: every seed exceeds the 0.5 ms paired policy-exclusive limit,
+and seed `20261105` also exceeds the 0.5 ms post-embedding limit. The tracked
+v4 preservation snapshot is under
+`artifacts/samples/verification/gate7-v4-invalid/`.
+
+V5 is a distinct frozen protocol, source tag, ledger, attempt root, and set of
+previously unused seeds (`20261201`--`20261205`). It was designed after v4 and
+does not reclassify any earlier result. It fixes the two mismatched
+identity/schema checks, replaces the brittle all-or-nothing 200 ms resource
+cadence rule with a frozen 99.9% coverage rule and 1 s hard ceiling, and removes
+two unnecessary CARMA operations from the common first-occurrence rejection
+path. A differential replay matched v4 admission, eviction, and resident
+decisions across 18,000 events. V5 keeps the workload, model, timing boundaries,
+comparators, and all six v4 numerical limits unchanged.
+
+The sole formal v5 attempt ran from clean commit
+`f59d64d93a5599149538003078403f1b33e2bab1` and annotated tag
+`gate7f-onnx-v5-talya-formal-source`. It completed all 15 fresh real-ONNX
+processes and 45,000 requests. The canonical terminal auditor reports a
+claimable **PASS** with zero errors and zero warnings: every one of the five
+seeds passes all six frozen checks. The semantic reconstruction is
+**PASS_OBSERVED**, with 25,400 same-concept hits and zero cross-concept,
+labeled-negative, stale-candidate, or response-mismatch hits. A second isolated
+ordinary audit reproduced the canonical adjudication byte-for-byte. The exact
+command used for that one formal attempt was:
+
+```bash
+/usr/bin/env -i \
+  CARMA_GATE7_WRAPPER_SHELL=gate7f-shell-v1 \
+  HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+  LANG=C.UTF-8 LC_ALL=C.UTF-8 LC_CTYPE=C.UTF-8 TZ=UTC TMPDIR=/tmp \
+  /usr/bin/caffeinate -dimsu \
+  /bin/bash "$PWD/scripts/run_gate7_v5_onnx_integration_benchmark.sh" full
+```
+
+The v5 wrapper registers a hash-chained `START`, then retains per-seed
+traces, per-request timings, external resource samples, whole-run and
+four-way outcome latency summaries, run summaries, and a hash-linked
+manifest. A fresh isolated auditor writes the immutable preterminal report;
+after producer exit, the isolated parent bootstrap revalidates the exact
+GENESIS/START chain and appends the completion-bound `TERMINAL`. The ordinary
+offline audit then writes `gate7-adjudication.json`. Smoke mode uses a fake
+embedding and is always non-claimable; it tests orchestration quickly. Full mode
+uses the pinned 768-dimensional CPU ONNX model and refuses dirty source,
+non-frozen configuration, an alternate contract, source changes during the
+run, mismatched QQP/model identities, concurrent formal execution, or an
+incomplete/malformed predecessor history. A pre-manifest failure leaves an
+identified failure record and all resource evidence accumulated so far. A
+failure after manifest publication leaves an unmatched `START` as a deliberate
+fail-stop and blocks every later formal attempt pending external forensic
+resolution. Claimability requires the complete retained
+`artifacts/gate7-v5-onnx-attempts/` root, not a copied attempt directory alone.
+That first-attempt guarantee is deliberately checkout-root scoped; proving one
+global first run across separate clones requires an external immutable run
+authority.
+The auditor exits `0/1/2/3` for pass/fail/pending/invalid; a structurally valid
+numerical FAIL still receives a canonical `TERMINAL`. The wrapper treats the
+expected pending status of smoke mode as a successful development check. The
+formal root is now terminal and must not be rerun or selectively extended;
+inspect or independently audit the retained evidence instead.
 
 Analyze only completed, manifest-endorsed artifacts; the analyzer rejects
 tampered hashes, partial staging directories, and incompatible legacy schemas.
@@ -179,6 +273,25 @@ one of the five seeds to pass every limit, so the retained run now produces a
 formal **Gate 7 v2 PASS**. This claim remains post-embedding: ONNX embedding
 generation is explicitly excluded, and the historical PDF correctly preserves
 the original pending verdict under the earlier incomplete protocol.
+
+Formal Gate 7 v5 entered through GPTCache's real `adapt` path with
+calibration-only QQP text, pinned ONNX embeddings, counterbalanced isolated
+LRU/LFU/CARMA processes, full per-request stage timing, and externally sampled
+resources. All five new seeds passed its conservative six-check rule. Across
+seeds, the full-request p95 ratio was `0.999`--`1.090` (maximum `1.25`), the
+post-embedding p95 delta was `-0.205`--`+0.016 ms` (maximum `+0.500 ms`), and
+the paired policy-exclusive p95 delta was `0.225`--`0.239 ms` (maximum
+`0.500 ms`). Throughput ratios were `0.988`--`1.004` (minimum `0.90`), peak-RSS
+ratios were `1.001`--`1.006` (maximum `1.20`), and peak-RSS deltas were
+`0.5`--`2.3 MiB` (maximum `64 MiB`). The canonical result is claimable
+**PASS**, and the independently regenerated adjudication is byte-identical.
+
+The QQP v2 analyzer now independently loads the hash-linked float32 matrix,
+recomputes all 7,729 calibration similarities and the frozen 20-threshold
+grid, and confirms that zero thresholds qualify before accepting the retained
+failure result. It deliberately rejects any v2 selected-threshold result until
+held-out similarities are also independently recomputed. Gate 2 therefore
+remains **FAIL**, not stale and not passed.
 
 The preregistered scan-return claim **failed**: CARMA achieved 100% return-phase
 valid hits, but LFU achieved 99.993%, so the stronger-baseline gain was only

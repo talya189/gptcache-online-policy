@@ -1,0 +1,56 @@
+{
+  "calibration": null,
+  "calibration_pairs": 7729,
+  "calibration_thresholds": {
+    "bytes": 3589,
+    "path": "calibration-thresholds.csv",
+    "sha256": "6cb322dc79b32fca9b3200ca16e1f28136589860b3e9aa558d70b64d44c7f038"
+  },
+  "heldout_endpoints_resolved": false,
+  "heldout_rows_discovered_by_split_only_scan": 56963,
+  "heldout_similarities_computed": false,
+  "heldout_similarity_count": 0,
+  "inputs": {
+    "embedding_manifest": {
+      "bytes": 597,
+      "path": "artifacts/qqp-full/embeddings/manifest.json",
+      "sha256": "b15ce2c3312099c08e8bd060b38aada6be545d52a4ccc4081a2e5e264e956d64"
+    },
+    "embedding_matrix": {
+      "bytes": 334024832,
+      "path": "artifacts/qqp-full/embeddings/embeddings.npy",
+      "sha256": "ff4c9f086e62ac15a9384e74c00c79b16416637f6e04413f2863fb99895931bf"
+    },
+    "embedding_text_ids": {
+      "bytes": 2935765,
+      "path": "artifacts/qqp-full/embeddings/text_ids.json",
+      "sha256": "3ff90194511a6273c28cb1edc88bc5618017da1ce4e17d129d4245aac0269268"
+    },
+    "prepared_manifest": {
+      "bytes": 865,
+      "path": "artifacts/qqp-full/prepared/manifest.json",
+      "sha256": "c57d719457fe40f2b3d898509a0f63c92ff65a4e2494d68300a6a522c3711a5b"
+    },
+    "prepared_pairs": {
+      "bytes": 15312448,
+      "path": "artifacts/qqp-full/prepared/pairs.jsonl",
+      "sha256": "c84d9897bd4838e8c12f45d59e04401031bbd5fa533570490db016cf40235126"
+    },
+    "prepared_texts": {
+      "bytes": 11818049,
+      "path": "artifacts/qqp-full/prepared/texts.jsonl",
+      "sha256": "645ece94cebf36d1d37a66410d925d7d2252b6d39dd42b473e866289d1576dc3"
+    }
+  },
+  "schema_version": "carma-qqp-v2",
+  "selected_threshold": null,
+  "selection_rule": "lowest threshold in the frozen 0.80..0.99 step-0.01 grid whose one-sided 95% Wilson precision lower bound is at least 0.99",
+  "selection_transcript": {
+    "bytes": 2522,
+    "path": "threshold-selection.json",
+    "sha256": "eb53e05e1816765fb93f2bed05bd01e2ce233c98879a20838f6853b97c1bd08c"
+  },
+  "selection_uses_heldout": false,
+  "status": "no_threshold_met_precision_gate",
+  "test_pairs_not_evaluated": 56963
+}

@@ -1,0 +1,112 @@
+[
+    {
+        "Id": "sha256:a5203e8d3f3beba85c5dc542b3573e724fb4da26cca65e82b3fb90a1a26985b1",
+        "RepoTags": [
+            "carma-project:repro-557c6ac0578c-285"
+        ],
+        "RepoDigests": [],
+        "Parent": "",
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-08-27T13:08:36.603952383Z",
+        "Container": "",
+        "ContainerConfig": {
+            "Hostname": "",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": null,
+            "Cmd": null,
+            "Image": "",
+            "Volumes": null,
+            "WorkingDir": "",
+            "Entrypoint": null,
+            "OnBuild": null,
+            "Labels": null
+        },
+        "DockerVersion": "",
+        "Author": "",
+        "Config": {
+            "Hostname": "",
+            "Domainname": "",
+            "User": "project",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+                "PYTHON_VERSION=3.12.13",
+                "PYTHON_SHA256=c08bc65a81971c1dd5783182826503369466c7e67374d1646519adf05207b684",
+                "PYTHONDONTWRITEBYTECODE=1",
+                "PYTHONUNBUFFERED=1",
+                "PIP_CONFIG_FILE=/dev/null",
+                "PIP_DISABLE_PIP_VERSION_CHECK=1",
+                "PIP_INDEX_URL=https://pypi.org/simple",
+                "PIP_NO_INPUT=1",
+                "PIP_ROOT_USER_ACTION=ignore",
+                "TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache"
+            ],
+            "Cmd": null,
+            "Image": "",
+            "Volumes": null,
+            "WorkingDir": "/workspace",
+            "Entrypoint": [
+                "bash",
+                "scripts/verify_project.sh"
+            ],
+            "OnBuild": null,
+            "Labels": null
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 435411792,
+        "VirtualSize": 435411792,
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/zbjlxyvcdp0f2wpkebyb6l2za/diff:/var/lib/docker/overlay2/hb3frn4a3ra4xoqjv280n0n2y/diff:/var/lib/docker/overlay2/mr3pfuxltoujcktiknrw97r2t/diff:/var/lib/docker/overlay2/ls384kaonlgqzwxghfstmmoy9/diff:/var/lib/docker/overlay2/zj03nc160h7r002t3zvfvwthp/diff:/var/lib/docker/overlay2/7ixggk463o29t6vnog5ijjmfg/diff:/var/lib/docker/overlay2/f4ioahl4bti5hrz7xg2rwh8h5/diff:/var/lib/docker/overlay2/5zg5nl026ygfhiidf5llyd9pl/diff:/var/lib/docker/overlay2/wku0eu6c466v2wx8jk57rbbbw/diff:/var/lib/docker/overlay2/razw17555yup8njrzaeb1q3cn/diff:/var/lib/docker/overlay2/w5u335ceqm2s14solohyu2d05/diff:/var/lib/docker/overlay2/p0s1pmhtlda2sgspbki2gaqau/diff:/var/lib/docker/overlay2/472av0krbcanp2flojnj64ft0/diff:/var/lib/docker/overlay2/yzdcoec3umpkojeddqyjxlocm/diff:/var/lib/docker/overlay2/a6k7os8fdnvpzpk1zsfoekmt0/diff:/var/lib/docker/overlay2/mavgv92djfziagds87wbo6nk4/diff:/var/lib/docker/overlay2/875b2ec06326f078949325237c8c5f9d045102504b422fbff03c90cead400b91/diff:/var/lib/docker/overlay2/2d446409fa0a2c91725813751a75e28b6ff2a2cf57d4cb17795fcecbbbc7b293/diff:/var/lib/docker/overlay2/3b232c9e24d8eec52cf40136e12358b9e160d3407e815b92b0b1a4d203bd76d7/diff:/var/lib/docker/overlay2/88c33045aafe74d1039d0191a6e25455479648fbf6ebb0c6dcd82852143296fc/diff",
+                "MergedDir": "/var/lib/docker/overlay2/tg18ytd2fvfoi8on4n27xbtdt/merged",
+                "UpperDir": "/var/lib/docker/overlay2/tg18ytd2fvfoi8on4n27xbtdt/diff",
+                "WorkDir": "/var/lib/docker/overlay2/tg18ytd2fvfoi8on4n27xbtdt/work"
+            },
+            "Name": "overlay2"
+        },
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:66462cc862fe2053b9863fefa3866e07bb5dfb06f6b3ce3177cc096e4021aabe",
+                "sha256:bbbb19fa59e928e9d2412742b476b97f157cd95304b1f9fd3a82d221f661acde",
+                "sha256:0632d0601fca2055c070f7382e63078c292b98d8fa4a5388ee04bd6b1ea0582e",
+                "sha256:da835b7922cb8503b751d1cd1a3ac2309a9608198554e43fdd225591a1ec16f4",
+                "sha256:a098ed64f5fe74e5281a9097475d8d3c927279f93862407febe5329fe03c510d",
+                "sha256:12a85f8c920f60db3a0baf7bba620e58afad4833f92c3dd0f9429bbee3e73f76",
+                "sha256:a2e532eeaffcec9282fe948cb441fa13a1be9b67380d94a37735ebb54e2334e4",
+                "sha256:092b72abe34bc5e474bd51b5f40d7c0510187c23ec0a10654814d3caf9072c3f",
+                "sha256:0d8433a9159e4972e8f05acf67da963de206681bcab065c76ec21a065781dde6",
+                "sha256:aa4c03b8b84fdb97fe2988d754f0cf57935d2487a5cc98288727fa6be7d55f79",
+                "sha256:a4228d0e341836ee4886d8b458ce3cb02fe3ac83ec9d09e07b46150fccf56f17",
+                "sha256:8a50838d8bf05bec9ced54b80a019de863d89c3832e0b38e85dbeb96e45b90ea",
+                "sha256:2ddf8560bf69f5baffa751644ec843b8338896b37409c27f10671453c8d5925f",
+                "sha256:6f51e15134943cdb328caef8cd072a93b92cd300d6a13d42a0c7eee3b993a9a3",
+                "sha256:8abf1f2fde534127888ff2d5e86ea1e852d2af3eae37c6f270b8b9bc55593d25",
+                "sha256:8322fd48a17592b276bad39fd9d24cc36e4acaa57619005df5ea258427e70ae8",
+                "sha256:d08bee612332ab6b83a0ce8e506f6b93b8bcbc91a6d159114eadd1791af6b545",
+                "sha256:5e3bd8d10065aeaf03d6bf99a9f5ba631e53e5af6a93ef3509f6f730c3d87c7a",
+                "sha256:254d3465de56b8a4b9aff8ea5269c76f31d94ec2c6fecdef8d615452c6049ad5",
+                "sha256:c1451bf7b111a9acde1f65424fed0f6afd95bb5d9a19f2479d96ae4a3202dacf",
+                "sha256:1fb66332a674dff7f8591a3ebfbaeb599183e89065c3391607c5b881f8d8e3e1"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-08-27T13:08:37.157523508Z"
+        }
+    }
+]

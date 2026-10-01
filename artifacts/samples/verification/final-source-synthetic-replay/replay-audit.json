@@ -1,0 +1,52 @@
+{
+  "schema_version": "carma-final-source-synthetic-replay-audit-v1",
+  "recorded_at_utc": "2026-08-27T20:48:25Z",
+  "status": "PASS",
+  "claim_scope": "deterministic synthetic summary reproducibility only",
+  "execution": {
+    "command": ".venv/bin/python -m benchmarks.carma.full_experiment --mode full --output <fresh-empty-directory>",
+    "git_head_commit_at_replay": "defba4aa78b24cb7115352ed2d58177d227b60ba",
+    "verified_source_parent_commit": "557c6ac0578cb6b77c5ae51595b49abdc0407e10",
+    "baseline_commit": "c59fb3a6152a4458b2a070ca183b61c4b614095f",
+    "git_worktree_clean_at_start": true,
+    "python": "3.12.13",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "policy_request_evaluations": 5180400
+  },
+  "comparisons": [
+    {
+      "path": "aggregate.csv",
+      "bytes": 61081,
+      "replay_sha256": "64974947bacd35dace1661a9ced515990ffcb131fc353b7d9ae6d13afddb564c",
+      "published_sha256": "64974947bacd35dace1661a9ced515990ffcb131fc353b7d9ae6d13afddb564c",
+      "byte_identical": true
+    },
+    {
+      "path": "runs.csv",
+      "bytes": 232106,
+      "replay_sha256": "fc049a34792fd3f144e20861b00b6552fea2ca5c3896c5f7207704a777bb99db",
+      "published_sha256": "fc049a34792fd3f144e20861b00b6552fea2ca5c3896c5f7207704a777bb99db",
+      "byte_identical": true
+    },
+    {
+      "path": "validation.csv",
+      "bytes": 10433,
+      "replay_sha256": "dc121bdea10ad50e3c3e618048ebca1d51383bdbd5da444e81c52edac4bf4098",
+      "published_sha256": "dc121bdea10ad50e3c3e618048ebca1d51383bdbd5da444e81c52edac4bf4098",
+      "byte_identical": true
+    },
+    {
+      "path": "validation_runs.csv",
+      "bytes": 572151,
+      "replay_sha256": "1da8c2855fc7ab87df0ecf6bef2f546449c7e6861d678da1fd9ede92757cd6b3",
+      "published_sha256": "1da8c2855fc7ab87df0ecf6bef2f546449c7e6861d678da1fd9ede92757cd6b3",
+      "byte_identical": true
+    }
+  ],
+  "all_published_summaries_byte_identical": true,
+  "limitations": [
+    "The replay request log and temporary working output are not published.",
+    "This audit does not alter the frozen historical experiment or its claims.",
+    "This audit does not validate or adjudicate Gate 7."
+  ]
+}

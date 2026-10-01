@@ -1,0 +1,5 @@
+finding_id,classification_layer,occurrence_count,observed,required,effect
+dependency-python-path,preterminal-auditor,1,/Users/matangoldfarb/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12,.venv/bin/python,one dependency_attestation error
+warmup-declaration-shape,preterminal-auditor,5,"each declaration has keys bytes,rows,sha256","each declaration must have exactly bytes,sha256",five warmup_artifacts errors
+resource-cadence-gap,preterminal-auditor,1,202142875,<= 200000000 ns,one resource_cadence error
+producer-auditor-identity-shape,producer-terminal-binding,1,"bytes,sha256","bytes,path,sha256",wrapper exit 4; unmatched START; no TERMINAL

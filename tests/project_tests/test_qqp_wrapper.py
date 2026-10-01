@@ -57,7 +57,7 @@ def test_wrapper_uses_python_override_for_each_pinned_stage(tmp_path):
         "-m benchmarks.carma.qqp embed "
         f"--prepared {output / 'prepared'} "
         f"--output {output / 'embeddings'} --batch-size 32",
-        "-m benchmarks.carma.qqp calibrate "
+        "-m benchmarks.carma.qqp_v2 "
         f"--prepared {output / 'prepared'} "
         f"--embeddings {output / 'embeddings'} "
         f"--output {output / 'evaluation'}",

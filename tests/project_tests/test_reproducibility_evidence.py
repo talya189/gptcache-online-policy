@@ -21,6 +21,11 @@ def test_docker_context_parent_exceptions_remain_tight():
     wrapper = PROJECT_ROOT / "scripts" / "run_qqp_validation.sh"
     assert wrapper.is_file()
 
+    dockerfile = PROJECT_ROOT / "Dockerfile.project"
+    assert tuple(evidence._dockerfile_statements(dockerfile)) == (
+        evidence.EXPECTED_DOCKERFILE_STATEMENTS
+    )
+
     dockerignore = PROJECT_ROOT / ".dockerignore"
     if dockerignore.is_file():
         active_patterns = [
@@ -36,6 +41,70 @@ def test_docker_context_parent_exceptions_remain_tight():
         assert examples_parent < examples_reexclude < examples_benchmark
         assert examples_benchmark < examples_contents
 
+        docs_parent = active_patterns.index("!docs/")
+        docs_reexclude = active_patterns.index("docs/**")
+        project_parent = active_patterns.index("!docs/project/")
+        project_reexclude = active_patterns.index("docs/project/**")
+        gate7_contract = active_patterns.index(
+            "!docs/project/gate7-remediation-contract.md"
+        )
+        gate7_v2_contract = active_patterns.index(
+            "!docs/project/gate7-v2-remediation-contract.md"
+        )
+        gate7_v3_contract = active_patterns.index(
+            "!docs/project/gate7-v3-remediation-contract.md"
+        )
+        gate7_v4_contract = active_patterns.index(
+            "!docs/project/gate7-v4-remediation-contract.md"
+        )
+        gate7_v5_contract = active_patterns.index(
+            "!docs/project/gate7-v5-remediation-contract.md"
+        )
+        evidence_parent = active_patterns.index("!docs/project/evidence/")
+        evidence_contents = active_patterns.index("!docs/project/evidence/**")
+        assert docs_parent < docs_reexclude < project_parent
+        assert project_parent < project_reexclude < gate7_contract
+        assert gate7_contract < gate7_v2_contract < gate7_v3_contract
+        assert gate7_v3_contract < gate7_v4_contract < gate7_v5_contract
+        assert gate7_v5_contract < evidence_parent
+        assert evidence_parent < evidence_contents
+
+        artifacts_parent = active_patterns.index("!artifacts/")
+        artifacts_reexclude = active_patterns.index("artifacts/**")
+        samples_parent = active_patterns.index("!artifacts/samples/")
+        samples_reexclude = active_patterns.index("artifacts/samples/**")
+        verification_parent = active_patterns.index(
+            "!artifacts/samples/verification/"
+        )
+        verification_reexclude = active_patterns.index(
+            "artifacts/samples/verification/**"
+        )
+        v2_parent = active_patterns.index(
+            "!artifacts/samples/verification/gate7-v2-invalid/"
+        )
+        v2_reexclude = active_patterns.index(
+            "artifacts/samples/verification/gate7-v2-invalid/**"
+        )
+        v3_parent = active_patterns.index(
+            "!artifacts/samples/verification/gate7-v3-invalid/"
+        )
+        v3_reexclude = active_patterns.index(
+            "artifacts/samples/verification/gate7-v3-invalid/**"
+        )
+        v4_parent = active_patterns.index(
+            "!artifacts/samples/verification/gate7-v4-invalid/"
+        )
+        v4_reexclude = active_patterns.index(
+            "artifacts/samples/verification/gate7-v4-invalid/**"
+        )
+        assert artifacts_parent < artifacts_reexclude < samples_parent
+        assert samples_parent < samples_reexclude < verification_parent
+        assert verification_parent < verification_reexclude < v2_parent
+        assert v2_parent < v2_reexclude < v3_parent < v3_reexclude
+        assert v3_reexclude < v4_parent < v4_reexclude
+        for name in evidence.V5_VERIFICATION_INPUTS[-6:]:
+            assert v4_reexclude < active_patterns.index("!" + name)
+
         assets_parent = active_patterns.index("!assets/")
         assets_reexclude = active_patterns.index("assets/**")
         cache_parent = active_patterns.index("!assets/tiktoken-cache/")
@@ -50,7 +119,15 @@ def test_docker_context_parent_exceptions_remain_tight():
         scripts_reexclude = active_patterns.index("scripts/**")
         required_scripts = (
             "!scripts/generate_hashed_locks.py",
+            "!scripts/gate7_v2_isolated_bootstrap.py",
+            "!scripts/gate7_v3_isolated_bootstrap.py",
+            "!scripts/gate7_v4_isolated_bootstrap.py",
+            "!scripts/gate7_v5_isolated_bootstrap.py",
             "!scripts/run_ci_benchmark.sh",
+            "!scripts/run_gate7_v2_onnx_integration_benchmark.sh",
+            "!scripts/run_gate7_v3_onnx_integration_benchmark.sh",
+            "!scripts/run_gate7_v4_onnx_integration_benchmark.sh",
+            "!scripts/run_gate7_v5_onnx_integration_benchmark.sh",
             "!scripts/run_qqp_validation.sh",
             "!scripts/run_reproducibility_gate.sh",
             "!scripts/verify_project.sh",
@@ -61,6 +138,28 @@ def test_docker_context_parent_exceptions_remain_tight():
             scripts_reexclude < active_patterns.index(pattern)
             for pattern in required_scripts
         )
+
+
+def test_verifier_project_test_inventory_is_exact_and_v5_complete():
+    observed = evidence._verifier_project_tests(PROJECT_ROOT)
+
+    assert observed == evidence.EXPECTED_PROJECT_TESTS
+    assert len(observed) == 32
+    assert {
+        "tests/project_tests/test_gate7_v2_preservation.py",
+        "tests/project_tests/test_gate7_v3_audit.py",
+        "tests/project_tests/test_gate7_v3_isolated_bootstrap.py",
+        "tests/project_tests/test_gate7_v3_onnx_integration.py",
+        "tests/project_tests/test_gate7_v3_preservation.py",
+        "tests/project_tests/test_gate7_v4_audit.py",
+        "tests/project_tests/test_gate7_v4_isolated_bootstrap.py",
+        "tests/project_tests/test_gate7_v4_onnx_integration.py",
+        "tests/project_tests/test_gate7_v4_preservation.py",
+        "tests/project_tests/test_gate7_v5_audit.py",
+        "tests/project_tests/test_gate7_v5_isolated_bootstrap.py",
+        "tests/project_tests/test_gate7_v5_onnx_integration.py",
+        "tests/project_tests/test_qqp_gate7_assets.py",
+    }.issubset(observed)
 
 
 def _packaged_tiktoken_cache_root():
@@ -168,6 +267,20 @@ def _project_root(tmp_path):
         "\n".join(evidence.EXPECTED_DOCKERIGNORE_PATTERNS) + "\n",
         encoding="utf-8",
     )
+    for relative in set(
+        evidence.EXPECTED_PROJECT_TESTS + evidence.V5_VERIFICATION_INPUTS
+    ):
+        path = root.joinpath(*relative.split("/"))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("fixture for %s\n" % relative, encoding="utf-8")
+    verifier = root / "scripts/verify_project.sh"
+    verifier.parent.mkdir(parents=True, exist_ok=True)
+    verifier.write_text(
+        "expected_project_tests=(\n"
+        + "".join("  %s\n" % path for path in evidence.EXPECTED_PROJECT_TESTS)
+        + ")\n",
+        encoding="utf-8",
+    )
     return root
 
 
@@ -212,6 +325,14 @@ def test_host_writer_emits_analyzer_schema_only_after_pass(monkeypatch, tmp_path
     payload = json.loads(output.read_text(encoding="utf-8"))
 
     assert payload["schema_version"] == "carma-host-verification-v1"
+    assert payload["verification_inventory"]["schema_version"] == (
+        evidence.VERIFICATION_INVENTORY_SCHEMA
+    )
+    assert payload["verification_inventory"]["contract_version"] == (
+        evidence.VERIFICATION_CONTRACT_VERSION
+    )
+    assert payload["verification_inventory"]["project_test_count"] == 32
+    assert payload["verification_inventory"]["historical_evidence_reclassified"] is False
     assert payload["source_commit"] == SOURCE_COMMIT
     assert payload["source_archive"]["source_commit"] == SOURCE_COMMIT
     assert payload["dependency_lock"]["require_hashes"] is True
@@ -356,6 +477,12 @@ def test_container_writer_derives_normalization_and_compares_bytes(
     payload = json.loads(output.read_text(encoding="utf-8"))
 
     assert payload["schema_version"] == "carma-container-reproducibility-v1"
+    assert payload["verification_inventory"]["gate7_experiment_id"] == (
+        "gate7f-onnx-v5"
+    )
+    assert payload["verification_inventory"]["v5_input_count"] == len(
+        evidence.V5_VERIFICATION_INPUTS
+    )
     assert payload["platform"] == "linux/amd64"
     assert payload["fresh_container_count"] == 2
     assert payload["runs"][0]["artifact_mount_source"].endswith("docker-run-1")
@@ -637,6 +764,22 @@ def test_verification_log_requires_project_pytest_summary():
             b"1 passed in 1s\n2 passed in 2s\n[verify] PASS\n",
             "fixture verification log",
         )
+
+
+def test_verification_log_accepts_pytest_long_duration_summary():
+    raw = (
+        b"8 passed in 0.80s\n"
+        b"2 passed, 1 deselected in 1.60s\n"
+        b"1291 passed, 4 skipped in 83.13s (0:01:23)\n"
+    )
+
+    evidence._require_pytest_summaries(raw, "fixture verification log")
+
+    assert evidence._normalize_pytest_elapsed(raw) == (
+        b"8 passed in <elapsed>\n"
+        b"2 passed, 1 deselected in <elapsed>\n"
+        b"1291 passed, 4 skipped in <elapsed>\n"
+    )
 
 
 def test_lock_requirements_include_cannot_escape_project_root(tmp_path):

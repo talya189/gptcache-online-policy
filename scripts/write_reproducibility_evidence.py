@@ -21,6 +21,61 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BASELINE_COMMIT = "c59fb3a6152a4458b2a070ca183b61c4b614095f"
 BENCHMARK_ARTIFACTS = ("manifest.json", "requests.jsonl", "runs.csv")
+VERIFICATION_INVENTORY_SCHEMA = "carma-project-verification-inventory-v3"
+VERIFICATION_CONTRACT_VERSION = "gate7f-onnx-v5-canonical-v1"
+EXPECTED_PROJECT_TESTS = (
+    "tests/project_tests/test_carma_analyze_results.py",
+    "tests/project_tests/test_carma_failure_paths.py",
+    "tests/project_tests/test_carma_integration.py",
+    "tests/project_tests/test_carma_integration_protocol.py",
+    "tests/project_tests/test_carma_phase_metrics.py",
+    "tests/project_tests/test_carma_protocol_remediation.py",
+    "tests/project_tests/test_gate7_audit.py",
+    "tests/project_tests/test_gate7_onnx_integration.py",
+    "tests/project_tests/test_gate7_trace.py",
+    "tests/project_tests/test_gate7_v1_preservation.py",
+    "tests/project_tests/test_gate7_v2_audit.py",
+    "tests/project_tests/test_gate7_v2_isolated_bootstrap.py",
+    "tests/project_tests/test_gate7_v2_onnx_integration.py",
+    "tests/project_tests/test_gate7_v2_preservation.py",
+    "tests/project_tests/test_gate7_v2_trace.py",
+    "tests/project_tests/test_gate7_v3_audit.py",
+    "tests/project_tests/test_gate7_v3_isolated_bootstrap.py",
+    "tests/project_tests/test_gate7_v3_onnx_integration.py",
+    "tests/project_tests/test_gate7_v3_preservation.py",
+    "tests/project_tests/test_gate7_v4_audit.py",
+    "tests/project_tests/test_gate7_v4_isolated_bootstrap.py",
+    "tests/project_tests/test_gate7_v4_onnx_integration.py",
+    "tests/project_tests/test_gate7_v4_preservation.py",
+    "tests/project_tests/test_gate7_v5_audit.py",
+    "tests/project_tests/test_gate7_v5_isolated_bootstrap.py",
+    "tests/project_tests/test_gate7_v5_onnx_integration.py",
+    "tests/project_tests/test_moss_benchmark.py",
+    "tests/project_tests/test_qqp_gate7_assets.py",
+    "tests/project_tests/test_qqp_v2.py",
+    "tests/project_tests/test_qqp_wrapper.py",
+    "tests/project_tests/test_reproducibility_evidence.py",
+    "tests/unit_tests/eviction/test_carma.py",
+)
+V5_VERIFICATION_INPUTS = (
+    "docs/project/gate7-v5-remediation-contract.md",
+    "benchmarks/carma/gate7_v5_onnx_integration_benchmark.py",
+    "benchmarks/carma/gate7_v5_audit.py",
+    "benchmarks/carma/gate7_v5_trace_preflight.py",
+    "scripts/gate7_v5_isolated_bootstrap.py",
+    "scripts/run_gate7_v5_onnx_integration_benchmark.sh",
+    "tests/project_tests/test_gate7_v4_preservation.py",
+    "tests/project_tests/test_gate7_v5_audit.py",
+    "tests/project_tests/test_gate7_v5_isolated_bootstrap.py",
+    "tests/project_tests/test_gate7_v5_onnx_integration.py",
+    "tests/project_tests/test_qqp_gate7_assets.py",
+    "artifacts/samples/verification/gate7-v4-invalid/SHA256SUMS",
+    "artifacts/samples/verification/gate7-v4-invalid/attempt-ledger.jsonl",
+    "artifacts/samples/verification/gate7-v4-invalid/attempt-1-failure.json",
+    "artifacts/samples/verification/gate7-v4-invalid/attempt-2-manifest.json",
+    "artifacts/samples/verification/gate7-v4-invalid/attempt-2-preterminal-adjudication.json",
+    "artifacts/samples/verification/gate7-v4-invalid/attempt-2-adjudication.json",
+)
 COMMIT = re.compile(r"[0-9a-f]{40}")
 IMAGE_ID = re.compile(r"sha256:[0-9a-f]{64}")
 CONTAINER_ID = re.compile(r"[0-9a-f]{64}")
@@ -51,7 +106,8 @@ EXPECTED_DOCKERFILE_STATEMENTS = (
     "PIP_INDEX_URL=https://pypi.org/simple PIP_NO_INPUT=1 "
     "PIP_ROOT_USER_ACTION=ignore TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache",
     "WORKDIR /workspace",
-    "COPY requirements-project.lock ./",
+    "COPY Dockerfile.project ./Dockerfile.project",
+    "COPY requirements-project.lock requirements-benchmark.lock ./",
     "RUN python -m pip --isolated --disable-pip-version-check install "
     "--no-cache-dir --no-input --index-url https://pypi.org/simple "
     "--require-hashes --only-binary=:all: "
@@ -70,6 +126,23 @@ EXPECTED_DOCKERFILE_STATEMENTS = (
     "COPY gptcache ./gptcache",
     "COPY gptcache_server ./gptcache_server",
     "COPY benchmarks ./benchmarks",
+    "COPY docs/project/gate7-remediation-contract.md "
+    "./docs/project/gate7-remediation-contract.md",
+    "COPY docs/project/gate7-v2-remediation-contract.md "
+    "./docs/project/gate7-v2-remediation-contract.md",
+    "COPY docs/project/gate7-v3-remediation-contract.md "
+    "./docs/project/gate7-v3-remediation-contract.md",
+    "COPY docs/project/gate7-v4-remediation-contract.md "
+    "./docs/project/gate7-v4-remediation-contract.md",
+    "COPY docs/project/gate7-v5-remediation-contract.md "
+    "./docs/project/gate7-v5-remediation-contract.md",
+    "COPY docs/project/evidence ./docs/project/evidence",
+    "COPY artifacts/samples/verification/gate7-v2-invalid "
+    "./artifacts/samples/verification/gate7-v2-invalid",
+    "COPY artifacts/samples/verification/gate7-v3-invalid "
+    "./artifacts/samples/verification/gate7-v3-invalid",
+    "COPY artifacts/samples/verification/gate7-v4-invalid "
+    "./artifacts/samples/verification/gate7-v4-invalid",
     "COPY examples/benchmark ./examples/benchmark",
     "COPY tests ./tests",
     "COPY scripts ./scripts",
@@ -84,6 +157,7 @@ EXPECTED_DOCKERFILE_STATEMENTS = (
 EXPECTED_DOCKERIGNORE_PATTERNS = (
     "*",
     "!Dockerfile.project",
+    "!requirements-benchmark.lock",
     "!requirements-project.lock",
     "!setup.py",
     "!README.md",
@@ -99,6 +173,43 @@ EXPECTED_DOCKERIGNORE_PATTERNS = (
     "!gptcache_server/**",
     "!benchmarks/",
     "!benchmarks/**",
+    "!docs/",
+    "docs/**",
+    "!docs/project/",
+    "docs/project/**",
+    "!docs/project/gate7-remediation-contract.md",
+    "!docs/project/gate7-v2-remediation-contract.md",
+    "!docs/project/gate7-v3-remediation-contract.md",
+    "!docs/project/gate7-v4-remediation-contract.md",
+    "!docs/project/gate7-v5-remediation-contract.md",
+    "!docs/project/evidence/",
+    "!docs/project/evidence/**",
+    "!artifacts/",
+    "artifacts/**",
+    "!artifacts/samples/",
+    "artifacts/samples/**",
+    "!artifacts/samples/verification/",
+    "artifacts/samples/verification/**",
+    "!artifacts/samples/verification/gate7-v2-invalid/",
+    "artifacts/samples/verification/gate7-v2-invalid/**",
+    "!artifacts/samples/verification/gate7-v2-invalid/SHA256SUMS",
+    "!artifacts/samples/verification/gate7-v2-invalid/attempt-ledger.jsonl",
+    "!artifacts/samples/verification/gate7-v2-invalid/gate7-preterminal-adjudication.json",
+    "!artifacts/samples/verification/gate7-v2-invalid/manifest.json",
+    "!artifacts/samples/verification/gate7-v3-invalid/",
+    "artifacts/samples/verification/gate7-v3-invalid/**",
+    "!artifacts/samples/verification/gate7-v3-invalid/SHA256SUMS",
+    "!artifacts/samples/verification/gate7-v3-invalid/attempt-ledger.jsonl",
+    "!artifacts/samples/verification/gate7-v3-invalid/gate7-preterminal-adjudication.json",
+    "!artifacts/samples/verification/gate7-v3-invalid/manifest.json",
+    "!artifacts/samples/verification/gate7-v4-invalid/",
+    "artifacts/samples/verification/gate7-v4-invalid/**",
+    "!artifacts/samples/verification/gate7-v4-invalid/SHA256SUMS",
+    "!artifacts/samples/verification/gate7-v4-invalid/attempt-ledger.jsonl",
+    "!artifacts/samples/verification/gate7-v4-invalid/attempt-1-failure.json",
+    "!artifacts/samples/verification/gate7-v4-invalid/attempt-2-manifest.json",
+    "!artifacts/samples/verification/gate7-v4-invalid/attempt-2-preterminal-adjudication.json",
+    "!artifacts/samples/verification/gate7-v4-invalid/attempt-2-adjudication.json",
     "!examples/",
     "examples/**",
     "!examples/benchmark/",
@@ -108,7 +219,15 @@ EXPECTED_DOCKERIGNORE_PATTERNS = (
     "!scripts/",
     "scripts/**",
     "!scripts/generate_hashed_locks.py",
+    "!scripts/gate7_v2_isolated_bootstrap.py",
+    "!scripts/gate7_v3_isolated_bootstrap.py",
+    "!scripts/gate7_v4_isolated_bootstrap.py",
+    "!scripts/gate7_v5_isolated_bootstrap.py",
     "!scripts/run_ci_benchmark.sh",
+    "!scripts/run_gate7_v2_onnx_integration_benchmark.sh",
+    "!scripts/run_gate7_v3_onnx_integration_benchmark.sh",
+    "!scripts/run_gate7_v4_onnx_integration_benchmark.sh",
+    "!scripts/run_gate7_v5_onnx_integration_benchmark.sh",
     "!scripts/run_qqp_validation.sh",
     "!scripts/run_reproducibility_gate.sh",
     "!scripts/verify_project.sh",
@@ -117,7 +236,8 @@ EXPECTED_DOCKERIGNORE_PATTERNS = (
 PYTEST_SUMMARY = re.compile(
     rb"(?m)^(?P<result>[0-9]+ passed"
     rb"(?:, [0-9]+ (?:deselected|skipped|xfailed|xpassed|warnings?))*)"
-    rb" in [0-9]+(?:[.][0-9]+)?s$"
+    rb" in [0-9]+(?:[.][0-9]+)?s"
+    rb"(?: \([0-9]+:[0-9]{2}:[0-9]{2}\))?$"
 )
 
 
@@ -575,6 +695,72 @@ def _validate_docker_dependency_contract(project_root: Path) -> None:
         )
 
 
+def _verifier_project_tests(project_root: Path) -> Tuple[str, ...]:
+    """Read the canonical Bash allowlist without treating discovery as authority."""
+
+    path = project_root / "scripts" / "verify_project.sh"
+    lines = _read_text(path, "canonical project verifier").splitlines()
+    try:
+        start = lines.index("expected_project_tests=(")
+    except ValueError as exc:
+        raise EvidenceError(
+            "canonical project verifier lacks expected_project_tests"
+        ) from exc
+    observed: List[str] = []
+    for line in lines[start + 1 :]:
+        value = line.strip()
+        if value == ")":
+            break
+        if not value or re.fullmatch(r"[A-Za-z0-9_./-]+", value) is None:
+            raise EvidenceError(
+                "canonical project verifier has a malformed project-test entry"
+            )
+        observed.append(value)
+    else:
+        raise EvidenceError(
+            "canonical project verifier project-test allowlist is unterminated"
+        )
+    if tuple(observed) != EXPECTED_PROJECT_TESTS:
+        raise EvidenceError(
+            "canonical project verifier test inventory differs from the frozen v5 inventory"
+        )
+    return tuple(observed)
+
+
+def _source_identity(project_root: Path, relative: str) -> Dict[str, Any]:
+    path = project_root.joinpath(*relative.split("/"))
+    if path.is_symlink() or not path.is_file():
+        raise EvidenceError(
+            "verification inventory input is missing or unsafe: %s" % relative
+        )
+    data = path.read_bytes()
+    return {
+        "path": relative,
+        "sha256": _sha256_bytes(data),
+        "bytes": len(data),
+    }
+
+
+def _verification_inventory(project_root: Path) -> Dict[str, Any]:
+    tests = _verifier_project_tests(project_root)
+    return {
+        "schema_version": VERIFICATION_INVENTORY_SCHEMA,
+        "contract_version": VERIFICATION_CONTRACT_VERSION,
+        "gate7_experiment_id": "gate7f-onnx-v5",
+        "historical_evidence_reclassified": False,
+        "verifier": _source_identity(project_root, "scripts/verify_project.sh"),
+        "project_test_count": len(tests),
+        "project_tests": [
+            _source_identity(project_root, relative) for relative in tests
+        ],
+        "v5_input_count": len(V5_VERIFICATION_INPUTS),
+        "v4_inputs": [
+            _source_identity(project_root, relative)
+            for relative in V5_VERIFICATION_INPUTS
+        ],
+    }
+
+
 def _single_inspect(path: Path, label: str) -> Dict[str, Any]:
     payload = _load_json(path, label)
     if (
@@ -758,12 +944,14 @@ def _host_evidence(
     source_archive = _source_archive_attestation(
         project_root, evidence_root, execution_root, source_commit
     )
+    verification_inventory = _verification_inventory(project_root)
 
     evidence = {
         "schema_version": "carma-host-verification-v1",
         "status": "pass",
         "source_commit": source_commit,
         "source_archive": source_archive,
+        "verification_inventory": verification_inventory,
         "baseline_ancestor_verified": True,
         "python": {
             "implementation": platform.python_implementation(),
@@ -831,6 +1019,7 @@ def _container_evidence(
     source_archive = _source_archive_attestation(
         project_root, evidence_root, execution_root, source_commit
     )
+    verification_inventory = _verification_inventory(project_root)
     image_id = _read_text(
         evidence_root / "container-image-id.txt", "container image ID"
     ).strip().lower()
@@ -931,6 +1120,7 @@ def _container_evidence(
         "status": "pass",
         "source_commit": source_commit,
         "source_archive": source_archive,
+        "verification_inventory": verification_inventory,
         "image_id": image_id,
         "platform": "linux/amd64",
         "fresh_container_count": 2,
