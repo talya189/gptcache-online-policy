@@ -299,6 +299,7 @@ async def aadapt(
     :return: llm result
     """
     start_time = time.time()
+    search_only_flag = kwargs.pop("search_only", False)
     user_temperature = "temperature" in kwargs
     user_top_k = "top_k" in kwargs
     temperature = kwargs.pop("temperature", 0.0)
