@@ -56,7 +56,7 @@
   \vspace{0.05in}
   {\large Cluster-Adaptive Reuse and Miss-pressure Admission\par}
   \vspace{0.08in}
-  {\normalsize Talya Yermiyahu --- Final Project Report, September 2026\par}
+  {\normalsize Talya Yermiyahu - Final Project Report, September 2026\par}
 \end{center}
 
 \textbf{Executive summary.}
@@ -90,7 +90,7 @@ chooses which stored entry to remove when the cache is full.
 
 GPTCache was selected because it is a mature, locally runnable baseline with a
 published system paper, an established test suite, and separable embedding,
-search, similarity, storage, and eviction components. Its SQLite--FAISS path
+search, similarity, storage, and eviction components. Its SQLite-FAISS path
 runs on a central processing unit without a paid model call or application
 programming interface key. That modular path made it possible to change the
 eviction policy while preserving the existing cache interface and testing the
@@ -304,7 +304,7 @@ systems are not allowed to install packages during verification.
 At verified repository commit \code{bea5c64ebfac5a00632d8c3db046518d668c42a8},
 the public continuous-integration run passed all four jobs. The Python 3.8
 slice passed 44 tests. Host verification passed eight upstream eviction tests,
-two SQLite--FAISS tests (with one unavailable optional case deselected), and
+two SQLite-FAISS tests (with one unavailable optional case deselected), and
 1,292 project tests with four platform-dependent skips, followed by the
 deterministic benchmark. Two fresh network-isolated containers repeated the
 same verification and produced matching non-timing benchmark evidence. The
@@ -624,7 +624,7 @@ they are not estimates of semantic accuracy on unseen questions.
   the fraction of requests completed by each time, using 15,000 requests per
   policy; the lower panel enlarges the range from the median to the 99th
   percentile. Panel B separates average time after embedding and enlarges the
-  policy-only part. The 495.5--496.5-millisecond average embedding time is not
+  policy-only part. The 495.5-496.5-millisecond average embedding time is not
   drawn because it is about 99.3\% of total average request time. Panel C shows
   throughput from the five processes on a deliberately narrow scale. Panel D
   shows peak physical memory for each process. Measurements taken close
@@ -701,7 +701,7 @@ set was not opened, and the planned final-test criteria were not evaluated.
     {artifacts/samples/analysis/report-descriptive/qqp-calibration-tradeoff.png}
   \caption{Duplicate-question classification on the Quora Question Pairs
   calibration set across 20 cosine-similarity thresholds. The precision panel
-  is enlarged to 90--100\% and includes the one-sided 95\% Wilson lower
+  is enlarged to 90-100\% and includes the one-sided 95\% Wilson lower
   confidence bound. Recall uses all true duplicate pairs as its denominator;
   the false-positive rate uses all non-duplicate pairs. The 0.97 line marks the
   threshold used in the system experiment, not a threshold selected from final
@@ -797,7 +797,7 @@ Evidence area & Exact repository locations \\
 \midrule
 Public repository and verified revision &
 \href{https://github.com/talya189/gptcache-online-policy}{github.com/talya189/gptcache-online-policy},
-branch \code{feature/gate7-end-to-end}, commit
+branch \code{main}, commit
 \code{bea5c64ebfac5a00632d8c3db046518d668c42a8}. \\
 Implementation and tests & \path{gptcache/manager/} and \path{tests/}. \\
 Benchmark documentation & \path{benchmarks/carma/README.md} and
@@ -851,7 +851,7 @@ the full-path invocation.
 \begin{thebibliography}{9}
 \bibitem{gptcache-paper}
 Bang Fu and Di Feng. ``GPTCache: An Open-Source Semantic Cache for LLM Applications
-Enabling Faster Answers and Cost Savings.'' \emph{NLP-OSS 2023}, pp. 212--218.
+Enabling Faster Answers and Cost Savings.'' \emph{NLP-OSS 2023}, pp. 212-218.
 \href{https://doi.org/10.18653/v1/2023.nlposs-1.24}{doi:10.18653/v1/2023.nlposs-1.24}.
 \bibitem{scalm}
 J. Li, C. Xu, F. Wang, I. M. von Riedemann, C. Zhang, and J. Liu.
@@ -860,12 +860,12 @@ Language Models.'' arXiv:2406.00025v1, 2024.
 \href{https://arxiv.org/abs/2406.00025}{arxiv.org/abs/2406.00025}.
 \bibitem{twoq}
 Theodore Johnson and Dennis Shasha. ``2Q: A Low Overhead High Performance
-Buffer Management Replacement Algorithm.'' \emph{VLDB 1994}, pp. 439--450.
+Buffer Management Replacement Algorithm.'' \emph{VLDB 1994}, pp. 439-450.
 \href{https://www.vldb.org/conf/1994/P439.PDF}{vldb.org/conf/1994/P439.PDF}.
 \bibitem{lrfu}
 Donghee Lee et al. ``LRFU: A Spectrum of Policies that Subsumes the Least
 Recently Used and Least Frequently Used Policies.'' \emph{IEEE Transactions
-on Computers} 50(12), 2001, pp. 1352--1361.
+on Computers} 50(12), 2001, pp. 1352-1361.
 \href{https://doi.org/10.1109/TC.2001.970573}{doi:10.1109/TC.2001.970573}.
 \bibitem{arc}
 Nimrod Megiddo and Dharmendra S. Modha. ``ARC: A Self-Tuning, Low Overhead
