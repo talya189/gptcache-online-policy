@@ -317,6 +317,7 @@ class SSDataManager(DataManager):
         if callable(marker):
             try:
                 marker(reason)
+            # pylint: disable-next=broad-except
             except Exception as marker_error:  # pragma: no cover - defensive
                 gptcache_log.error(
                     "Failed to mark eviction policy unhealthy: %s", marker_error
@@ -345,6 +346,7 @@ class SSDataManager(DataManager):
             if callable(targeted_clear):
                 targeted_clear(recovery_ids)
             return True
+        # pylint: disable-next=broad-except
         except Exception as recovery_error:  # pragma: no cover - backend-specific
             gptcache_log.error(
                 "Failed to restore cache consistency after cache import: %s",
@@ -467,6 +469,7 @@ class SSDataManager(DataManager):
                 if recovered:
                     try:
                         self._rebuild_eviction_state()
+                    # pylint: disable-next=broad-except
                     except Exception as rebuild_error:  # pragma: no cover - recovery path
                         gptcache_log.error(
                             "Failed to rebuild eviction state after cache import: %s",
